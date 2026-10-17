@@ -9,7 +9,7 @@
 [![3x-ui](https://img.shields.io/badge/3x--ui-API-green)](https://github.com/MHSanaei/3x-ui)
 [![Stars](https://img.shields.io/badge/⭐_Telegram_Stars-поддержка-yellow)]()
 
-[![Version](https://img.shields.io/badge/version-v2.0.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.0.0-blue)](CHANGELOG.md)
 
 **Живой пример:** [@skrepnet_bot](https://t.me/skrepnet_bot) (BOT_NAME=`SkrepNet`, SUPPORT_USERNAME=`SkrepNet_support`).    
 Это **шаблон** — разверните **свой** бот с **другим** именем, просто изменив `.env`.
@@ -23,7 +23,7 @@
 - 📦 Получение подписки Hysteria2
 - 📜 Согласие с правилами, политикой и пользовательским соглашением
 - 📱 Лимит 3 IP одновременно, срок подписки 30 дней
-- 🔄 Ручное продление подписки по кнопке
+- 🔄 Ручное продление подписки по кнопке (с защитой от накрутки)
 - 📷 QR-код для быстрого подключения
 - 🔔 Напоминания о продлении (за 3 дня и в день окончания, без звука)
 - 📊 Прогресс сбора донатов (полоска в `/start` и напоминаниях)
@@ -50,6 +50,18 @@
 - 💬 Лист ожидания с автоуведомлением при освобождении места
 - ❌ Кнопка «Отмена» во всех FSM-сценариях (рассылка, продление, комментарии, email)
 
+### Telegram Mini App (WebApp) — NEW in v3.0
+
+- 🌐 **Полноценный личный кабинет** внутри Telegram
+- 📊 **Главное меню**: статус подписки, прогресс донатов, быстрые действия
+- 🔐 **Моя подписка**: QR-код, ссылка на подписку, прогресс-бар дней, трафик (скачано/загружено), статус онлайн/оффлайн
+- 🛡️ **Защита от накрутки**: продление не дальше 30 дней от текущей даты
+- 🔄 **Умное фоновое обновление**: каждые 3 секунды проверяет изменения и обновляет данные только при необходимости
+- 💰 **Донат**: Telegram Stars (через инвойс) и DonationAlerts
+- 🆘 **Техподдержка**: прямая ссылка на @SkrepNet_support
+- 📜 **Документы**: правила, политика, соглашение (в модальных окнах)
+- 👥 **Реферальная система**: ссылка для приглашения, счётчик друзей
+
 ### Веб-сайт (для выдачи подписки без Telegram)
 
 - 🌐 Flask-приложение на HTTPS (порт 8443)
@@ -75,6 +87,7 @@
 - **Панель 3x-ui** — на российском VPS
 - Связь между ними — через **API-токен (Bearer)** по HTTPS
 - **Веб-сайт** (`web_app.py`) — Flask на HTTPS, отдельный порт
+- **Mini App** — Flask на HTTPS, валидация `initData` (HMAC-SHA256, WebAppData, BOT_TOKEN, `auth_date` TTL 1 час)
 - **Донаты** — Telegram Stars + DonationAlerts через Centrifugo WebSocket
 
 ## 📋 Требования
@@ -85,7 +98,7 @@
 - API-токен 3x-ui (Settings → Security → API Tokens)
 - Бот в Telegram (создаётся через @BotFather)
 - Токен DonationAlerts (для приёма донатов)
-- SSL-сертификат для веб-сайта (например, Let's Encrypt)
+- SSL-сертификат для веб-сайта и Mini App (например, Let's Encrypt)
 
 ## 🚀 Быстрая установка
 
@@ -95,7 +108,7 @@
     # Установка бота
     bash scripts/install-bot.sh
 
-    # Установка веб-сайта (опционально)
+    # Установка веб-сайта и Mini App (опционально)
     bash scripts/install-web.sh
 
 Скрипт задаст все вопросы (BOT_TOKEN, ADMIN_ID, BOT_USERNAME, BOT_NAME, SUPPORT_USERNAME, XUI_HOST, XUI_API_TOKEN, инбаунд, SUB_BASE_URL, лимиты, донат) и настроит бота автоматически: создаст `.env` с правами 600, поставит зависимости в venv, настроит cron для бэкапов и systemd-сервис.
@@ -134,6 +147,10 @@
 - `SUBSCRIPTION_DAYS` — срок подписки в днях (по умолчанию 30)
 - `MAX_USERS` — максимум активных пользователей (по умолчанию 100)
 
+### Mini App
+
+- `MINIAPP_URL` — URL Mini App (например, `https://gb-skrepnet.duckdns.org:8443/v3`)
+
 ### Донаты
 
 - `DONATE_URL` — ссылка на DonationAlerts
@@ -144,23 +161,23 @@
 ### Прочее
 
 - `DB_PATH` — путь к базе данных (по умолчанию `skrepnet.db`)
-- `BOT_VERSION` — версия бота (по умолчанию `2.0.0`)
+- `BOT_VERSION` — версия бота (по умолчанию `3.0.0`)
 
 ## 📁 Структура проекта
 
     bot.py                  # точка входа
     config.py               # чтение .env, валидация
     database.py             # SQLite (users, admins, invite_links, invites, donations, waitlist)
-    xui_client.py           # API 3x-ui (add/get/update/delete client, comment)
+    xui_client.py           # API 3x-ui (add/get/update/delete client, comment, online)
     keyboards.py            # кнопки и меню
     scheduler.py            # напоминания + автоочистка + лист ожидания + брошенные веб-выдачи
     docs_config.py          # ссылки на документы в telegra.ph
     donation_socket.py      # DonationAlerts через Centrifugo WebSocket
-    web_app.py              # Flask-сайт для выдачи без Telegram
+    web_app.py              # Flask-приложение (тонкий вход)
     backup.sh               # бэкап базы
     handlers/               # обработчики по модулям
-    ├── menu.py             # НОВЫЙ — главное inline-меню, back_to_main, menu_* callback
-    ├── web_link.py         # НОВЫЙ — автопривязка по TG ID (handle_web_link, bind_by_tg_id)
+    ├── menu.py             # главное inline-меню, back_to_main, menu_* callback
+    ├── web_link.py         # автопривязка по TG ID (handle_web_link, bind_by_tg_id)
     ├── start.py            # /start, deep-link (ref_*, link_*)
     ├── subscription.py     # заявка, одобрение, продление, QR, лист ожидания
     ├── donate.py           # Stars + DonationAlerts
@@ -172,13 +189,17 @@
     ├── states.py           # FSM-состояния
     └── utils.py            # sanitize_email, QR-генератор
     scripts/                # install-bot.sh, install-web.sh
-    web/                    # templates + static
+    web/                    # NEW: Flask-роуты и Mini App
+    ├── routes/             # api, docs, invite, miniapp
+    ├── utils/              # auth.py (валидация initData), async_helper.py
     └── templates/
+        ├── miniapp.html    # Mini App (фронтенд)
         ├── docs.html
         └── docs/
             ├── rules.html
             ├── privacy.html
             └── terms.html
+    web/static/style.css    # стили (в т.ч. Mini App)
 
 ## 🔄 Как работает выдача подписки
 
@@ -187,6 +208,7 @@
 1. `/start` → «📦 Получить подписку»
 2. Принятие правил, политики и соглашения
 3. Админ жмёт «✅ Одобрить» → клиент создаётся в 3x-ui, пользователь получает ссылку
+4. Управление подпиской (QR, продление) — через **Mini App** («📱 Личный кабинет»)
 
 ### Реферал (по ссылке `?start=ref_<id>`)
 
@@ -219,6 +241,8 @@
 - API-токен 3x-ui вместо логина/пароля
 - Systemd с `Restart=always`
 - Валидация обязательных переменных при старте (`config.py`)
+- **Валидация initData** в Mini App: HMAC-SHA256 (WebAppData, BOT_TOKEN), `compare_digest`, проверка `auth_date` (TTL 1 час)
+- **Same-Origin Restriction** в BotFather (только ваш домен может читать initData)
 - **Жёсткая проверка TG ID** при автопривязке — только тот B, для кого создана ссылка
 - Dependabot, CodeQL, Secret scanning — включены
 
@@ -245,7 +269,10 @@
 - [x] **Автопривязка веб-пользователей по TG ID**
 - [x] **Автоочистка брошенных веб-выдач**
 - [x] **Отмена во всех FSM-сценариях**
-- [ ] Онлайн-клиенты
+- [x] **Telegram Mini App (v3.0)** — личный кабинет с подпиской, донатом, поддержкой
+- [x] **Фоновое обновление в Mini App** — каждые 3 секунды (только при изменениях)
+- [x] **Защита от накрутки продления** — не дальше 30 дней от сегодня
+- [ ] Онлайн-клиенты (список IP — в планах)
 - [ ] Мониторинг панели 3x-ui
 - [ ] Статистика донатов через API
 - [ ] Инструкции для Apple TV, Samsung TV, LG TV
@@ -254,7 +281,7 @@
 
 ## 📌 Версия
 
-**Текущая версия: v2.0.0**
+**Текущая версия: v3.0.0**
 
 История версий — в [CHANGELOG.md](CHANGELOG.md).
 
