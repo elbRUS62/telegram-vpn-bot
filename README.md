@@ -102,7 +102,7 @@
 
 ## 🚀 Быстрая установка
 
-    git clone https://github.com/elbRUS62/skrepnet-bot.git
+    git clone https://github.com/elbRUS62/telegram-vpn-bot.git
     cd skrepnet-bot
 
     # Установка бота
