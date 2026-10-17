@@ -175,3 +175,12 @@ class XUIClient:
     def build_sub_url(self, sub_id: str) -> str:
         """Собрать ссылку на подписку."""
         return f"{SUB_BASE_URL}{SUB_PATH}{sub_id}"
+    async def is_client_online(self, email: str) -> bool:
+        """Проверяет, онлайн ли клиент с указанным email."""
+        try:
+            result = await self._post("/panel/api/clients/onlines")
+            if result.get("success") and isinstance(result.get("obj"), list):
+                return email in result["obj"]
+        except Exception:
+            pass
+        return False

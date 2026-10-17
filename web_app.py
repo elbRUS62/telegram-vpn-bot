@@ -1,233 +1,28 @@
+"""Flask-приложение для сайта и Mini App."""
+
 import asyncio
 import logging
-import sys
 import os
-from datetime import datetime
 
-from flask import Flask, render_template, request, jsonify
-import aiosqlite
-
-sys.path.insert(0, '/root/skrepnet-bot')
-
-from database import (
-    init_db, get_invite_link, use_invite_link, get_user,
-    increment_invites, add_invite, mark_invite_counted,
-)
-from xui_client import XUIClient
-from config import DB_PATH, SUBSCRIPTION_DAYS, BOT_TOKEN, ADMIN_IDS, BOT_NAME
-from handlers.utils import sanitize_email
+from flask import Flask
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from database import init_db
+from web.routes.docs import docs_bp
+from web.routes.invite import invite_bp
+from web.routes.miniapp import miniapp_bp
+from web.routes.api import api
+
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 
+# Blueprint'ы
+app.register_blueprint(invite_bp)
+app.register_blueprint(docs_bp)
+app.register_blueprint(miniapp_bp)
+app.register_blueprint(api)
 
-# ============================================================
-# УВЕДОМЛЕНИЕ АДМИНАМ О НОВОМ ВЕБ-ПОЛЬЗОВАТЕЛЕ
-# ============================================================
-
-async def notify_admin_new_web_user(friend_username: str, telegram_id: int, inviter_id: int, sub_url: str):
-    """Отправить уведомление админам о новом пользователе через веб-выдачу."""
-    from aiogram import Bot
-    from aiogram.client.default import DefaultBotProperties
-
-    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
-    try:
-        text = (
-            f"🆕 <b>Новый пользователь (веб-выдача)</b>\n\n"
-            f"👤 @{friend_username or 'без username'}\n"
-            f"🆔 <code>{telegram_id}</code>\n"
-            f"👥 Пригласил: <code>{inviter_id}</code>\n\n"
-            f"🔗 {sub_url}"
-        )
-        for admin_id in ADMIN_IDS:
-            try:
-                await bot.send_message(admin_id, text, disable_notification=True)
-            except Exception as e:
-                logger.error(f"Ошибка отправки админу {admin_id}: {e}")
-    finally:
-        await bot.session.close()
-
-
-# ============================================================
-# ДОКУМЕНТЫ НА САЙТЕ
-# ============================================================
-
-DOCS_META = {
-    "rules": {
-        "title": "Правила использования",
-        "template": "docs/rules.html",
-    },
-    "privacy": {
-        "title": "Политика конфиденциальности",
-        "template": "docs/privacy.html",
-    },
-    "terms": {
-        "title": "Пользовательское соглашение",
-        "template": "docs/terms.html",
-    },
-}
-
-
-@app.route('/docs/<doc_key>')
-def docs_page(doc_key):
-    """Отдаёт страницу документа из templates/docs/."""
-    meta = DOCS_META.get(doc_key)
-    if not meta:
-        return render_template('error.html',
-            message="Документ не найден"), 404
-
-    return render_template('docs.html',
-        title=meta["title"],
-        content=render_template(meta["template"]),
-        updated=datetime.now().strftime("%d.%m.%Y"))
-
-
-# ============================================================
-# СТРАНИЦА ПРИГЛАШЕНИЯ
-# ============================================================
-
-@app.route('/invite/<token>')
-def invite_page(token):
-    """Страница активации приглашения."""
-    invite = asyncio.run(get_invite_link(token))
-
-    if not invite:
-        return render_template('error.html',
-            message="Ссылка недействительна или уже использована"), 404
-
-    inviter = asyncio.run(get_user(invite["created_by"]))
-    inviter_name = "друг"
-    if inviter:
-        if inviter["username"]:
-            inviter_name = f"@{inviter['username']}"
-        elif inviter["first_name"]:
-            inviter_name = inviter["first_name"]
-
-    return render_template('invite.html',
-        token=token,
-        inviter_name=inviter_name,
-        friend_username=invite["friend_username"] or "друг")
-
-
-# ============================================================
-# АКТИВАЦИЯ ПОДПИСКИ
-# ============================================================
-
-@app.route('/api/activate/<token>', methods=['POST'])
-def activate(token):
-    """Активация — создаёт клиента в 3x-ui."""
-    data = request.json or {}
-
-    if not data.get('accepted_terms'):
-        return jsonify({'error': 'Необходимо принять условия'}), 400
-
-    async def process():
-        invite = await get_invite_link(token)
-        if not invite:
-            return {'error': 'Ссылка недействительна'}
-
-        if invite["friend_username"]:
-            name = invite["friend_username"]
-        else:
-            name = f"guest_{invite['created_by']}_{int(datetime.now().timestamp())}"
-
-        telegram_id = invite["friend_user_id"] or 0
-        xui_email = sanitize_email(name, telegram_id)
-
-        try:
-            # Формат: @ivan | web → bot | от: @elb62
-            user_part = f"@{invite['friend_username']}" if invite["friend_username"] else "guest"
-
-            inviter_part = str(invite['created_by'])
-            if invite['created_by']:
-                inviter = await get_user(invite['created_by'])
-                if inviter and inviter['username']:
-                    inviter_part = f"@{inviter['username']}"
-
-            auto_comment = f"{user_part} | web → bot | от: {inviter_part}"
-
-            async with XUIClient() as xui:
-                sub_id = await xui.add_client(
-                    xui_email,
-                    days=SUBSCRIPTION_DAYS,
-                    comment=auto_comment,
-                    tg_id=invite["friend_user_id"] or 0,
-                )
-                sub_url = xui.build_sub_url(sub_id)
-        except Exception as e:
-            logger.error(f"Ошибка создания клиента: {e}")
-            return {'error': f'Ошибка создания подписки: {e}'}
-
-        await use_invite_link(token, xui_email, sub_id)
-
-        # Засчитываем приглашение A (один раз — идемпотентно)
-        try:
-            counted = await mark_invite_counted(token)
-            if counted:
-                await increment_invites(invite["created_by"])
-                await add_invite(
-                    inviter_id=invite["created_by"],
-                    invited_user_id=invite["friend_user_id"],
-                    invited_username=invite["friend_username"],
-                    invited_first_name=None,
-                    invite_type="no_tg",
-                )
-                logger.info(f"✅ Приглашение засчитано: inviter={invite['created_by']}, token={token}")
-            else:
-                logger.warning(f"⚠️ Приглашение уже было засчитано: token={token}")
-        except Exception as e:
-            logger.error(f"❌ Ошибка засчёта приглашения: {e}")
-
-        # Уведомляем админов
-        try:
-            await notify_admin_new_web_user(
-                friend_username=invite["friend_username"],
-                telegram_id=invite["friend_user_id"] or 0,
-                inviter_id=invite["created_by"],
-                sub_url=sub_url
-            )
-        except Exception as e:
-            logger.error(f"Ошибка уведомления админа: {e}")
-
-        # Генерируем QR-код
-        import base64
-        import io
-        import qrcode
-
-        qr = qrcode.QRCode(
-            version=None,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=10,
-            border=2,
-        )
-        qr.add_data(sub_url)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        buf.seek(0)
-        qr_base64 = base64.b64encode(buf.read()).decode('utf-8')
-
-        return {
-            'sub_url': sub_url,
-            'sub_id': sub_id,
-            'email': xui_email,
-            'qr_base64': qr_base64
-        }
-
-    result = asyncio.run(process())
-
-    if 'error' in result:
-        return jsonify(result), 400
-    return jsonify(result)
-
-
-# ============================================================
-# ЗАПУСК
-# ============================================================
 
 if __name__ == '__main__':
     asyncio.run(init_db())
@@ -236,8 +31,7 @@ if __name__ == '__main__':
     SSL_KEY = '/root/cert/gb-skrepnet.duckdns.org/privkey.pem'
 
     if os.path.exists(SSL_CERT) and os.path.exists(SSL_KEY):
-        app.run(host='0.0.0.0', port=8443,
-                ssl_context=(SSL_CERT, SSL_KEY))
+        app.run(host='0.0.0.0', port=8443, ssl_context=(SSL_CERT, SSL_KEY))
     else:
         logger.warning("SSL сертификаты не найдены — запуск без HTTPS")
         app.run(host='0.0.0.0', port=8443)

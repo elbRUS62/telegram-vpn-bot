@@ -3,11 +3,11 @@
 import logging
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 
-from config import ADMIN_IDS, DONATE_TEXT, DONATE_URL, BOT_NAME
+from config import ADMIN_IDS, BOT_NAME, DONATE_TEXT, DONATE_URL
 from database import get_user, is_in_waitlist, get_waitlist_position
-from keyboards import main_inline_menu, main_menu, admin_menu
+from keyboards import main_inline_menu, main_menu, admin_menu, admin_manage_keyboard, support_keyboard
 from handlers.progress import render_progress
 
 router = Router()
@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 async def show_main_menu(message: Message):
-    """Показать главное меню (ReplyKeyboard + InlineKeyboard).
-    Вызывается из cmd_start и из cmd_start_ref (start.py)."""
+    """Показать главное меню (ReplyKeyboard + InlineKeyboard)."""
     user = await get_user(message.from_user.id)
     is_admin = message.from_user.id in ADMIN_IDS
     menu = admin_menu() if is_admin else main_menu()
@@ -31,20 +30,12 @@ async def show_main_menu(message: Message):
             parse_mode="HTML",
             reply_markup=menu
         )
-        await message.answer(
-            "📋 <b>Меню</b>",
-            parse_mode="HTML",
-            reply_markup=main_inline_menu(is_admin)
-        )
         return
-
-    progress_line = await render_progress(short=True)
 
     if user and user["status"] == "active":
         text = (
             f"👋 С возвращением, {message.from_user.first_name}!\n\n"
-            f"У тебя активная подписка.\n\n"
-            f"{progress_line}"
+            f"У тебя активная подписка. Управление — в приложении."
         )
     elif user and user["status"] == "pending":
         text = "⏳ Твоя заявка на рассмотрении. Скоро админ её одобрит."
@@ -52,70 +43,41 @@ async def show_main_menu(message: Message):
         text = (
             f"👋 Привет, {message.from_user.first_name}!\n\n"
             f"Это бот для выдачи бесплатных подписок {BOT_NAME}.\n\n"
-            f"{progress_line}\n\n"
-            f"⚠️ Проект бесплатный, но сервер стоит ~3000 ₽/мес. "
-            f"Если хочешь помочь — жми «❤️ Поддержать проект»."
+            f"Нажми «Личный кабинет», чтобы начать."
         )
 
     await message.answer(text, parse_mode="HTML", reply_markup=menu)
 
-    await message.answer(
-        "📋 <b>Меню</b>\n\nВыбери действие:",
-        parse_mode="HTML",
-        reply_markup=main_inline_menu(is_admin)
-    )
-
 
 @router.message(CommandStart(deep_link=False))
 async def cmd_start(message: Message):
-    """Обычный /start БЕЗ deep-link.
-
-    Сначала проверяем АВТОПРИВЯЗКУ по TG ID:
-      - если для этого TG есть активная ссылка (friend_user_id)
-      - и она не привязана → привязываем автоматически
-    Потом показываем меню.
-    """
-    from database import find_pending_web_link_for_tg
-    from handlers.web_link import bind_by_tg_id
-
-    tg_id = message.from_user.id
-
-    # Ищем активную ссылку для этого TG
-    link = await find_pending_web_link_for_tg(tg_id)
-
-    if link:
-        logger.info(f"🔗 Найдена автопривязка для TG={tg_id}: token={link['token']}")
-        await bind_by_tg_id(message, link)
-        return
-
-    # Обычное меню
+    """Обычный /start — показываем меню."""
     await show_main_menu(message)
+
+
+@router.message(Command("admin"))
+async def cmd_admin(message: Message):
+    """Секретная команда для админа — открывает панель управления."""
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    
+    await message.answer(
+        "🛠 <b>Панель администратора</b>\n\nВыбери действие:",
+        parse_mode="HTML",
+        reply_markup=admin_manage_keyboard()
+    )
 
 
 @router.callback_query(F.data == "back_to_main")
 async def back_to_main(callback: CallbackQuery):
-    """Возврат в главное меню. Работает и с текстом, и с фото."""
+    """Возврат в главное меню."""
     is_admin = callback.from_user.id in ADMIN_IDS
 
-    try:
-        # Пробуем отредактировать текст (если сообщение текстовое)
-        await callback.message.edit_text(
-            "🏠 <b>Главное меню</b>\n\nВыбери действие:",
-            parse_mode="HTML",
-            reply_markup=main_inline_menu(is_admin)
-        )
-    except Exception:
-        # Сообщение с фото (или другое не текстовое) — удаляем и шлём новое
-        try:
-            await callback.message.delete()
-        except Exception:
-            pass
-        await callback.message.answer(
-            "🏠 <b>Главное меню</b>\n\nВыбери действие:",
-            parse_mode="HTML",
-            reply_markup=main_inline_menu(is_admin)
-        )
-
+    await callback.message.edit_text(
+        "🏠 <b>Главное меню</b>\n\nВыбери действие:",
+        parse_mode="HTML",
+        reply_markup=main_inline_menu(is_admin)
+    )
     await callback.answer()
 
 
@@ -137,6 +99,20 @@ async def menu_invite(callback: CallbackQuery):
 @router.callback_query(F.data == "menu_invite_no_tg")
 async def menu_invite_no_tg(callback: CallbackQuery):
     await _handle_invite_no_tg(callback)
+
+
+@router.callback_query(F.data == "menu_support")
+async def menu_support(callback: CallbackQuery):
+    from config import SUPPORT_USERNAME
+    await callback.message.edit_text(
+        f"🆘 <b>Техподдержка {BOT_NAME}</b>\n\n"
+        "Если у тебя возникли вопросы, проблемы с подключением "
+        "или ты хочешь сообщить о сбое — напиши нам.\n\n"
+        f"📢 Канал техподдержки: @{SUPPORT_USERNAME}",
+        parse_mode="HTML",
+        reply_markup=support_keyboard()
+    )
+    await callback.answer()
 
 
 @router.callback_query(F.data == "menu_docs")
@@ -174,11 +150,8 @@ async def menu_progress(callback: CallbackQuery):
 # ============================================================
 
 async def _handle_get_sub(callback: CallbackQuery):
-    """📦 Получить подписку."""
     from config import MAX_USERS
-    from database import (
-        count_active_users, is_limit_reached,
-    )
+    from database import count_active_users, is_limit_reached
     from keyboards import terms_keyboard, waitlist_keyboard
 
     user = await get_user(callback.from_user.id)
@@ -230,7 +203,6 @@ async def _handle_get_sub(callback: CallbackQuery):
 
 
 async def _handle_my_sub(callback: CallbackQuery):
-    """🔑 Моя подписка."""
     from datetime import datetime
     from xui_client import XUIClient
     from keyboards import subscription_keyboard
@@ -276,7 +248,6 @@ async def _handle_my_sub(callback: CallbackQuery):
 
 
 async def _handle_invite(callback: CallbackQuery):
-    """👥 Пригласить пользователя."""
     from keyboards import share_keyboard
     from config import BOT_USERNAME
 
@@ -290,7 +261,7 @@ async def _handle_invite(callback: CallbackQuery):
     ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{callback.from_user.id}"
 
     await callback.message.edit_text(
-        f"👥 <b>Пригласи пользователя</b>\n\n"
+        f"👥 <b>Пригласи друга</b>\n\n"
         f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
         f"📊 Ты уже пригласил: {invites} чел.\n\n"
         f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
@@ -301,7 +272,6 @@ async def _handle_invite(callback: CallbackQuery):
 
 
 async def _handle_invite_no_tg(callback: CallbackQuery):
-    """➕ Добавить без Telegram — показываем ReplyKeyboard для выбора контакта."""
     from keyboards import invite_contact_keyboard
 
     user = await get_user(callback.from_user.id)
@@ -310,14 +280,15 @@ async def _handle_invite_no_tg(callback: CallbackQuery):
         await callback.answer("Сначала получи подписку", show_alert=True)
         return
 
-    # Удаляем сообщение с inline-меню, отправляем новое с ReplyKeyboard
     await callback.message.delete()
     await callback.message.answer(
-        "➕ <b>Добавить пользователя без Telegram</b>\n\n"
-        "Нажми «👤 Выбрать из контактов» — выбери человека из списка Telegram.\n"
-        "Я получу его ID и username автоматически.\n\n"
-        "⏳ После выбора создам одноразовую ссылку на 7 дней.",
-        parse_mode="HTML",
-        reply_markup=invite_contact_keyboard()
+        "➕ <b>Добавить друга без Telegram</b>\n\n"
+        "Выбери способ:\n"
+        "• Выбрать из контактов Telegram\n"
+        "• Или ввести @username / ID вручную\n\n"
+        "После этого я создам одноразовую ссылку, "
+        "которую ты передашь любым способом.",
+        reply_markup=invite_contact_keyboard(),
+        parse_mode="HTML"
     )
     await callback.answer()

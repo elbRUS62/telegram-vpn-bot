@@ -732,3 +732,102 @@ async def join_waitlist_callback(callback: CallbackQuery):
     await callback.answer("Ты в очереди!")
 
     logger.info(f"✅ {user.id} добавлен в лист ожидания (позиция {position})")
+
+# ============================================================
+# ОБРАБОТЧИК ДАННЫХ ОТ MINI APP
+# ============================================================
+
+@router.message(F.web_app_data)
+async def webapp_data_handler(message: Message):
+    """Обработчик данных от Mini App (tg.sendData)."""
+    import json
+
+    try:
+        data = json.loads(message.web_app_data.data)
+    except Exception as e:
+        logger.error(f"web_app_data parse error: {e}")
+        return
+
+    action = data.get("action")
+    logger.info(f"📱 Mini App action: {action} от {message.from_user.id}")
+
+    # --- 📦 Получить подписку ---
+    if action == "get_sub":
+        from keyboards import terms_keyboard
+        user = await get_user(message.from_user.id)
+
+        if user and user["status"] == "active":
+            await message.answer("У тебя уже есть активная подписка")
+            return
+        if user and user["status"] == "pending":
+            await message.answer("⏳ Заявка уже отправлена. Жди одобрения админа.")
+            return
+
+        await message.answer(
+            "📜 <b>Для получения подписки ознакомься с документами:</b>\n\n"
+            "1. 📜 Правила использования\n"
+            "2. 🔒 Политика конфиденциальности\n"
+            "3. 📋 Пользовательское соглашение\n\n"
+            "Нажимая «✅ Я согласен со всеми условиями», ты подтверждаешь, "
+            "что ознакомился со всеми документами.",
+            reply_markup=terms_keyboard(),
+            parse_mode="HTML"
+        )
+        return
+
+    # --- 👥 Пригласить друга ---
+    if action == "invite_friend":
+        from keyboards import share_keyboard
+        from config import BOT_USERNAME
+
+        user = await get_user(message.from_user.id)
+        if not user:
+            await message.answer("Сначала получи подписку")
+            return
+
+        invites = user["invites_count"] if user["invites_count"] else 0
+        ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{message.from_user.id}"
+
+        await message.answer(
+            f"👥 <b>Пригласи друга</b>\n\n"
+            f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
+            f"📊 Ты уже пригласил: {invites} чел.\n\n"
+            f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
+            reply_markup=share_keyboard(BOT_USERNAME, message.from_user.id),
+            parse_mode="HTML"
+        )
+        return
+
+    # --- ➕ Добавить без TG ---
+    if action == "invite_no_tg":
+        from keyboards import invite_contact_keyboard
+
+        user = await get_user(message.from_user.id)
+        if not user or user["status"] != "active":
+            await message.answer("Сначала получи подписку")
+            return
+
+        await message.answer(
+            "➕ <b>Добавить пользователя без Telegram</b>\n\n"
+            "Нажми «👤 Выбрать из контактов» — выбери человека из списка Telegram.\n"
+            "Я получу его ID и username автоматически.\n\n"
+            "⏳ После выбора создам одноразовую ссылку на 7 дней.",
+            parse_mode="HTML",
+            reply_markup=invite_contact_keyboard()
+        )
+        return
+
+    # --- ❤️ Поддержать проект ---
+    if action == "donate":
+        from keyboards import donate_keyboard
+        from config import DONATE_TEXT, DONATE_URL
+
+        await message.answer(
+            f"{DONATE_TEXT}\n\n"
+            f"Ссылка для доната: {DONATE_URL}",
+            reply_markup=donate_keyboard()
+        )
+        return
+
+    # --- Неизвестное действие ---
+    logger.warning(f"⚠️ Неизвестный action: {action}")

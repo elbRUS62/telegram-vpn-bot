@@ -2,9 +2,10 @@ from docs_config import DOCS
 from aiogram.types import (
     InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton,
-    KeyboardButtonRequestUsers
+    KeyboardButtonRequestUsers,
+    WebAppInfo
 )
-from config import DONATE_URL, BOT_NAME, SUPPORT_USERNAME
+from config import DONATE_URL, BOT_NAME, SUPPORT_USERNAME, MINIAPP_URL
 
 
 # ============================================================
@@ -13,23 +14,17 @@ from config import DONATE_URL, BOT_NAME, SUPPORT_USERNAME
 
 def main_menu():
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="❤️ Поддержать проект")]],
+        keyboard=[
+            [KeyboardButton(text="❤️ Поддержать проект")]
+        ],
         resize_keyboard=True,
         is_persistent=True
     )
 
 
 def admin_menu():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="❤️ Поддержать проект")]],
-        resize_keyboard=True,
-        is_persistent=True
-    )
+    return main_menu()
 
-
-# ============================================================
-# ГЛАВНОЕ INLINE-МЕНЮ (заменяет старые кнопки)
-# ============================================================
 
 def main_inline_menu(is_admin: bool = False):
     """Главное inline-меню. «Прогресс сбора» — только админу."""
@@ -130,13 +125,25 @@ def renew_keyboard():
 
 
 def subscription_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
+    from config import MINIAPP_URL
+
+    rows = []
+
+    if MINIAPP_URL:
+        rows.append([InlineKeyboardButton(
+            text="📱 Открыть приложение",
+            web_app=WebAppInfo(url=MINIAPP_URL)
+        )])
+
+    rows += [
         [InlineKeyboardButton(text="📖 Как подключиться", callback_data="connect_help")],
         [InlineKeyboardButton(text="📷 QR-код", callback_data="show_qr")],
         [InlineKeyboardButton(text="🔄 Продлить", callback_data="renew")],
         [InlineKeyboardButton(text="❤️ Поддержать", url=DONATE_URL)],
         [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")],
-    ])
+    ]
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def share_keyboard(bot_username: str, telegram_id: int):

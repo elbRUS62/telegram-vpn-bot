@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Моя подписка — SkrepNet</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #0d1117);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #161b22);
+            --text-color: var(--tg-theme-text-color, #c9d1d9);
+            --hint-color: var(--tg-theme-hint-color, #8b949e);
+            --link-color: var(--tg-theme-link-color, #58a6ff);
+            --button-color: var(--tg-theme-button-color, #238636);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .tabs {
+            display: flex;
+            background-color: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 12px 10px;
+            gap: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            background-color: transparent;
+            border: 1.5px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--hint-color);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .tab:active { transform: scale(0.96); }
+        .tab.active {
+            color: var(--button-text);
+            background-color: var(--button-color);
+            border-color: var(--button-color);
+            font-weight: 600;
+        }
+        .screen { display: none; padding: 20px; max-width: 440px; margin: 0 auto; }
+        .screen.active { display: block; }
+        .card {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: var(--text-color); font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-badge.active { background-color: #238636; color: white; }
+        .status-badge.expiring { background-color: #d29922; color: white; }
+        .status-badge.expired { background-color: #f85149; color: white; }
+        .status-badge.pending { background-color: #6e7681; color: white; }
+        .status-badge.new { background-color: var(--link-color); color: white; }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn-primary { background-color: var(--button-color); color: var(--button-text); box-shadow: 0 4px 12px rgba(35, 134, 54, 0.2); }
+        .btn-secondary { background-color: var(--secondary-bg); color: var(--text-color); border: 1px solid var(--border-color); }
+        .btn-link { background-color: var(--link-color); color: white; box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2); }
+        .qr-wrap { text-align: center; margin: 16px 0; }
+        .qr-wrap img { width: 100%; max-width: 260px; background: white; padding: 16px; border-radius: 16px; }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 15px;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label { color: var(--hint-color); }
+        .info-row .value { font-weight: 500; color: var(--text-color); }
+        .link-box {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px;
+            margin: 12px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--link-color);
+        }
+        .progress-container {
+            position: relative;
+            background-color: var(--bg-color);
+            border-radius: 20px;
+            height: 24px;
+            overflow: hidden;
+            margin: 12px 0;
+            border: 1px solid var(--border-color);
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #238636 0%, #3fb950 100%);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.6s ease;
+            min-width: 0;
+        }
+        .progress-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        .doc-text {
+            text-align: justify;
+            line-height: 1.6;
+            font-size: 15px;
+            color: var(--text-color);
+            max-height: 60vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .doc-text h1 { display: none; }
+        .doc-text h2 { text-align: center; color: var(--text-color); font-size: 18px; margin-top: 24px; margin-bottom: 12px; text-indent: 0; font-weight: 600; }
+        .doc-text p { margin-bottom: 12px; text-indent: 24px; }
+        .doc-text ul, .doc-text ol { margin-bottom: 12px; padding-left: 24px; }
+        .doc-text li { margin-bottom: 8px; }
+        .loading { text-align: center; padding: 40px; color: var(--hint-color); }
+        .error { text-align: center; padding: 40px; color: #f85149; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--button-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            white-space: normal;
+            text-align: center;
+            max-width: 85vw;
+            min-width: 200px;
+            width: max-content;
+            line-height: 1.4;
+        }
+        .toast.show { opacity: 1; }
+        .toast.error { background-color: #f85149; }
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-backdrop.show { display: flex; }
+        .modal {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 360px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .modal h2 { color: var(--text-color); margin-bottom: 16px; font-size: 20px; font-weight: 600; text-align: center; }
+        .modal .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+        .modal .row:last-child { border-bottom: none; }
+        .modal .row .label { color: var(--hint-color); }
+        .modal .row .value { font-weight: 600; color: var(--text-color); }
+        .modal .actions { margin-top: 24px; }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="main">Главное меню</button>
+        <button class="tab" data-tab="sub">Моя подписка</button>
+        <button class="tab" data-tab="donate">❤️ Донат</button>
+        <button class="tab" data-tab="support">Техподдержка</button>
+    </div>
+
+    <div id="screen-main" class="screen active">
+        <div class="loading" id="main-loading">⏳ Загрузка...</div>
+        <div id="main-content" style="display:none;"></div>
+    </div>
+    <div id="screen-sub" class="screen">
+        <div class="loading" id="sub-loading">⏳ Загрузка...</div>
+        <div id="sub-content" style="display:none;"></div>
+    </div>
+    <div id="screen-donate" class="screen">
+        <div class="loading" id="donate-loading">⏳ Загрузка...</div>
+        <div id="donate-content" style="display:none;"></div>
+    </div>
+    <div id="screen-support" class="screen">
+        <div class="loading" id="support-loading">⏳ Загрузка...</div>
+        <div id="support-content" style="display:none;"></div>
+    </div>
+
+    <div class="modal-backdrop" id="renew-modal">
+        <div class="modal">
+            <h2>Продлить подписку</h2>
+            <div class="row"><span class="label">Текущая дата</span><span class="value" id="renew-current">—</span></div>
+            <div class="row"><span class="label">Новая дата</span><span class="value" id="renew-new">—</span></div>
+            <div class="row"><span class="label">Прибавится</span><span class="value">+30 дней</span></div>
+            <div class="actions">
+                <button class="btn btn-primary" id="renew-confirm">Продлить</button>
+                <button class="btn btn-secondary" id="renew-cancel">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="docs-modal">
+        <div class="modal" style="max-height: 80vh; overflow-y: auto;">
+            <h2 id="docs-title">Документ</h2>
+            <div id="docs-content" style="line-height: 1.6; font-size: 15px; color: var(--text-color); margin-bottom: 16px;"></div>
+            <div class="actions">
+                <button class="btn btn-secondary" id="docs-close">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="ref-modal">
+        <div class="modal">
+            <h2>Пригласить друга</h2>
+            <div style="text-align:center; margin-bottom:16px;">
+                <div style="font-size:32px; font-weight:700; color:var(--link-color);" id="ref-count">0</div>
+                <div style="color:var(--hint-color); font-size:13px;">приглашено друзей</div>
+            </div>
+            <div class="link-box" style="margin-bottom:12px;" id="ref-link">
+                Загрузка...
+            </div>
+            <div style="background:var(--bg-color); border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px; color:var(--hint-color); line-height: 1.5;">
+                <p style="margin-bottom: 8px;"><b style="color:var(--text-color);">Что делать?</b></p>
+                <p style="margin-bottom: 6px;">1. Нажми «Копировать ссылку».</p>
+                <p style="margin-bottom: 6px;">2. Отправь её другу в любом мессенджере.</p>
+                <p>3. Друг перейдёт по ней и автоматически получит VPN на 30 дней.</p>
+            </div>
+            <button class="btn btn-primary" id="ref-copy-btn">Копировать ссылку</button>
+            <button class="btn btn-secondary" id="ref-close-btn" style="margin-top:8px;">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="connect-modal">
+        <div class="modal" style="max-height: 85vh; overflow-y: auto;">
+            <h2 id="connect-title">Как подключиться</h2>
+            <div id="connect-content" style="margin-bottom: 16px;"></div>
+            <button class="btn btn-secondary" id="connect-close">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="terms-modal">
+        <div class="modal" style="max-height: 85vh; overflow-y: auto;">
+            <h2>Для получения подписки</h2>
+            <p style="margin-bottom: 12px; font-size: 14px; color: var(--hint-color);">
+                Ознакомься с документами и подтверди согласие:
+            </p>
+            <div id="terms-docs-list" style="margin-bottom:16px;">
+                <div class="loading">⏳ Загрузка документов...</div>
+            </div>
+            <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer; font-size:14px;">
+                <input type="checkbox" id="terms-checkbox" style="margin-top:3px; width:18px; height:18px;">
+                <span>Я прочитал и принимаю все условия</span>
+            </label>
+            <button class="btn btn-primary" id="terms-submit" disabled>Получить подписку</button>
+            <button class="btn btn-secondary" id="terms-close" style="margin-top:8px;">Отмена</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Скопировано!</div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        console.log('initData length:', tg.initData ? tg.initData.length : 0);
+
+
+        let CURRENT_SUB_DATA = null;
+        let CACHED_DOCS = null;
+        let POLLING_TIMER = null;
+
+        let INIT_DATA = tg.initData || "";
+
+        async function apiCall(path, body = {}) {
+            // Всегда берем актуальный initData (вдруг появился)
+            if (!INIT_DATA) {
+                INIT_DATA = tg.initData || "";
+            }
+            
+            const res = await fetch(path, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({init_data: INIT_DATA, ...body}),
+            });
+            
+            if (res.status === 401) {
+                console.warn("Ошибка 401: init_data пустой или неверный");
+            }
+            
+            return res.json();
+        }
+
+        function showToast(text, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = text;
+            // Автоматически определяем ошибку по ключевым словам, если не передали явно
+            const errorKeywords = ['максимальный срок', 'Сначала получите', 'Ошибка', '❌', 'Не удалось', 'Нет активной'];
+            const looksLikeError = isError || errorKeywords.some(kw => text.includes(kw));
+            if (looksLikeError) {
+                toast.classList.add('error');
+            } else {
+                toast.classList.remove('error');
+            }
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Скопировано!');
+            }).catch(() => {
+                showToast('Не удалось скопировать');
+            });
+        }
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const name = tab.dataset.tab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('screen-' + name).classList.add('active');
+
+                if (name === 'main') loadMain();
+                else if (name === 'sub') loadSubscription();
+                else if (name === 'donate') loadDonate();
+                else if (name === 'support') loadSupport();
+            });
+        });
+
+        function switchTab(name) {
+            const tab = document.querySelector(`.tab[data-tab="${name}"]`);
+            if (tab) tab.click();
+        }
+
+        async function loadMain(isSilent = false) {
+            const loading = document.getElementById('main-loading');
+            const content = document.getElementById('main-content');
+            
+            if (!isSilent) {
+                loading.style.display = 'block';
+                content.style.display = 'none';
+            }
+
+            if (POLLING_TIMER) {
+                clearTimeout(POLLING_TIMER);
+                POLLING_TIMER = null;
+            }
+
+            try {
+                const data = await apiCall('/api/miniapp/main');
+                
+                if (isSilent) {
+                    const currentStatusEl = content.querySelector('.status-badge');
+                    const currentStatusText = currentStatusEl ? currentStatusEl.textContent : '';
+                    if (currentStatusText === data.status_text) {
+                        if (data.status === 'pending') {
+                            POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
+                        }
+                        return;
+                    }
+                }
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+                if (data.error) {
+                    if (!isSilent) content.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    return;
+                }
+
+                if (data.status === 'pending') {
+                    POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
+                }
+
+                const statusClass = data.status === 'active' ? 'active' : (data.status === 'pending' ? 'pending' : (data.status === 'rejected' ? 'expired' : 'new'));
+
+                let buttonsHtml = '';
+                if (data.has_subscription) {
+                    buttonsHtml = `<button class="btn btn-primary" data-action="switch_sub">Моя подписка</button>`;
+                } else {
+                    buttonsHtml = `<button class="btn btn-primary" data-action="get_sub">Получить подписку</button>`;
+                }
+
+                content.innerHTML = `
+                    <div class="header">
+                        <h1>${data.bot_name || 'SkrepNet'}</h1>
+                        <span class="status-badge ${statusClass}">${data.status_text}</span>
+                    </div>
+
+                    <div class="card" style="text-align:center; padding:16px;">
+                        <div style="color:var(--hint-color);font-size:13px;margin-bottom:12px;">Собрано на работу сервера в ${data.next_month}:</div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width: ${data.progress_percent}%;"></div>
+                            <div class="progress-text">${data.progress_percent}%</div>
+                        </div>
+                        <div style="color:var(--hint-color);font-size:12px;margin-top:8px;">Проект держится на донатах — помоги, если можешь.</div>
+                    </div>
+
+                    <div class="card" style="padding:12px;">
+                        <button class="btn btn-secondary" data-action="donate">❤️ Поддержать проект</button>
+                        ${buttonsHtml}
+                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_friend">Пригласить друга</button>` : ''}
+                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_no_tg">Добавить друга без Telegram</button>` : ''}
+                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="connect_help">Как подключиться</button>` : ''}
+                    </div>
+
+                    <div style="text-align:center;margin-top:20px;font-size:13px;">
+                        <a href="#" id="docs-link" style="color:var(--link-color);text-decoration:none;margin:0 10px;">Пользовательские соглашения</a>
+                    </div>
+                `;
+
+                content.querySelectorAll('[data-action]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const action = btn.dataset.action;
+                        if (action === 'switch_sub') switchTab('sub');
+                        else if (action === 'invite_friend') {
+                            if (!data.has_subscription) {
+                                showToast('Сначала получите подписку');
+                                return;
+                            }
+                            openRefModal();
+                        }
+                        else if (action === 'connect_help') openConnectModal();
+                        else if (action === 'donate') switchTab('donate');
+                        else if (action === 'invite_no_tg') {
+                            if (!data.has_subscription) {
+                                showToast('Сначала получите подписку');
+                                return;
+                            }
+                            const url = `https://t.me/skrepnet_bot?start=webapp_invite_no_tg`;
+                            if (tg.openTelegramLink) tg.openTelegramLink(url);
+                            else window.open(url, '_blank');
+                            tg.close();
+                        } else if (action === 'get_sub') openTermsModal();
+                    });
+                });
+
+                const docsLink = document.getElementById('docs-link');
+                if (docsLink) {
+                    docsLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        openDocsModal();
+                    });
+                }
+
+            } catch (e) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                if (!isSilent) content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
+            }
+        }
+
+        async function openRefModal() {
+            const linkEl = document.getElementById('ref-link');
+            const countEl = document.getElementById('ref-count');
+            linkEl.textContent = 'Загрузка...';
+            countEl.textContent = '0';
+            document.getElementById('ref-modal').classList.add('show');
+
+            try {
+                const data = await apiCall('/api/miniapp/referral');
+                if (data.error) throw new Error(data.error);
+                linkEl.textContent = data.ref_link;
+                countEl.textContent = data.invites_count;
+                document.getElementById('ref-copy-btn').onclick = () => copyToClipboard(data.ref_link);
+            } catch (e) {
+                linkEl.textContent = 'Ошибка: ' + e.message;
+            }
+        }
+
+        document.getElementById('ref-close-btn').addEventListener('click', () => {
+            document.getElementById('ref-modal').classList.remove('show');
+        });
+
+        async function openDocsModal(startIndex = null, fromTerms = false) {
+            const title = document.getElementById('docs-title');
+            const content = document.getElementById('docs-content');
+            title.textContent = "Пользовательские соглашения";
+            content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
+            document.getElementById('docs-modal').classList.add('show');
+
+            try {
+                if (!CACHED_DOCS) {
+                    const data = await apiCall('/api/miniapp/profile');
+                    if (data.error) throw new Error(data.error);
+                    CACHED_DOCS = data.documents;
+                }
+
+                if (startIndex !== null) {
+                    const doc = CACHED_DOCS[startIndex];
+                    title.textContent = doc.title;
+                    content.innerHTML = `
+                        <div class="doc-text">${doc.content}</div>
+                        <button class="btn btn-secondary" id="docs-back" style="margin-top: 16px;">Назад</button>
+                    `;
+                    document.getElementById('docs-back').addEventListener('click', () => {
+                        if (fromTerms) {
+                            document.getElementById('docs-modal').classList.remove('show');
+                            document.getElementById('terms-modal').classList.add('show');
+                        } else {
+                            openDocsModal(null, false);
+                        }
+                    });
+                } else {
+                    const linksHtml = CACHED_DOCS.map((d, i) => 
+                        `<button class="btn btn-secondary doc-btn" data-index="${i}" style="margin-bottom: 8px; text-align: left; padding-left: 16px;">${d.title}</button>`
+                    ).join('');
+                    content.innerHTML = `
+                        <p style="margin-bottom:16px;color:var(--hint-color);font-size:14px;">Выберите документ:</p>
+                        ${linksHtml}
+                    `;
+                    content.querySelectorAll('.doc-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            openDocsModal(parseInt(btn.dataset.index), fromTerms);
+                        });
+                    });
+                }
+            } catch (e) {
+                content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`;
+            }
+        }
+
+        document.getElementById('docs-close').addEventListener('click', () => {
+            document.getElementById('docs-modal').classList.remove('show');
+        });
+
+        async function openConnectModal() {
+            const title = document.getElementById('connect-title');
+            const content = document.getElementById('connect-content');
+            title.textContent = "Как подключиться";
+            content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
+            document.getElementById('connect-modal').classList.add('show');
+
+            try {
+                const data = await apiCall('/api/miniapp/connect');
+                if (data.error) throw new Error(data.error);
+                const platformsHtml = data.platforms.map(p => 
+                    `<button class="btn btn-secondary platform-btn" data-key="${p.key}" style="margin-bottom: 8px;">${p.title}</button>`
+                ).join('');
+                content.innerHTML = `
+                    <p style="margin-bottom:12px;color:var(--hint-color);font-size:14px;">Выберите устройство:</p>
+                    ${platformsHtml}
+                `;
+                content.querySelectorAll('.platform-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const key = btn.dataset.key;
+                        content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
+                        try {
+                            const pData = await apiCall('/api/miniapp/connect/' + key);
+                            if (pData.error) throw new Error(pData.error);
+                            const stepsHtml = pData.steps.map((s, i) => 
+                                `<div class="step" style="display:flex; gap:12px; margin-bottom:12px;">
+                                    <div style="background:var(--link-color); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">${i+1}</div>
+                                    <div style="font-size:14px; line-height:1.5;">${s}</div>
+                                </div>`
+                            ).join('');
+                            content.innerHTML = `
+                                <h3 style="text-align:center; color:var(--text-color); margin-bottom:16px;">${pData.title}</h3>
+                                ${stepsHtml}
+                                <a href="${pData.app_url}" target="_blank" style="text-decoration:none; display:block; margin-top:16px;">
+                                    <button class="btn btn-link" style="width:100%;">Скачать ${pData.app}</button>
+                                </a>
+                                <button class="btn btn-secondary" id="connect-back" style="margin-top:12px;">Назад к списку</button>
+                            `;
+                            document.getElementById('connect-back').addEventListener('click', () => openConnectModal());
+                        } catch (e) {
+                            content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`;
+                        }
+                    });
+                });
+            } catch (e) {
+                content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`;
+            }
+        }
+
+        document.getElementById('connect-close').addEventListener('click', () => {
+            document.getElementById('connect-modal').classList.remove('show');
+        });
+
+        async function openTermsModal() {
+            document.getElementById('terms-checkbox').checked = false;
+            document.getElementById('terms-submit').disabled = true;
+            document.getElementById('terms-modal').classList.add('show');
+            
+            const docsList = document.getElementById('terms-docs-list');
+            docsList.innerHTML = '<div class="loading">⏳ Загрузка документов...</div>';
+            
+            try {
+                if (!CACHED_DOCS) {
+                    const data = await apiCall('/api/miniapp/profile');
+                    if (data.error) throw new Error(data.error);
+                    CACHED_DOCS = data.documents;
+                }
+                const linksHtml = CACHED_DOCS.map((d, i) => 
+                    `<a href="#" class="term-doc-btn" data-index="${i}" style="display:block; padding:12px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; color:var(--link-color); text-decoration:none; text-align:center; font-size:14px;">${d.title}</a>`
+                ).join('');
+                docsList.innerHTML = linksHtml;
+                docsList.querySelectorAll('.term-doc-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.getElementById('terms-modal').classList.remove('show');
+                        openDocsModal(parseInt(btn.dataset.index), true);
+                    });
+                });
+            } catch (e) {
+                docsList.innerHTML = `<div class="error">Ошибка загрузки: ${e.message}</div>`;
+            }
+        }
+
+        document.getElementById('terms-close').addEventListener('click', () => {
+            document.getElementById('terms-modal').classList.remove('show');
+        });
+
+        document.getElementById('terms-checkbox').addEventListener('change', (e) => {
+            document.getElementById('terms-submit').disabled = !e.target.checked;
+        });
+
+        document.getElementById('terms-submit').addEventListener('click', async () => {
+            const btn = document.getElementById('terms-submit');
+            btn.disabled = true;
+            btn.textContent = 'Отправка...';
+            try {
+                const data = await apiCall('/api/miniapp/accept_terms');
+                if (data.error) throw new Error(data.error);
+                document.getElementById('terms-modal').classList.remove('show');
+                showToast('Заявка отправлена');
+                loadMain();
+            } catch (e) {
+                showToast('❌ ' + e.message);
+                btn.disabled = false;
+                btn.textContent = 'Получить подписку';
+            }
+        });
+
+        async function loadSubscription() {
+            const loading = document.getElementById('sub-loading');
+            const content = document.getElementById('sub-content');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            try {
+                const data = await apiCall('/api/miniapp/subscription');
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+                if (data.error) {
+                    content.innerHTML = `
+                        <div class="header">
+                            <h1>Моя подписка</h1>
+                        </div>
+                        <div class="card" style="text-align:center; padding: 32px 20px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+                            <h2 style="color: var(--text-color); font-size: 18px; margin-bottom: 8px;">Нет активной подписки</h2>
+                            <p style="color: var(--hint-color); font-size: 14px; margin-bottom: 24px; line-height: 1.5;">
+                                У тебя пока нет подписки.<br>Получи её бесплатно на главной странице.
+                            </p>
+                            <button class="btn btn-primary" onclick="switchTab('main')">Перейти в главное меню</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                CURRENT_SUB_DATA = data;
+                const statusClass = data.status === 'active' ? 'active' : (data.status === 'expiring' ? 'expiring' : 'expired');
+
+                // Рассчитываем прогресс дней (предполагаем, что дней в подписке от 0 до 30)
+                const daysLeft = data.days_left || 0;
+                const totalDays = 30; // Можно вынести в конфиг, если срок другой
+                const daysPercent = Math.min(100, Math.max(0, (daysLeft / totalDays) * 100));
+                
+                // Парсим трафик (формат "2.45 GB" -> 2.45)
+                const downVal = parseFloat(data.traffic_down) || 0;
+                const upVal = parseFloat(data.traffic_up) || 0;
+
+                content.innerHTML = `
+                    <div class="header">
+                        <h1>Моя подписка</h1>
+                        <span class="status-badge ${statusClass}">${data.status_text}</span>
+                    </div>
+
+                    <!-- Карточка с прогресс-баром дней -->
+                    <div class="card" style="padding:16px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
+                            <span style="color:var(--hint-color);">Осталось дней</span>
+                            <span style="font-weight:600; color:${daysLeft <= 3 ? '#f85149' : '#3fb950'};">${daysLeft} из ${totalDays}</span>
+                        </div>
+                        <div class="progress-container" style="height:12px;">
+                            <div class="progress-fill" style="width: ${daysPercent}%; background: ${daysLeft <= 3 ? '#f85149' : 'linear-gradient(90deg, #238636 0%, #3fb950 100%)'};"></div>
+                        </div>
+                        <div style="text-align:right; font-size:12px; color:var(--hint-color); margin-top:4px;">
+                            Активна до ${data.expires_at}
+                        </div>
+                    </div>
+
+                    <!-- QR-код и кнопка копирования -->
+                    <div class="card" style="text-align:center; padding:16px;">
+                        <div class="qr-wrap" style="margin:0;">
+                            <img src="data:image/png;base64,${data.qr_base64}" alt="QR" style="max-width: 200px; padding: 10px;">
+                            <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
+                        </div>
+                        <button class="btn btn-primary" data-action="copy_link" style="margin-top:12px;">📋 Скопировать ссылку</button>
+                    </div>
+
+                    <!-- Статистика (Иконки) -->
+                    <div class="card" style="padding:12px 20px; display:flex; justify-content:space-around; text-align:center;">
+                        <div>
+                            <div style="font-size:24px; margin-bottom:4px;">📥</div>
+                            <div style="font-size:14px; font-weight:600;">${downVal.toFixed(2)} GB</div>
+                            <div style="font-size:11px; color:var(--hint-color);">Скачано</div>
+                        </div>
+                        <div style="border-left:1px solid var(--border-color); margin:0 10px;"></div>
+                        <div>
+                            <div style="font-size:24px; margin-bottom:4px;">📤</div>
+                            <div style="font-size:14px; font-weight:600;">${upVal.toFixed(2)} GB</div>
+                            <div style="font-size:11px; color:var(--hint-color);">Загружено</div>
+                        </div>
+                        <div style="border-left:1px solid var(--border-color); margin:0 10px;"></div>
+                        <div>
+                            <div style="font-size:24px; margin-bottom:4px;">${data.is_online ? '🟢' : '⚪'}</div>
+                            <div style="font-size:14px; font-weight:600;">${data.is_online ? 'Онлайн' : 'Оффлайн'}</div>
+                            <div style="font-size:11px; color:var(--hint-color);">Статус</div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="card" style="padding:12px;">
+                        <button class="btn btn-secondary" data-action="renew_sub">🔄 Продлить подписку</button>
+                    </div>
+
+                    <!-- Кнопка поддержки внизу -->
+                    <div style="text-align:center; margin-top:16px;">
+                        <a href="https://t.me/${data.support_username || 'SkrepNet_support'}" target="_blank" style="color:var(--link-color); font-size:13px; text-decoration:none;">
+                            🆘 Проблема с подключением? Напиши в поддержку
+                        </a>
+                    </div>
+                `;
+
+                content.querySelectorAll('[data-action]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (btn.dataset.action === 'copy_link') copyToClipboard(data.sub_url);
+                        else if (btn.dataset.action === 'renew_sub') openRenewModal();
+                    });
+                });
+
+            } catch (e) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
+            }
+        }
+
+        function openRenewModal() {
+            if (!CURRENT_SUB_DATA) return;
+            document.getElementById('renew-current').textContent = CURRENT_SUB_DATA.expires_at;
+
+            const parts = CURRENT_SUB_DATA.expires_at.split('.');
+            if (parts.length === 3) {
+                const cur = new Date(parts[2], parts[1] - 1, parseInt(parts[0]));
+                const next = new Date(cur.getTime() + 30 * 24 * 60 * 60 * 1000);
+                const newDate = String(next.getDate()).padStart(2, '0') + '.' +
+                                String(next.getMonth() + 1).padStart(2, '0') + '.' +
+                                next.getFullYear();
+                document.getElementById('renew-new').textContent = newDate;
+            }
+
+            document.getElementById('renew-modal').classList.add('show');
+        }
+
+        document.getElementById('renew-cancel').addEventListener('click', () => {
+            document.getElementById('renew-modal').classList.remove('show');
+        });
+
+        document.getElementById('renew-confirm').addEventListener('click', async () => {
+            const btn = document.getElementById('renew-confirm');
+            btn.disabled = true;
+            btn.textContent = 'Продлеваем...';
+
+            try {
+                const data = await apiCall('/api/miniapp/renew');
+                if (data.error) {
+                    showToast(data.error);
+                    btn.disabled = false;
+                    btn.textContent = 'Продлить';
+                    return;
+                }
+                showToast('Продлено до ' + data.new_expires_at);
+                document.getElementById('renew-modal').classList.remove('show');
+                btn.disabled = false;
+                btn.textContent = 'Продлить';
+                loadSubscription();
+            } catch (e) {
+                showToast(e.message);
+                btn.disabled = false;
+                btn.textContent = 'Продлить';
+            }
+        });
+
+        async function loadDonate() {
+            const loading = document.getElementById('donate-loading');
+            const content = document.getElementById('donate-content');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            try {
+                const data = await apiCall('/api/miniapp/donate');
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+                if (data.error) {
+                    content.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    return;
+                }
+
+                content.innerHTML = `
+                    <div class="header">
+                        <h1>❤️ Поддержать проект</h1>
+                    </div>
+                    <div class="card">
+                        <div style="white-space:pre-line;margin-bottom:16px;">${data.donate_text}</div>
+                    </div>
+                    <div class="card" style="text-align:center;">
+                        <div style="color:var(--hint-color);font-size:13px;margin-bottom:12px;">Прогресс сбора на сервер</div>
+                        <div class="progress-container">
+                            <div class="progress-fill" style="width: ${data.progress_percent}%;"></div>
+                            <div class="progress-text">${data.progress_percent}%</div>
+                        </div>
+
+                    </div>
+                    <div class="card" style="padding:12px;">
+                        <button class="btn btn-link" data-action="stars">⭐ Поддержать звёздами</button>
+                        <a href="${data.donate_url}" target="_blank" style="text-decoration:none;">
+                            <button class="btn btn-primary" style="width:100%;">💸 DonationAlerts</button>
+                        </a>
+                    </div>
+                `;
+
+                content.querySelectorAll('[data-action]').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (btn.dataset.action === 'stars') {
+                            btn.disabled = true;
+                            btn.textContent = '⏳ Создаём счёт...';
+                            try {
+                                const res = await fetch('/api/miniapp/invoice', {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({init_data: tg.initData, amount: 10})
+                                });
+                                const invData = await res.json();
+                                if (invData.error) throw new Error(invData.error);
+                                tg.openInvoice(invData.invoice_link, (status) => {
+                                    if (status === 'paid') showToast('✅ Спасибо за поддержку!');
+                                    else if (status === 'failed') showToast('❌ Ошибка оплаты');
+                                    btn.disabled = false;
+                                    btn.textContent = '⭐ Поддержать звёздами';
+                                });
+                            } catch (e) {
+                                showToast('❌ ' + e.message);
+                                btn.disabled = false;
+                                btn.textContent = '⭐ Поддержать звёздами';
+                            }
+                        }
+                    });
+                });
+
+            } catch (e) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
+            }
+        }
+
+        async function loadSupport() {
+            const loading = document.getElementById('support-loading');
+            const content = document.getElementById('support-content');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            try {
+                const data = await apiCall('/api/miniapp/profile');
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+                if (data.error) {
+                    content.innerHTML = `<div class="error">❌ ${data.error}</div>`;
+                    return;
+                }
+
+                content.innerHTML = `
+                    <div class="header">
+                        <h1>Техподдержка</h1>
+                    </div>
+                    <div class="card">
+                        <p style="margin-bottom:12px;color:var(--hint-color);font-size:14px;">
+                            Вопросы, проблемы с подключением, сбои — пиши нам.
+                        </p>
+                        <a href="https://t.me/${data.support_username}" target="_blank" style="text-decoration:none;">
+                            <button class="btn btn-primary" style="width:100%;">@${data.support_username}</button>
+                        </a>
+                    </div>
+                    <div class="card" style="text-align:center;padding:16px;color:var(--hint-color);font-size:13px;">
+                        ${data.bot_name} · v2.0.0
+                    </div>
+                `;
+            } catch (e) {
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
+            }
+        }
+
+        loadMain();
+    </script>
+</body>
+</html>
