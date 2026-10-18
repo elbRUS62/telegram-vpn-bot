@@ -345,6 +345,7 @@
         let CURRENT_SUB_DATA = null;
         let CACHED_DOCS = null;
         let POLLING_TIMER = null;
+        let SUB_TIMER = null;
 
         let INIT_DATA = tg.initData || "";
 
@@ -399,7 +400,18 @@
                 document.getElementById('screen-' + name).classList.add('active');
 
                 if (name === 'main') loadMain();
-                else if (name === 'sub') loadSubscription();
+                else if (name === 'sub') {
+                    if (SUB_TIMER) { clearInterval(SUB_TIMER); SUB_TIMER = null; }
+                    loadSubscription();
+                    SUB_TIMER = setInterval(() => {
+                        if (document.getElementById('screen-sub').classList.contains('active')) {
+                            loadSubscription(true);
+                        } else {
+                            clearInterval(SUB_TIMER);
+                            SUB_TIMER = null;
+                        }
+                    }, 5000);
+                }
                 else if (name === 'donate') loadDonate();
                 else if (name === 'support') loadSupport();
             });
@@ -710,14 +722,32 @@
             }
         });
 
-        async function loadSubscription() {
+        async function loadSubscription(isSilent = false) {
             const loading = document.getElementById('sub-loading');
             const content = document.getElementById('sub-content');
-            loading.style.display = 'block';
-            content.style.display = 'none';
+
+            if (!isSilent) {
+                loading.style.display = 'block';
+                content.style.display = 'none';
+            }
 
             try {
                 const data = await apiCall('/api/miniapp/subscription');
+
+                // Если это фоновое обновление и данные не изменились — выходим
+                if (isSilent && CURRENT_SUB_DATA) {
+                    const changed = 
+                        data.traffic_down !== CURRENT_SUB_DATA.traffic_down ||
+                        data.traffic_up !== CURRENT_SUB_DATA.traffic_up ||
+                        data.days_left !== CURRENT_SUB_DATA.days_left ||
+                        data.status !== CURRENT_SUB_DATA.status ||
+                        data.is_online !== CURRENT_SUB_DATA.is_online ||
+                        data.expires_at !== CURRENT_SUB_DATA.expires_at;
+                    if (!changed) {
+                        return;
+                    }
+                }
+
                 loading.style.display = 'none';
                 content.style.display = 'block';
 
@@ -741,22 +771,24 @@
                 CURRENT_SUB_DATA = data;
                 const statusClass = data.status === 'active' ? 'active' : (data.status === 'expiring' ? 'expiring' : 'expired');
 
-                // Рассчитываем прогресс дней (предполагаем, что дней в подписке от 0 до 30)
+                // Рассчитываем прогресс дней
                 const daysLeft = data.days_left || 0;
-                const totalDays = 30; // Можно вынести в конфиг, если срок другой
+                const totalDays = 30;
                 const daysPercent = Math.min(100, Math.max(0, (daysLeft / totalDays) * 100));
-                
-                // Парсим трафик (формат "2.45 GB" -> 2.45)
-                const downVal = parseFloat(data.traffic_down) || 0;
-                const upVal = parseFloat(data.traffic_up) || 0;
+
+                // Парсим трафик
+                const downVal = data.traffic_down === "—" ? "—" : (parseFloat(data.traffic_down) || 0);
+                const upVal = data.traffic_up === "—" ? "—" : (parseFloat(data.traffic_up) || 0);
 
                 content.innerHTML = `
                     <div class="header">
                         <h1>Моя подписка</h1>
+                        <div style="color:var(--hint-color); font-size:14px; margin-top:4px; margin-bottom:12px;">
+                            ${data.first_name || 'Пользователь'} ${data.username ? '(@' + data.username + ')' : ''}
+                        </div>
                         <span class="status-badge ${statusClass}">${data.status_text}</span>
                     </div>
 
-                    <!-- Карточка с прогресс-баром дней -->
                     <div class="card" style="padding:16px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
                             <span style="color:var(--hint-color);">Осталось дней</span>
@@ -770,7 +802,6 @@
                         </div>
                     </div>
 
-                    <!-- QR-код и кнопка копирования -->
                     <div class="card" style="text-align:center; padding:16px;">
                         <div class="qr-wrap" style="margin:0;">
                             <img src="data:image/png;base64,${data.qr_base64}" alt="QR" style="max-width: 200px; padding: 10px;">
@@ -779,17 +810,16 @@
                         <button class="btn btn-primary" data-action="copy_link" style="margin-top:12px;">📋 Скопировать ссылку</button>
                     </div>
 
-                    <!-- Статистика (Иконки) -->
                     <div class="card" style="padding:12px 20px; display:flex; justify-content:space-around; text-align:center;">
                         <div>
                             <div style="font-size:24px; margin-bottom:4px;">📥</div>
-                            <div style="font-size:14px; font-weight:600;">${downVal.toFixed(2)} GB</div>
+                            <div style="font-size:14px; font-weight:600;">${downVal === "—" ? "—" : downVal.toFixed(2) + " GB"}</div>
                             <div style="font-size:11px; color:var(--hint-color);">Скачано</div>
                         </div>
                         <div style="border-left:1px solid var(--border-color); margin:0 10px;"></div>
                         <div>
                             <div style="font-size:24px; margin-bottom:4px;">📤</div>
-                            <div style="font-size:14px; font-weight:600;">${upVal.toFixed(2)} GB</div>
+                            <div style="font-size:14px; font-weight:600;">${upVal === "—" ? "—" : upVal.toFixed(2) + " GB"}</div>
                             <div style="font-size:11px; color:var(--hint-color);">Загружено</div>
                         </div>
                         <div style="border-left:1px solid var(--border-color); margin:0 10px;"></div>
@@ -800,12 +830,10 @@
                         </div>
                     </div>
 
-                    <!-- Кнопки действий -->
                     <div class="card" style="padding:12px;">
                         <button class="btn btn-secondary" data-action="renew_sub">🔄 Продлить подписку</button>
                     </div>
 
-                    <!-- Кнопка поддержки внизу -->
                     <div style="text-align:center; margin-top:16px;">
                         <a href="https://t.me/${data.support_username || 'SkrepNet_support'}" target="_blank" style="color:var(--link-color); font-size:13px; text-decoration:none;">
                             🆘 Проблема с подключением? Напиши в поддержку
@@ -823,7 +851,7 @@
             } catch (e) {
                 loading.style.display = 'none';
                 content.style.display = 'block';
-                content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
+                if (!isSilent) content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
             }
         }
 

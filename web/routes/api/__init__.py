@@ -117,8 +117,18 @@ def subscription():
                     exp_date, days_left = "∞", 999
                     status_text, status = "Бессрочно", "active"
 
-                traffic_up = client.get("up", 0) / (1024**3)
-                traffic_down = client.get("down", 0) / (1024**3)
+                # Получаем трафик через новый эндпоинт
+                traffic_data = await xui.get_client_traffic(db_user["xui_email"])
+                traffic_up = traffic_data.get("up", 0)
+                traffic_down = traffic_data.get("down", 0)
+                if traffic_up is not None:
+                    traffic_up = traffic_up / (1024**3)
+                if traffic_down is not None:
+                    traffic_down = traffic_down / (1024**3)
+                
+                # Проверяем онлайн внутри сессии
+                is_online = await xui.is_client_online(db_user["xui_email"])
+                logger.info(f"subscription: is_online={is_online}")
 
             qr = qrcode.QRCode(
                 version=None,
@@ -135,7 +145,11 @@ def subscription():
             qr_base64 = base64.b64encode(buf.read()).decode('utf-8')
 
             # Проверяем, онлайн ли клиент
-            is_online = await xui.is_client_online(db_user["xui_email"])
+            # Проверяем, что в списке онлайн
+
+            logger.info(f"RESULT: is_online={is_online}, email={db_user['xui_email']}")
+
+            logger.info(f"subscription: is_online для {db_user['xui_email']} = {is_online}")
 
             return {
                 'sub_url': sub_url,
@@ -143,10 +157,12 @@ def subscription():
                 'days_left': days_left,
                 'status': status,
                 'status_text': status_text,
-                'traffic_up': f"{traffic_up:.2f} GB",
-                'traffic_down': f"{traffic_down:.2f} GB",
+                'traffic_up': f"{traffic_up:.2f} GB" if traffic_up is not None else "—",
+                'traffic_down': f"{traffic_down:.2f} GB" if traffic_down is not None else "—",
                 'qr_base64': qr_base64,
                 'is_online': is_online,
+                'first_name': user.get('first_name', 'Пользователь'),
+                'username': user.get('username', ''),
             }
         except Exception as e:
             logger.error(f"Subscription error: {e}")

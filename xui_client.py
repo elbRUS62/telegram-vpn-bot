@@ -176,11 +176,23 @@ class XUIClient:
         """Собрать ссылку на подписку."""
         return f"{SUB_BASE_URL}{SUB_PATH}{sub_id}"
     async def is_client_online(self, email: str) -> bool:
-        """Проверяет, онлайн ли клиент с указанным email."""
+        """Проверяет, онлайн ли клиент (только через список onlines)."""
         try:
             result = await self._post("/panel/api/clients/onlines")
-            if result.get("success") and isinstance(result.get("obj"), list):
-                return email in result["obj"]
-        except Exception:
-            pass
+            obj = result.get("obj", [])
+            logger.info(f"is_client_online: email={email}, obj_len={len(obj)}, obj={obj[:5]}")
+            if result.get("success") and isinstance(obj, list):
+                return email in obj
+        except Exception as e:
+            logger.error(f"is_client_online error: {e}")
         return False
+    async def get_client_traffic(self, email: str) -> dict:
+        """Получить трафик клиента (up/down в байтах) через /panel/api/clients/traffic/{email}."""
+        try:
+            result = await self._get(f"/panel/api/clients/traffic/{email}")
+            if result.get("success"):
+                return result.get("obj", {})
+            logger.warning(f"get_client_traffic: success=False для {email}: {result}")
+        except Exception as e:
+            logger.error(f"get_client_traffic error для {email}: {e}")
+        return {}
