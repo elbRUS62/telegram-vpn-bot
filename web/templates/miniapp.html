@@ -140,7 +140,8 @@
             border: 1px solid var(--border-color);
         }
         .progress-fill {
-            background: linear-gradient(90deg, #238636 0%, #3fb950 100%);
+            transition: width 0.6s ease, background-color 0.6s ease;
+            
             height: 100%;
             border-radius: 20px;
             transition: width 0.6s ease;
@@ -722,6 +723,32 @@
             }
         });
 
+        
+        function getProgressColor(daysLeft, totalDays) {
+            console.log('getProgressColor called with:', daysLeft, totalDays);
+            // Ограничиваем дни от 0 до totalDays
+            const days = Math.max(0, Math.min(daysLeft, totalDays));
+            const percent = days / totalDays; // 0..1
+            
+            // Зелёный (0, 200, 80) -> Красный (248, 81, 73)
+            // Но добавим жёлтый посередине (210, 153, 34)
+            let r, g, b;
+            if (percent > 0.5) {
+                // От жёлтого к зелёному (1..0.5)
+                const t = (percent - 0.5) / 0.5; // 0..1
+                r = Math.round(210 + (0 - 210) * t); // 210 -> 0
+                g = Math.round(153 + (200 - 153) * t); // 153 -> 200
+                b = Math.round(34 + (80 - 34) * t); // 34 -> 80
+            } else {
+                // От красного к жёлтому (0.5..0)
+                const t = percent / 0.5; // 0..1
+                r = Math.round(248 + (210 - 248) * t); // 248 -> 210
+                g = Math.round(81 + (153 - 81) * t); // 81 -> 153
+                b = Math.round(73 + (34 - 73) * t); // 73 -> 34
+            }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
         async function loadSubscription(isSilent = false) {
             const loading = document.getElementById('sub-loading');
             const content = document.getElementById('sub-content');
@@ -792,10 +819,10 @@
                     <div class="card" style="padding:16px;">
                         <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:14px;">
                             <span style="color:var(--hint-color);">Осталось дней</span>
-                            <span style="font-weight:600; color:${daysLeft <= 3 ? '#f85149' : '#3fb950'};">${daysLeft} из ${totalDays}</span>
+                            <span style="font-weight:600; color:var(--text-color);">${daysLeft} из ${totalDays}</span>
                         </div>
-                        <div class="progress-container" style="height:12px;">
-                            <div class="progress-fill" style="width: ${daysPercent}%; background: ${daysLeft <= 3 ? '#f85149' : 'linear-gradient(90deg, #238636 0%, #3fb950 100%)'};"></div>
+                                                <div class="progress-container" style="height:12px;">
+                            <div class="progress-fill" style="width: ${daysPercent}%; background-color: ${getProgressColor(daysLeft, totalDays)};"></div>
                         </div>
                         <div style="text-align:right; font-size:12px; color:var(--hint-color); margin-top:4px;">
                             Активна до ${data.expires_at}
