@@ -1,5 +1,5 @@
 from docs_config import DOCS
-from aiogram.types import (, WebAppInfo
+from aiogram.types import (
     InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton,
     KeyboardButtonRequestUsers,
@@ -32,7 +32,7 @@ def main_inline_menu(is_admin: bool = False):
         [
             InlineKeyboardButton(
                 text="🚀 Открыть приложение",
-                web_app=WebAppInfo(url="https://gb-skrepnet.duckdns.org:8443/")
+                web_app=WebAppInfo(url="https://gb-skrepnet.duckdns.org:8443/miniapp")
             )
         ],
     ]
@@ -121,7 +121,7 @@ def subscription_keyboard():
     if MINIAPP_URL:
         rows.append([InlineKeyboardButton(
             text="📱 Открыть приложение",
-            web_app=WebAppInfo(url=MINIAPP_URL)
+            web_app=WebAppInfo(url="https://gb-skrepnet.duckdns.org:8443/miniapp")
         )])
 
     rows += [

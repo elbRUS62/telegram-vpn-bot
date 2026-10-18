@@ -15,22 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 async def show_main_menu(message: Message):
-    """Показать главное меню (ReplyKeyboard + InlineKeyboard)."""
+    from database import get_user
     user = await get_user(message.from_user.id)
     is_admin = message.from_user.id in ADMIN_IDS
-    menu = admin_menu() if is_admin else main_menu()
-
-    in_waitlist = await is_in_waitlist(message.from_user.id)
-    if in_waitlist:
-        position = await get_waitlist_position(message.from_user.id)
-        await message.answer(
-            f"⏳ <b>Ты в листе ожидания</b>\n\n"
-            f"📋 Твоя позиция: <b>{position}</b>\n\n"
-            f"Мы напишем, когда освободится место.",
-            parse_mode="HTML",
-            reply_markup=menu
-        )
-        return
 
     if user and user["status"] == "active":
         text = (
@@ -43,12 +30,15 @@ async def show_main_menu(message: Message):
         text = (
             f"👋 Привет, {message.from_user.first_name}!\n\n"
             f"Это бот для выдачи бесплатных подписок {BOT_NAME}.\n\n"
-            f"Нажми «Личный кабинет», чтобы начать."
+            f"Нажми «Открыть приложение», чтобы начать."
         )
 
-    await message.answer(text, parse_mode="HTML", reply_markup=menu)
-    # Отправляем inline-меню (админ-кнопки для админа)
-    await message.answer("Выберите действие:", reply_markup=main_inline_menu(is_admin))
+    # Отправляем ТОЛЬКО inline-меню с WebApp
+    await message.answer(
+        text,
+        parse_mode="HTML",
+        reply_markup=main_inline_menu(is_admin)
+    )
 
 
 @router.message(CommandStart(deep_link=False))

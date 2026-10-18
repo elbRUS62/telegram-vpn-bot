@@ -21,3 +21,7 @@ backups/
 *.log
 *.pyo
 venv-web/
+
+# Бэкапы, не коммитим
+*.bak-*
+*.db.bak-*
