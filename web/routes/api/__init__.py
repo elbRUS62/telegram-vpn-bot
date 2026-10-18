@@ -334,7 +334,7 @@ def profile():
     if not user:
         return jsonify({'error': 'Неверная авторизация'}), 401
 
-    from config import BOT_NAME, SUPPORT_USERNAME
+    from config import BOT_NAME, BOT_VERSION, SUPPORT_USERNAME
     from flask import render_template
 
     # Читаем HTML-контент документов из шаблонов
@@ -346,6 +346,7 @@ def profile():
 
     return jsonify({
         'bot_name': BOT_NAME,
+        'bot_version': BOT_VERSION,
         'support_username': SUPPORT_USERNAME,
         'documents': [
             {'title': 'Правила использования', 'key': 'rules', 'content': docs_content['rules']},
@@ -354,11 +355,12 @@ def profile():
         ],
     })
 
-    from config import BOT_NAME, SUPPORT_USERNAME
+    from config import BOT_NAME, BOT_VERSION, SUPPORT_USERNAME
     from docs_config import DOCS
 
     return jsonify({
         'bot_name': BOT_NAME,
+        'bot_version': BOT_VERSION,
         'support_username': SUPPORT_USERNAME,
         'documents': [
             {'title': DOCS['rules']['title'], 'url': DOCS['rules']['url']},
