@@ -239,6 +239,51 @@ def requests_list():
 
 # ---------------- actions ----------------
 
+@admin_api.route("/approve", methods=["POST"])
+@admin_required
+def approve():
+    tg_id = int((request.json or {}).get("tg_id", 0))
+    custom_comment = (request.json or {}).get("comment")
+
+    async def do():
+        from database import get_user, approve_user
+        from xui_client import XUIClient
+
+        user = await get_user(tg_id)
+        if not user:
+            return {"error": "Пользователь не найден"}
+        if user["status"] == "active":
+            return {"error": "Уже активен"}
+
+        user_part = f"@{user['username']}" if user["username"] else str(tg_id)
+        comment = f"{user_part} | {custom_comment}" if custom_comment else f"{user_part} | bot"
+
+        try:
+            async with XUIClient() as xui:
+                sub_id = await xui.add_client(
+                    user["xui_email"],
+                    comment=comment,
+                    tg_id=tg_id,
+                )
+                await approve_user(tg_id, sub_id)
+                sub_url = xui.build_sub_url(sub_id)
+        except Exception as e:
+            logger.error(f"approve failed for {tg_id}: {e}")
+            return {"error": str(e)}
+
+        await _audit(request.admin_user["id"], "approve", tg_id, comment)
+        return {"success": True, "sub_url": sub_url}
+
+    try:
+        r = run_async(do())
+    except Exception as e:
+        logger.exception("admin/approve failed")
+        return jsonify({"error": str(e)}), 500
+    if "error" in r:
+        return jsonify(r), 400
+    return jsonify(r)
+
+
 @admin_api.route("/reject", methods=["POST"])
 @admin_required
 def reject():
@@ -274,14 +319,14 @@ def extend():
         user = await get_user(tg_id)
         if not user:
             return {"error": "Пользователь не найден"}
-        if not user.get("xui_email"):
+        if not user["xui_email"]:
             return {"error": "У пользователя нет xui_email"}
 
         async with XUIClient() as xui:
             new_expiry = await xui.update_expiry(user["xui_email"], days=days)
             try:
                 new_count = await increment_renew_count(tg_id)
-                user_part = f"@{user['username']}" if user.get("username") else str(tg_id)
+                user_part = f"@{user['username']}" if user["username"] else str(tg_id)
                 date_str  = new_expiry.strftime("%d.%m.%Y")
                 await xui.update_comment(
                     user["xui_email"],
@@ -319,7 +364,7 @@ def delete():
         from xui_client import XUIClient
 
         user = await get_user(tg_id)
-        if user and user.get("xui_email"):
+        if user and user["xui_email"]:
             try:
                 async with XUIClient() as xui:
                     await xui.delete_client(user["xui_email"])

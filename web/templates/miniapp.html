@@ -141,7 +141,6 @@
         }
         .progress-fill {
             transition: width 0.6s ease, background-color 0.6s ease;
-            
             height: 100%;
             border-radius: 20px;
             transition: width 0.6s ease;
@@ -233,11 +232,8 @@
         .modal .row .label { color: var(--hint-color); }
         .modal .row .value { font-weight: 600; color: var(--text-color); }
         .modal .actions { margin-top: 24px; }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-/* --- Admin tab --- */
+
+        /* --- Admin tab --- */
         .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
         .stat-card { background: var(--secondary-bg); border-radius: 14px; padding: 14px; }
         .stat-num { font-size: 22px; font-weight: 700; color: var(--text-color); }
@@ -264,21 +260,17 @@
         .admin-search input, .admin-search select { padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--secondary-bg); color: var(--text-color); font-size: 14px; }
         .admin-search input { flex: 1; min-width: 0; }
         
-        .admin-filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-        .filter-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border-color); background: transparent; color: var(--hint-color); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; }
-        .filter-btn.active { background: var(--secondary-bg); color: var(--text-color); border-color: transparent; }
-        
-        .admin-empty { padding: 24px; text-align: center; color: var(--hint-color); font-size: 14px; }
-    
         .admin-filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
         .filter-btn { padding: 6px 12px; border-radius: 16px; border: 1.5px solid var(--border-color);
-                      background: transparent; color: var(--hint-color); font-size: 13px; cursor: pointer; }
+                      background: transparent; color: var(--hint-color); font-size: 13px; cursor: pointer; display: flex; align-items: center; }
         .filter-btn.active { background: var(--button-color); color: var(--button-text); border-color: var(--button-color); font-weight: 600; }
-</style>
+        
+        .admin-empty { padding: 24px; text-align: center; color: var(--hint-color); font-size: 14px; }
+    </style>
 </head>
 <body>
     <div class="tabs" id="tabs">
-        <button class="tab" data-tab="admin" id="tab-admin" style="display:none;">Админ</button>
+        <button class="tab" data-tab="admin" id="tab-admin" style="display:none;">Админ <span class="badge pending" id="tab-admin-badge" style="display:none; margin-left: 4px; padding: 0 6px; height: 18px; line-height: 18px;">0</span></button>
         <button class="tab active" data-tab="main">Главное меню</button>
         <button class="tab" data-tab="sub">Моя подписка</button>
         <button class="tab" data-tab="donate">❤️ Донат</button>
@@ -301,10 +293,21 @@
         <div class="loading" id="support-loading">⏳ Загрузка...</div>
         <div id="support-content" style="display:none;"></div>
     </div>
-
     <div id="screen-admin" class="screen">
         <div class="loading" id="admin-loading">⏳ Загрузка...</div>
         <div id="admin-content" style="display:none;"></div>
+    </div>
+
+    <!-- Модалка подтверждения (кастомная, чтобы не было страшных confirm) -->
+    <div class="modal-backdrop" id="confirm-modal">
+        <div class="modal">
+            <h2 id="confirm-title" style="margin-bottom:16px;">Подтверждение</h2>
+            <p id="confirm-text" style="margin-bottom:20px;color:var(--hint-color);font-size:15px;">Вы уверены?</p>
+            <div style="display:flex;gap:10px;">
+                <button class="btn btn-secondary" id="confirm-cancel" style="flex:1;">Отмена</button>
+                <button class="btn btn-primary" id="confirm-ok" style="flex:1;">ОК</button>
+            </div>
+        </div>
     </div>
 
     <div class="modal-backdrop" id="renew-modal">
@@ -337,9 +340,7 @@
                 <div style="font-size:32px; font-weight:700; color:var(--link-color);" id="ref-count">0</div>
                 <div style="color:var(--hint-color); font-size:13px;">приглашено друзей</div>
             </div>
-            <div class="link-box" style="margin-bottom:12px;" id="ref-link">
-                Загрузка...
-            </div>
+            <div class="link-box" style="margin-bottom:12px;" id="ref-link">Загрузка...</div>
             <div style="background:var(--bg-color); border-radius:8px; padding:12px; margin-bottom:16px; font-size:13px; color:var(--hint-color); line-height: 1.5;">
                 <p style="margin-bottom: 8px;"><b style="color:var(--text-color);">Что делать?</b></p>
                 <p style="margin-bottom: 6px;">1. Нажми «Копировать ссылку».</p>
@@ -384,53 +385,63 @@
         tg.ready();
         tg.expand();
 
-
         let CURRENT_SUB_DATA = null;
         let CACHED_DOCS = null;
         let POLLING_TIMER = null;
         let SUB_TIMER = null;
-
+        let IS_ADMIN = false;
         let INIT_DATA = tg.initData || "";
 
         async function apiCall(path, body = {}) {
-            // Всегда берем актуальный initData (вдруг появился)
             if (!INIT_DATA) {
                 INIT_DATA = tg.initData || "";
             }
-            
             const res = await fetch(path, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({init_data: INIT_DATA, ...body}),
             });
-            
-            if (res.status === 401) {
-                console.warn("Ошибка 401: init_data пустой или неверный");
-            }
-            
+            if (res.status === 401) console.warn("Ошибка 401: init_data пустой или неверный");
             return res.json();
         }
 
         function showToast(text, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = text;
-            // Автоматически определяем ошибку по ключевым словам, если не передали явно
-            const errorKeywords = ['максимальный срок', 'Сначала получите', 'Ошибка', '❌', 'Не удалось', 'Нет активной'];
+            const errorKeywords = ['максимальный срок', 'Сначала получите', 'Ошибка', '❌', 'Не удалось', 'Нет активной', 'Доступ запрещён', 'Неверная авторизация'];
             const looksLikeError = isError || errorKeywords.some(kw => text.includes(kw));
-            if (looksLikeError) {
-                toast.classList.add('error');
-            } else {
-                toast.classList.remove('error');
-            }
+            if (looksLikeError) toast.classList.add('error');
+            else toast.classList.remove('error');
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Скопировано!');
-            }).catch(() => {
-                showToast('Не удалось скопировать');
+            navigator.clipboard.writeText(text).then(() => showToast('Скопировано!')).catch(() => showToast('Не удалось скопировать'));
+        }
+
+        // Кастомное окно подтверждения (нативное, в стиле Telegram)
+        function showConfirm(text, title = 'Подтверждение') {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('confirm-modal');
+                document.getElementById('confirm-title').textContent = title;
+                document.getElementById('confirm-text').textContent = text;
+                modal.classList.add('show');
+                
+                const okBtn = document.getElementById('confirm-ok');
+                const cancelBtn = document.getElementById('confirm-cancel');
+                
+                const cleanup = () => {
+                    modal.classList.remove('show');
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
+                };
+                
+                const onOk = () => { cleanup(); resolve(true); };
+                const onCancel = () => { cleanup(); resolve(false); };
+                
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
             });
         }
 
@@ -447,12 +458,8 @@
                     if (SUB_TIMER) { clearInterval(SUB_TIMER); SUB_TIMER = null; }
                     loadSubscription();
                     SUB_TIMER = setInterval(() => {
-                        if (document.getElementById('screen-sub').classList.contains('active')) {
-                            loadSubscription(true);
-                        } else {
-                            clearInterval(SUB_TIMER);
-                            SUB_TIMER = null;
-                        }
+                        if (document.getElementById('screen-sub').classList.contains('active')) loadSubscription(true);
+                        else { clearInterval(SUB_TIMER); SUB_TIMER = null; }
                     }, 5000);
                 }
                 else if (name === 'donate') loadDonate();
@@ -466,21 +473,20 @@
             if (tab) tab.click();
         }
 
-        let IS_ADMIN = false;
+        function updateAdminTabBadge(count) {
+            const badge = document.getElementById('tab-admin-badge');
+            if (!badge) return;
+            if (count > 0) { badge.textContent = count; badge.style.display = 'inline-block'; }
+            else badge.style.display = 'none';
+        }
 
+        // ==================== ГЛАВНОЕ МЕНЮ ====================
         async function loadMain(isSilent = false) {
             const loading = document.getElementById('main-loading');
             const content = document.getElementById('main-content');
             
-            if (!isSilent) {
-                loading.style.display = 'block';
-                content.style.display = 'none';
-            }
-
-            if (POLLING_TIMER) {
-                clearTimeout(POLLING_TIMER);
-                POLLING_TIMER = null;
-            }
+            if (!isSilent) { loading.style.display = 'block'; content.style.display = 'none'; }
+            if (POLLING_TIMER) { clearTimeout(POLLING_TIMER); POLLING_TIMER = null; }
 
             try {
                 const data = await apiCall('/api/miniapp/main');
@@ -489,9 +495,7 @@
                     const currentStatusEl = content.querySelector('.status-badge');
                     const currentStatusText = currentStatusEl ? currentStatusEl.textContent : '';
                     if (currentStatusText === data.status_text) {
-                        if (data.status === 'pending') {
-                            POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
-                        }
+                        if (data.status === 'pending') POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
                         return;
                     }
                 }
@@ -504,17 +508,15 @@
                     return;
                 }
 
-                if (data.status === 'pending') {
-                    POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
-                }
+                if (data.status === 'pending') POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
 
                 const statusClass = data.status === 'active' ? 'active' : (data.status === 'pending' ? 'pending' : (data.status === 'rejected' ? 'expired' : 'new'));
 
                 let buttonsHtml = '';
                 if (data.has_subscription) {
-                    buttonsHtml = `<button class="btn btn-primary" data-action="switch_sub">Моя подписка</button>`;
+                    buttonsHtml = `<button class="btn btn-primary" data-action="switch_sub">👤 Личный кабинет</button>`;
                 } else {
-                    buttonsHtml = `<button class="btn btn-primary" data-action="get_sub">Получить подписку</button>`;
+                    buttonsHtml = `<button class="btn btn-primary" data-action="get_sub">📦 Получить подписку</button>`;
                 }
 
                 content.innerHTML = `
@@ -532,12 +534,9 @@
                         <div style="color:var(--hint-color);font-size:12px;margin-top:8px;">Проект держится на донатах — помоги, если можешь.</div>
                     </div>
 
-                    <div class="card" style="padding:12px;">
-                        <button class="btn btn-secondary" data-action="donate">❤️ Поддержать проект</button>
+                    <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:10px;">
+                        <button class="btn btn-secondary" data-action="donate" style="margin-bottom:0;">❤️ Поддержать проект</button>
                         ${buttonsHtml}
-                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_friend">Пригласить друга</button>` : ''}
-                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_no_tg">Добавить друга без Telegram</button>` : ''}
-                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="connect_help">Как подключиться</button>` : ''}
                     </div>
 
                     <div style="text-align:center;margin-top:20px;font-size:13px;">
@@ -549,40 +548,25 @@
                     btn.addEventListener('click', () => {
                         const action = btn.dataset.action;
                         if (action === 'switch_sub') switchTab('sub');
-                        else if (action === 'invite_friend') {
-                            if (!data.has_subscription) {
-                                showToast('Сначала получите подписку');
-                                return;
-                            }
-                            openRefModal();
-                        }
-                        else if (action === 'connect_help') openConnectModal();
                         else if (action === 'donate') switchTab('donate');
-                        else if (action === 'invite_no_tg') {
-                            if (!data.has_subscription) {
-                                showToast('Сначала получите подписку');
-                                return;
-                            }
-                            const url = `https://t.me/skrepnet_bot?start=webapp_invite_no_tg`;
-                            if (tg.openTelegramLink) tg.openTelegramLink(url);
-                            else window.open(url, '_blank');
-                            tg.close();
-                        } else if (action === 'get_sub') openTermsModal();
+                        else if (action === 'get_sub') openTermsModal();
                     });
                 });
 
                 const docsLink = document.getElementById('docs-link');
                 if (docsLink) {
-                    docsLink.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        openDocsModal();
-                    });
+                    docsLink.addEventListener('click', (e) => { e.preventDefault(); openDocsModal(); });
                 }
-
 
                 IS_ADMIN = !!data.is_admin;
                 const tabAdmin = document.getElementById('tab-admin');
                 if (tabAdmin) tabAdmin.style.display = IS_ADMIN ? '' : 'none';
+                
+                if (IS_ADMIN) {
+                    adminCall('/stats').then(r => {
+                        if (r && !r.error) updateAdminTabBadge(r.pending);
+                    });
+                }
 
             } catch (e) {
                 loading.style.display = 'none';
@@ -591,226 +575,16 @@
             }
         }
 
-        async function openRefModal() {
-            const linkEl = document.getElementById('ref-link');
-            const countEl = document.getElementById('ref-count');
-            linkEl.textContent = 'Загрузка...';
-            countEl.textContent = '0';
-            document.getElementById('ref-modal').classList.add('show');
-
-            try {
-                const data = await apiCall('/api/miniapp/referral');
-                if (data.error) throw new Error(data.error);
-                linkEl.textContent = data.ref_link;
-                countEl.textContent = data.invites_count;
-                document.getElementById('ref-copy-btn').onclick = () => copyToClipboard(data.ref_link);
-            } catch (e) {
-                linkEl.textContent = 'Ошибка: ' + e.message;
-            }
-        }
-
-        document.getElementById('ref-close-btn').addEventListener('click', () => {
-            document.getElementById('ref-modal').classList.remove('show');
-        });
-
-        async function openDocsModal(startIndex = null, fromTerms = false) {
-            const title = document.getElementById('docs-title');
-            const content = document.getElementById('docs-content');
-            title.textContent = "Пользовательские соглашения";
-            content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
-            document.getElementById('docs-modal').classList.add('show');
-
-            try {
-                if (!CACHED_DOCS) {
-                    const data = await apiCall('/api/miniapp/profile');
-                    if (data.error) throw new Error(data.error);
-                    CACHED_DOCS = data.documents;
-                }
-
-                if (startIndex !== null) {
-                    const doc = CACHED_DOCS[startIndex];
-                    title.textContent = doc.title;
-                    content.innerHTML = `
-                        <div class="doc-text">${doc.content}</div>
-                        <button class="btn btn-secondary" id="docs-back" style="margin-top: 16px;">Назад</button>
-                    `;
-                    document.getElementById('docs-back').addEventListener('click', () => {
-                        if (fromTerms) {
-                            document.getElementById('docs-modal').classList.remove('show');
-                            document.getElementById('terms-modal').classList.add('show');
-                        } else {
-                            openDocsModal(null, false);
-                        }
-                    });
-                } else {
-                    const linksHtml = CACHED_DOCS.map((d, i) => 
-                        `<button class="btn btn-secondary doc-btn" data-index="${i}" style="margin-bottom: 8px; text-align: left; padding-left: 16px;">${d.title}</button>`
-                    ).join('');
-                    content.innerHTML = `
-                        <p style="margin-bottom:16px;color:var(--hint-color);font-size:14px;">Выберите документ:</p>
-                        ${linksHtml}
-                    `;
-                    content.querySelectorAll('.doc-btn').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            openDocsModal(parseInt(btn.dataset.index), fromTerms);
-                        });
-                    });
-                }
-            } catch (e) {
-                content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`;
-            }
-        }
-
-        document.getElementById('docs-close').addEventListener('click', () => {
-            document.getElementById('docs-modal').classList.remove('show');
-        });
-
-        async function openConnectModal() {
-            const title = document.getElementById('connect-title');
-            const content = document.getElementById('connect-content');
-            title.textContent = "Как подключиться";
-            content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
-            document.getElementById('connect-modal').classList.add('show');
-
-            try {
-                const data = await apiCall('/api/miniapp/connect');
-                if (data.error) throw new Error(data.error);
-                const platformsHtml = data.platforms.map(p => 
-                    `<button class="btn btn-secondary platform-btn" data-key="${p.key}" style="margin-bottom: 8px;">${p.title}</button>`
-                ).join('');
-                content.innerHTML = `
-                    <p style="margin-bottom:12px;color:var(--hint-color);font-size:14px;">Выберите устройство:</p>
-                    ${platformsHtml}
-                `;
-                content.querySelectorAll('.platform-btn').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const key = btn.dataset.key;
-                        content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
-                        try {
-                            const pData = await apiCall('/api/miniapp/connect/' + key);
-                            if (pData.error) throw new Error(pData.error);
-                            const stepsHtml = pData.steps.map((s, i) => 
-                                `<div class="step" style="display:flex; gap:12px; margin-bottom:12px;">
-                                    <div style="background:var(--link-color); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">${i+1}</div>
-                                    <div style="font-size:14px; line-height:1.5;">${s}</div>
-                                </div>`
-                            ).join('');
-                            content.innerHTML = `
-                                <h3 style="text-align:center; color:var(--text-color); margin-bottom:16px;">${pData.title}</h3>
-                                ${stepsHtml}
-                                <a href="${pData.app_url}" target="_blank" style="text-decoration:none; display:block; margin-top:16px;">
-                                    <button class="btn btn-link" style="width:100%;">Скачать ${pData.app}</button>
-                                </a>
-                                <button class="btn btn-secondary" id="connect-back" style="margin-top:12px;">Назад к списку</button>
-                            `;
-                            document.getElementById('connect-back').addEventListener('click', () => openConnectModal());
-                        } catch (e) {
-                            content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`;
-                        }
-                    });
-                });
-            } catch (e) {
-                content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`;
-            }
-        }
-
-        document.getElementById('connect-close').addEventListener('click', () => {
-            document.getElementById('connect-modal').classList.remove('show');
-        });
-
-        async function openTermsModal() {
-            document.getElementById('terms-checkbox').checked = false;
-            document.getElementById('terms-submit').disabled = true;
-            document.getElementById('terms-modal').classList.add('show');
-            
-            const docsList = document.getElementById('terms-docs-list');
-            docsList.innerHTML = '<div class="loading">⏳ Загрузка документов...</div>';
-            
-            try {
-                if (!CACHED_DOCS) {
-                    const data = await apiCall('/api/miniapp/profile');
-                    if (data.error) throw new Error(data.error);
-                    CACHED_DOCS = data.documents;
-                }
-                const linksHtml = CACHED_DOCS.map((d, i) => 
-                    `<a href="#" class="term-doc-btn" data-index="${i}" style="display:block; padding:12px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; color:var(--link-color); text-decoration:none; text-align:center; font-size:14px;">${d.title}</a>`
-                ).join('');
-                docsList.innerHTML = linksHtml;
-                docsList.querySelectorAll('.term-doc-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        document.getElementById('terms-modal').classList.remove('show');
-                        openDocsModal(parseInt(btn.dataset.index), true);
-                    });
-                });
-            } catch (e) {
-                docsList.innerHTML = `<div class="error">Ошибка загрузки: ${e.message}</div>`;
-            }
-        }
-
-        document.getElementById('terms-close').addEventListener('click', () => {
-            document.getElementById('terms-modal').classList.remove('show');
-        });
-
-        document.getElementById('terms-checkbox').addEventListener('change', (e) => {
-            document.getElementById('terms-submit').disabled = !e.target.checked;
-        });
-
-        document.getElementById('terms-submit').addEventListener('click', async () => {
-            const btn = document.getElementById('terms-submit');
-            btn.disabled = true;
-            btn.textContent = 'Отправка...';
-            try {
-                const data = await apiCall('/api/miniapp/accept_terms');
-                if (data.error) throw new Error(data.error);
-                document.getElementById('terms-modal').classList.remove('show');
-                showToast('Заявка отправлена');
-                loadMain();
-            } catch (e) {
-                showToast('❌ ' + e.message);
-                btn.disabled = false;
-                btn.textContent = 'Получить подписку';
-            }
-        });
-
-        
-        function getProgressColor(daysLeft, totalDays) {
-            // Ограничиваем дни от 0 до totalDays
-            const days = Math.max(0, Math.min(daysLeft, totalDays));
-            const percent = days / totalDays; // 0..1
-            
-            // Зелёный (0, 200, 80) -> Красный (248, 81, 73)
-            // Но добавим жёлтый посередине (210, 153, 34)
-            let r, g, b;
-            if (percent > 0.5) {
-                // От жёлтого к зелёному (1..0.5)
-                const t = (percent - 0.5) / 0.5; // 0..1
-                r = Math.round(210 + (0 - 210) * t); // 210 -> 0
-                g = Math.round(153 + (200 - 153) * t); // 153 -> 200
-                b = Math.round(34 + (80 - 34) * t); // 34 -> 80
-            } else {
-                // От красного к жёлтому (0.5..0)
-                const t = percent / 0.5; // 0..1
-                r = Math.round(248 + (210 - 248) * t); // 248 -> 210
-                g = Math.round(81 + (153 - 81) * t); // 81 -> 153
-                b = Math.round(73 + (34 - 73) * t); // 73 -> 34
-            }
-            return `rgb(${r}, ${g}, ${b})`;
-        }
-
+        // ==================== МОЯ ПОДПИСКА ====================
         async function loadSubscription(isSilent = false) {
             const loading = document.getElementById('sub-loading');
             const content = document.getElementById('sub-content');
 
-            if (!isSilent) {
-                loading.style.display = 'block';
-                content.style.display = 'none';
-            }
+            if (!isSilent) { loading.style.display = 'block'; content.style.display = 'none'; }
 
             try {
                 const data = await apiCall('/api/miniapp/subscription');
 
-                // Если это фоновое обновление и данные не изменились — выходим
                 if (isSilent && CURRENT_SUB_DATA) {
                     const changed = 
                         data.traffic_down !== CURRENT_SUB_DATA.traffic_down ||
@@ -819,9 +593,7 @@
                         data.status !== CURRENT_SUB_DATA.status ||
                         data.is_online !== CURRENT_SUB_DATA.is_online ||
                         data.expires_at !== CURRENT_SUB_DATA.expires_at;
-                    if (!changed) {
-                        return;
-                    }
+                    if (!changed) return;
                 }
 
                 loading.style.display = 'none';
@@ -829,15 +601,11 @@
 
                 if (data.error) {
                     content.innerHTML = `
-                        <div class="header">
-                            <h1>Моя подписка</h1>
-                        </div>
+                        <div class="header"><h1>Моя подписка</h1></div>
                         <div class="card" style="text-align:center; padding: 32px 20px;">
                             <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
                             <h2 style="color: var(--text-color); font-size: 18px; margin-bottom: 8px;">Нет активной подписки</h2>
-                            <p style="color: var(--hint-color); font-size: 14px; margin-bottom: 24px; line-height: 1.5;">
-                                У тебя пока нет подписки.<br>Получи её бесплатно на главной странице.
-                            </p>
+                            <p style="color: var(--hint-color); font-size: 14px; margin-bottom: 24px; line-height: 1.5;">У тебя пока нет подписки.<br>Получи её бесплатно на главной странице.</p>
                             <button class="btn btn-primary" onclick="switchTab('main')">Перейти в главное меню</button>
                         </div>
                     `;
@@ -846,22 +614,16 @@
 
                 CURRENT_SUB_DATA = data;
                 const statusClass = data.status === 'active' ? 'active' : (data.status === 'expiring' ? 'expiring' : 'expired');
-
-                // Рассчитываем прогресс дней
                 const daysLeft = data.days_left || 0;
                 const totalDays = 30;
                 const daysPercent = Math.min(100, Math.max(0, (daysLeft / totalDays) * 100));
-
-                // Парсим трафик
                 const downVal = data.traffic_down === "—" ? "—" : (parseFloat(data.traffic_down) || 0);
                 const upVal = data.traffic_up === "—" ? "—" : (parseFloat(data.traffic_up) || 0);
 
                 content.innerHTML = `
                     <div class="header">
                         <h1>Моя подписка</h1>
-                        <div style="color:var(--hint-color); font-size:14px; margin-top:4px; margin-bottom:12px;">
-                            ${data.first_name || 'Пользователь'} ${data.username ? '(@' + data.username + ')' : ''}
-                        </div>
+                        <div style="color:var(--hint-color); font-size:14px; margin-top:4px; margin-bottom:12px;">${data.first_name || 'Пользователь'} ${data.username ? '(@' + data.username + ')' : ''}</div>
                         <span class="status-badge ${statusClass}">${data.status_text}</span>
                     </div>
 
@@ -870,12 +632,10 @@
                             <span style="color:var(--hint-color);">Осталось дней</span>
                             <span style="font-weight:600; color:var(--text-color);">${daysLeft} из ${totalDays}</span>
                         </div>
-                                                <div class="progress-container" style="height:12px;">
+                        <div class="progress-container" style="height:12px;">
                             <div class="progress-fill" style="width: ${daysPercent}%; background-color: ${getProgressColor(daysLeft, totalDays)};"></div>
                         </div>
-                        <div style="text-align:right; font-size:12px; color:var(--hint-color); margin-top:4px;">
-                            Активна до ${data.expires_at}
-                        </div>
+                        <div style="text-align:right; font-size:12px; color:var(--hint-color); margin-top:4px;">Активна до ${data.expires_at}</div>
                     </div>
 
                     <div class="card" style="text-align:center; padding:16px;">
@@ -911,9 +671,7 @@
                     </div>
 
                     <div style="text-align:center; margin-top:16px;">
-                        <a href="https://t.me/${data.support_username || 'SkrepNet_support'}" target="_blank" style="color:var(--link-color); font-size:13px; text-decoration:none;">
-                            🆘 Проблема с подключением? Напиши в поддержку
-                        </a>
+                        <a href="https://t.me/${data.support_username || 'SkrepNet_support'}" target="_blank" style="color:var(--link-color); font-size:13px; text-decoration:none;">🆘 Проблема с подключением? Напиши в поддержку</a>
                     </div>
                 `;
 
@@ -931,171 +689,231 @@
             }
         }
 
+        function getProgressColor(daysLeft, totalDays) {
+            const days = Math.max(0, Math.min(daysLeft, totalDays));
+            const percent = days / totalDays;
+            let r, g, b;
+            if (percent > 0.5) {
+                const t = (percent - 0.5) / 0.5;
+                r = Math.round(210 + (0 - 210) * t);
+                g = Math.round(153 + (200 - 153) * t);
+                b = Math.round(34 + (80 - 34) * t);
+            } else {
+                const t = percent / 0.5;
+                r = Math.round(248 + (210 - 248) * t);
+                g = Math.round(81 + (153 - 81) * t);
+                b = Math.round(73 + (34 - 73) * t);
+            }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
         function openRenewModal() {
             if (!CURRENT_SUB_DATA) return;
             document.getElementById('renew-current').textContent = CURRENT_SUB_DATA.expires_at;
-
             const parts = CURRENT_SUB_DATA.expires_at.split('.');
             if (parts.length === 3) {
                 const cur = new Date(parts[2], parts[1] - 1, parseInt(parts[0]));
                 const next = new Date(cur.getTime() + 30 * 24 * 60 * 60 * 1000);
-                const newDate = String(next.getDate()).padStart(2, '0') + '.' +
-                                String(next.getMonth() + 1).padStart(2, '0') + '.' +
-                                next.getFullYear();
+                const newDate = String(next.getDate()).padStart(2, '0') + '.' + String(next.getMonth() + 1).padStart(2, '0') + '.' + next.getFullYear();
                 document.getElementById('renew-new').textContent = newDate;
             }
-
             document.getElementById('renew-modal').classList.add('show');
         }
 
-        document.getElementById('renew-cancel').addEventListener('click', () => {
-            document.getElementById('renew-modal').classList.remove('show');
-        });
-
+        document.getElementById('renew-cancel').addEventListener('click', () => document.getElementById('renew-modal').classList.remove('show'));
         document.getElementById('renew-confirm').addEventListener('click', async () => {
             const btn = document.getElementById('renew-confirm');
-            btn.disabled = true;
-            btn.textContent = 'Продлеваем...';
-
+            btn.disabled = true; btn.textContent = 'Продлеваем...';
             try {
                 const data = await apiCall('/api/miniapp/renew');
-                if (data.error) {
-                    showToast(data.error);
-                    btn.disabled = false;
-                    btn.textContent = 'Продлить';
-                    return;
-                }
+                if (data.error) { showToast(data.error); btn.disabled = false; btn.textContent = 'Продлить'; return; }
                 showToast('Продлено до ' + data.new_expires_at);
                 document.getElementById('renew-modal').classList.remove('show');
-                btn.disabled = false;
-                btn.textContent = 'Продлить';
+                btn.disabled = false; btn.textContent = 'Продлить';
                 loadSubscription();
             } catch (e) {
-                showToast(e.message);
-                btn.disabled = false;
-                btn.textContent = 'Продлить';
+                showToast(e.message); btn.disabled = false; btn.textContent = 'Продлить';
             }
         });
 
+        // ==================== ДОНАТ ====================
         async function loadDonate() {
             const loading = document.getElementById('donate-loading');
             const content = document.getElementById('donate-content');
-            loading.style.display = 'block';
-            content.style.display = 'none';
-
+            loading.style.display = 'block'; content.style.display = 'none';
             try {
                 const data = await apiCall('/api/miniapp/donate');
-                loading.style.display = 'none';
-                content.style.display = 'block';
-
-                if (data.error) {
-                    content.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-                    return;
-                }
-
+                loading.style.display = 'none'; content.style.display = 'block';
+                if (data.error) { content.innerHTML = `<div class="error">❌ ${data.error}</div>`; return; }
                 content.innerHTML = `
-                    <div class="header">
-                        <h1>❤️ Поддержать проект</h1>
-                    </div>
-                    <div class="card">
-                        <div style="white-space:pre-line;margin-bottom:16px;">${data.donate_text}</div>
-                    </div>
+                    <div class="header"><h1>❤️ Поддержать проект</h1></div>
+                    <div class="card"><div style="white-space:pre-line;margin-bottom:16px;">${data.donate_text}</div></div>
                     <div class="card" style="text-align:center;">
                         <div style="color:var(--hint-color);font-size:13px;margin-bottom:12px;">Прогресс сбора на сервер</div>
                         <div class="progress-container">
                             <div class="progress-fill" style="width: ${data.progress_percent}%;"></div>
                             <div class="progress-text">${data.progress_percent}%</div>
                         </div>
-
                     </div>
                     <div class="card" style="padding:12px;">
                         <button class="btn btn-link" data-action="stars">⭐ Поддержать звёздами</button>
-                        <a href="${data.donate_url}" target="_blank" style="text-decoration:none;">
-                            <button class="btn btn-primary" style="width:100%;">💸 DonationAlerts</button>
-                        </a>
+                        <a href="${data.donate_url}" target="_blank" style="text-decoration:none;"><button class="btn btn-primary" style="width:100%;">💸 DonationAlerts</button></a>
                     </div>
                 `;
-
                 content.querySelectorAll('[data-action]').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         if (btn.dataset.action === 'stars') {
-                            btn.disabled = true;
-                            btn.textContent = '⏳ Создаём счёт...';
+                            btn.disabled = true; btn.textContent = '⏳ Создаём счёт...';
                             try {
-                                const res = await fetch('/api/miniapp/invoice', {
-                                    method: 'POST',
-                                    headers: {'Content-Type': 'application/json'},
-                                    body: JSON.stringify({init_data: tg.initData, amount: 10})
-                                });
+                                const res = await fetch('/api/miniapp/invoice', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({init_data: tg.initData, amount: 10}) });
                                 const invData = await res.json();
                                 if (invData.error) throw new Error(invData.error);
                                 tg.openInvoice(invData.invoice_link, (status) => {
                                     if (status === 'paid') showToast('✅ Спасибо за поддержку!');
                                     else if (status === 'failed') showToast('❌ Ошибка оплаты');
-                                    btn.disabled = false;
-                                    btn.textContent = '⭐ Поддержать звёздами';
+                                    btn.disabled = false; btn.textContent = '⭐ Поддержать звёздами';
                                 });
-                            } catch (e) {
-                                showToast('❌ ' + e.message);
-                                btn.disabled = false;
-                                btn.textContent = '⭐ Поддержать звёздами';
-                            }
+                            } catch (e) { showToast('❌ ' + e.message); btn.disabled = false; btn.textContent = '⭐ Поддержать звёздами'; }
                         }
                     });
                 });
-
             } catch (e) {
-                loading.style.display = 'none';
-                content.style.display = 'block';
+                loading.style.display = 'none'; content.style.display = 'block';
                 content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
             }
         }
 
+        // ==================== ПОДДЕРЖКА ====================
         async function loadSupport() {
             const loading = document.getElementById('support-loading');
             const content = document.getElementById('support-content');
-            loading.style.display = 'block';
-            content.style.display = 'none';
-
+            loading.style.display = 'block'; content.style.display = 'none';
             try {
                 const data = await apiCall('/api/miniapp/profile');
-                loading.style.display = 'none';
-                content.style.display = 'block';
-
-                if (data.error) {
-                    content.innerHTML = `<div class="error">❌ ${data.error}</div>`;
-                    return;
-                }
-
+                loading.style.display = 'none'; content.style.display = 'block';
+                if (data.error) { content.innerHTML = `<div class="error">❌ ${data.error}</div>`; return; }
                 content.innerHTML = `
-                    <div class="header">
-                        <h1>Техподдержка</h1>
-                    </div>
+                    <div class="header"><h1>Техподдержка</h1></div>
                     <div class="card">
-                        <p style="margin-bottom:12px;color:var(--hint-color);font-size:14px;">
-                            Вопросы, проблемы с подключением, сбои — пиши нам.
-                        </p>
-                        <a href="https://t.me/${data.support_username}" target="_blank" style="text-decoration:none;">
-                            <button class="btn btn-primary" style="width:100%;">@${data.support_username}</button>
-                        </a>
+                        <p style="margin-bottom:12px;color:var(--hint-color);font-size:14px;">Вопросы, проблемы с подключением, сбои — пиши нам.</p>
+                        <a href="https://t.me/${data.support_username}" target="_blank" style="text-decoration:none;"><button class="btn btn-primary" style="width:100%;">@${data.support_username}</button></a>
                     </div>
-                    <div class="card" style="text-align:center;padding:16px;color:var(--hint-color);font-size:13px;">
-                        ${data.bot_name} · v2.0.0
-                    </div>
+                    <div class="card" style="text-align:center;padding:16px;color:var(--hint-color);font-size:13px;">${data.bot_name} · v2.0.0</div>
                 `;
             } catch (e) {
-                loading.style.display = 'none';
-                content.style.display = 'block';
+                loading.style.display = 'none'; content.style.display = 'block';
                 content.innerHTML = `<div class="error">❌ ${e.message}</div>`;
             }
         }
 
-        loadMain();
-    
+        // ==================== ДОКУМЕНТЫ / РЕФЕРАЛКА / ТЕРМС ====================
+        async function openDocsModal(startIndex = null, fromTerms = false) {
+            const title = document.getElementById('docs-title');
+            const content = document.getElementById('docs-content');
+            title.textContent = "Пользовательские соглашения";
+            content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
+            document.getElementById('docs-modal').classList.add('show');
+            try {
+                if (!CACHED_DOCS) {
+                    const data = await apiCall('/api/miniapp/profile');
+                    if (data.error) throw new Error(data.error);
+                    CACHED_DOCS = data.documents;
+                }
+                if (startIndex !== null) {
+                    const doc = CACHED_DOCS[startIndex];
+                    title.textContent = doc.title;
+                    content.innerHTML = `<div class="doc-text">${doc.content}</div><button class="btn btn-secondary" id="docs-back" style="margin-top: 16px;">Назад</button>`;
+                    document.getElementById('docs-back').addEventListener('click', () => {
+                        if (fromTerms) { document.getElementById('docs-modal').classList.remove('show'); document.getElementById('terms-modal').classList.add('show'); }
+                        else openDocsModal(null, false);
+                    });
+                } else {
+                    const linksHtml = CACHED_DOCS.map((d, i) => `<button class="btn btn-secondary doc-btn" data-index="${i}" style="margin-bottom: 8px; text-align: left; padding-left: 16px;">${d.title}</button>`).join('');
+                    content.innerHTML = `<p style="margin-bottom:16px;color:var(--hint-color);font-size:14px;">Выберите документ:</p>${linksHtml}`;
+                    content.querySelectorAll('.doc-btn').forEach(btn => btn.addEventListener('click', () => openDocsModal(parseInt(btn.dataset.index), fromTerms)));
+                }
+            } catch (e) { content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`; }
+        }
 
-        // ============================================================
-        // Админ-вкладка
-        // ============================================================
+        document.getElementById('docs-close').addEventListener('click', () => document.getElementById('docs-modal').classList.remove('show'));
+
+        async function openRefModal() {
+            const linkEl = document.getElementById('ref-link');
+            const countEl = document.getElementById('ref-count');
+            linkEl.textContent = 'Загрузка...'; countEl.textContent = '0';
+            document.getElementById('ref-modal').classList.add('show');
+            try {
+                const data = await apiCall('/api/miniapp/referral');
+                if (data.error) throw new Error(data.error);
+                linkEl.textContent = data.ref_link; countEl.textContent = data.invites_count;
+                document.getElementById('ref-copy-btn').onclick = () => copyToClipboard(data.ref_link);
+            } catch (e) { linkEl.textContent = 'Ошибка: ' + e.message; }
+        }
+        document.getElementById('ref-close-btn').addEventListener('click', () => document.getElementById('ref-modal').classList.remove('show'));
+
+        async function openConnectModal() {
+            const title = document.getElementById('connect-title');
+            const content = document.getElementById('connect-content');
+            title.textContent = "Как подключиться";
+            content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
+            document.getElementById('connect-modal').classList.add('show');
+            try {
+                const data = await apiCall('/api/miniapp/connect');
+                if (data.error) throw new Error(data.error);
+                const platformsHtml = data.platforms.map(p => `<button class="btn btn-secondary platform-btn" data-key="${p.key}" style="margin-bottom: 8px;">${p.title}</button>`).join('');
+                content.innerHTML = `<p style="margin-bottom:12px;color:var(--hint-color);font-size:14px;">Выберите устройство:</p>${platformsHtml}`;
+                content.querySelectorAll('.platform-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const key = btn.dataset.key;
+                        content.innerHTML = "<div class='loading'>⏳ Загрузка...</div>";
+                        try {
+                            const pData = await apiCall('/api/miniapp/connect/' + key);
+                            if (pData.error) throw new Error(pData.error);
+                            const stepsHtml = pData.steps.map((s, i) => `<div class="step" style="display:flex; gap:12px; margin-bottom:12px;"><div style="background:var(--link-color); color:white; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">${i+1}</div><div style="font-size:14px; line-height:1.5;">${s}</div></div>`).join('');
+                            content.innerHTML = `<h3 style="text-align:center; color:var(--text-color); margin-bottom:16px;">${pData.title}</h3>${stepsHtml}<a href="${pData.app_url}" target="_blank" style="text-decoration:none; display:block; margin-top:16px;"><button class="btn btn-link" style="width:100%;">Скачать ${pData.app}</button></a><button class="btn btn-secondary" id="connect-back" style="margin-top:12px;">Назад к списку</button>`;
+                            document.getElementById('connect-back').addEventListener('click', () => openConnectModal());
+                        } catch (e) { content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`; }
+                    });
+                });
+            } catch (e) { content.innerHTML = `<div class="error">❌ Ошибка: ${e.message}</div>`; }
+        }
+        document.getElementById('connect-close').addEventListener('click', () => document.getElementById('connect-modal').classList.remove('show'));
+
+        async function openTermsModal() {
+            document.getElementById('terms-checkbox').checked = false;
+            document.getElementById('terms-submit').disabled = true;
+            document.getElementById('terms-modal').classList.add('show');
+            const docsList = document.getElementById('terms-docs-list');
+            docsList.innerHTML = '<div class="loading">⏳ Загрузка документов...</div>';
+            try {
+                if (!CACHED_DOCS) {
+                    const data = await apiCall('/api/miniapp/profile');
+                    if (data.error) throw new Error(data.error);
+                    CACHED_DOCS = data.documents;
+                }
+                const linksHtml = CACHED_DOCS.map((d, i) => `<a href="#" class="term-doc-btn" data-index="${i}" style="display:block; padding:12px; background:var(--bg-color); border:1px solid var(--border-color); border-radius:8px; margin-bottom:8px; color:var(--link-color); text-decoration:none; text-align:center; font-size:14px;">${d.title}</a>`).join('');
+                docsList.innerHTML = linksHtml;
+                docsList.querySelectorAll('.term-doc-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => { e.preventDefault(); document.getElementById('terms-modal').classList.remove('show'); openDocsModal(parseInt(btn.dataset.index), true); });
+                });
+            } catch (e) { docsList.innerHTML = `<div class="error">Ошибка загрузки: ${e.message}</div>`; }
+        }
+
+        document.getElementById('terms-close').addEventListener('click', () => document.getElementById('terms-modal').classList.remove('show'));
+        document.getElementById('terms-checkbox').addEventListener('change', (e) => { document.getElementById('terms-submit').disabled = !e.target.checked; });
+        document.getElementById('terms-submit').addEventListener('click', async () => {
+            const btn = document.getElementById('terms-submit');
+            btn.disabled = true; btn.textContent = 'Отправка...';
+            try {
+                const data = await apiCall('/api/miniapp/accept_terms');
+                if (data.error) throw new Error(data.error);
+                document.getElementById('terms-modal').classList.remove('show');
+                showToast('Заявка отправлена');
+                loadMain();
+            } catch (e) { showToast('❌ ' + e.message); btn.disabled = false; btn.textContent = 'Получить подписку'; }
+        });
+
+        // ==================== АДМИН-ПАНЕЛЬ ====================
         let ADMIN = { loaded: false, page: 1, q: '', status: 'all', sort: 'created_desc', busy: false, timer: null };
 
         async function adminCall(path, body = {}) {
@@ -1123,21 +941,16 @@
             if (dt) {
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const exp = new Date(dt + 'T00:00:00');
-                if (!isNaN(exp)) {
-                    daysLeft = Math.ceil((exp - today) / 86400000);
-                }
+                if (!isNaN(exp)) daysLeft = Math.ceil((exp - today) / 86400000);
             }
-            
             const statusMap = { active: 'активна', pending: 'заявка', rejected: 'отклонён', new: 'новая' };
             const statusText = statusMap[u.status] || u.status || '';
-            
             let expText = '';
             if (dt) {
                 if (daysLeft < 0) expText = `· истекла ${dt}`;
                 else if (daysLeft === 0) expText = `· истекает сегодня`;
                 else expText = `· ${daysLeft} дн. · до ${dt}`;
             }
-
             const isPending = u.status === 'pending';
             return `
               <div class="admin-user" data-tg="${u.telegram_id}">
@@ -1147,7 +960,8 @@
                 </div>
                 <div class="admin-actions">
                   ${isPending
-                    ? `<button class="btn-reject" data-act="reject" data-tg="${u.telegram_id}">Отклонить</button>`
+                    ? `<button class="btn-extend" data-act="approve" data-tg="${u.telegram_id}">Одобрить</button>
+                       <button class="btn-reject" data-act="reject" data-tg="${u.telegram_id}">Отклонить</button>`
                     : `<button class="btn-extend" data-act="extend" data-tg="${u.telegram_id}">Продлить</button>
                        <button class="btn-delete" data-act="delete" data-tg="${u.telegram_id}">Удалить</button>`}
                 </div>
@@ -1166,21 +980,16 @@
               <div class="stat-card"><div class="stat-num">${r.active} / ${r.max_users}</div><div class="stat-lbl">Занято мест</div></div>
               <div class="stat-card"><div class="stat-num">${r.donated_rub} ₽</div><div class="stat-lbl">Донаты</div></div>
             `;
-            
-            // Обновляем бейдж на кнопке "Заявки"
             const pendingBtn = document.getElementById('pending-count');
             if (pendingBtn) {
                 if (r.pending > 0) {
-                    pendingBtn.textContent = r.pending;
-                    pendingBtn.style.display = 'inline-block';
-                    // Если мы сейчас не на вкладке "Заявки", подсветим кнопку
-                    if (ADMIN.status !== 'pending') {
-                        document.getElementById('filter-pending-btn').style.borderColor = 'var(--button-color)';
-                    }
+                    pendingBtn.textContent = r.pending; pendingBtn.style.display = 'inline-block';
+                    if (ADMIN.status !== 'pending') document.getElementById('filter-pending-btn').style.borderColor = 'var(--button-color)';
                 } else {
                     pendingBtn.style.display = 'none';
                     document.getElementById('filter-pending-btn').style.borderColor = 'var(--border-color)';
                 }
+                updateAdminTabBadge(r.pending);
             }
         }
 
@@ -1190,17 +999,13 @@
             const box = document.getElementById('admin-users');
             if (!box) { ADMIN.busy = false; return; }
             if (!append) { ADMIN.page = 1; box.innerHTML = ''; }
-            const r = await adminCall('/users', {
-                q: ADMIN.q, status: ADMIN.status, sort: ADMIN.sort, page: ADMIN.page, limit: 20,
-            });
+            const r = await adminCall('/users', { q: ADMIN.q, status: ADMIN.status, sort: ADMIN.sort, page: ADMIN.page, limit: 20 });
             ADMIN.busy = false;
             if (r.error) return;
             box.insertAdjacentHTML('beforeend', (r.items || []).map(adminUserRow).join(''));
             const more = document.getElementById('admin-more');
             if (more) more.style.display = r.has_more ? 'block' : 'none';
-            if (!append && !(r.items || []).length) {
-                box.innerHTML = '<div class="admin-empty">Ничего не найдено</div>';
-            }
+            if (!append && !(r.items || []).length) box.innerHTML = '<div class="admin-empty">Ничего не найдено</div>';
         }
 
         function renderAdminScreen() {
@@ -1223,8 +1028,7 @@
                 <button class="filter-btn" data-filter="rejected">Отклонённые</button>
               </div>
               <div class="card" style="padding:0;" id="admin-users"></div>
-              <button class="btn btn-secondary" id="admin-more"
-                      style="width:100%;display:none;margin-top:8px;">Показать ещё</button>
+              <button class="btn btn-secondary" id="admin-more" style="width:100%;display:none;margin-top:8px;">Показать ещё</button>
             `;
 
             document.getElementById('admin-q').addEventListener('input', (e) => {
@@ -1233,23 +1037,12 @@
             });
             document.getElementById('admin-sync').addEventListener('click', async (e) => {
                 const btn = e.currentTarget;
-                const oldText = btn.textContent;
-                btn.textContent = '⏳';
-                btn.disabled = true;
+                const oldText = btn.textContent; btn.textContent = '⏳'; btn.disabled = true;
                 const r = await adminCall('/sync');
-                btn.textContent = oldText;
-                btn.disabled = false;
-                if (r.success) {
-                    showToast(`Синхронизировано: ${r.updated}`);
-                    loadAdminUsers();
-                    loadAdminStats();
-                }
+                btn.textContent = oldText; btn.disabled = false;
+                if (r.success) { showToast(`Синхронизировано: ${r.updated}`); loadAdminUsers(); loadAdminStats(); }
             });
-            
-            document.getElementById('admin-sort').addEventListener('change', (e) => {
-                ADMIN.sort = e.target.value;
-                loadAdminUsers();
-            });
+            document.getElementById('admin-sort').addEventListener('change', (e) => { ADMIN.sort = e.target.value; loadAdminUsers(); });
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1258,25 +1051,28 @@
                     loadAdminUsers();
                 });
             });
-            document.getElementById('admin-more').addEventListener('click', () => {
-                ADMIN.page += 1;
-                loadAdminUsers({ append: true });
-            });
+            document.getElementById('admin-more').addEventListener('click', () => { ADMIN.page += 1; loadAdminUsers({ append: true }); });
+            
             document.getElementById('admin-users').addEventListener('click', async (e) => {
                 const btn = e.target.closest('[data-act]');
                 if (!btn) return;
-                const act = btn.dataset.act, tg = +btn.dataset.tg;
-                if (act === 'reject') {
-                    if (!confirm(`Отклонить заявку ${tg}?`)) return;
-                    const r = await adminCall('/reject', { tg_id: tg });
+                const act = btn.dataset.act, tgId = +btn.dataset.tg;
+                
+                if (act === 'approve') {
+                    if (!await showConfirm(`Одобрить заявку ${tgId}?`)) return;
+                    const r = await adminCall('/approve', { tg_id: tgId });
+                    if (r.success) showToast('Одобрен');
+                } else if (act === 'reject') {
+                    if (!await showConfirm(`Отклонить заявку ${tgId}?`)) return;
+                    const r = await adminCall('/reject', { tg_id: tgId });
                     if (r.success) showToast('Отклонён');
                 } else if (act === 'extend') {
-                    if (!confirm(`Продлить ${tg} на 30 дней?`)) return;
-                    const r = await adminCall('/extend', { tg_id: tg, days: 30 });
+                    if (!await showConfirm(`Продлить ${tgId} на 30 дней?`)) return;
+                    const r = await adminCall('/extend', { tg_id: tgId, days: 30 });
                     if (r.success) showToast(`+30 дн., до ${r.new_expires_at}`);
                 } else if (act === 'delete') {
-                    if (!confirm(`Удалить ${tg}? Клиент будет удалён из 3x-ui.`)) return;
-                    const r = await adminCall('/delete', { tg_id: tg });
+                    if (!await showConfirm(`Удалить ${tgId}? Клиент будет удалён из 3x-ui.`)) return;
+                    const r = await adminCall('/delete', { tg_id: tgId });
                     if (r.success) showToast('Удалён');
                 }
                 loadAdminStats();
@@ -1291,22 +1087,17 @@
             if (!IS_ADMIN) return;
             document.getElementById('admin-loading').style.display = 'none';
             document.getElementById('admin-content').style.display = 'block';
-            if (!ADMIN.loaded) {
-                renderAdminScreen();
-                ADMIN.loaded = true;
-            } else {
-                loadAdminStats();
-                loadAdminUsers();
-            }
+            if (!ADMIN.loaded) { renderAdminScreen(); ADMIN.loaded = true; }
+            else { loadAdminStats(); loadAdminUsers(); }
             if (ADMIN.timer) clearInterval(ADMIN.timer);
             ADMIN.timer = setInterval(() => {
-                if (!document.getElementById('screen-admin').classList.contains('active')) {
-                    clearInterval(ADMIN.timer); ADMIN.timer = null; return;
-                }
+                if (!document.getElementById('screen-admin').classList.contains('active')) { clearInterval(ADMIN.timer); ADMIN.timer = null; return; }
                 loadAdminStats();
             }, 60000);
         }
 
-</script>
+        // Запуск
+        loadMain();
+    </script>
 </body>
 </html>
