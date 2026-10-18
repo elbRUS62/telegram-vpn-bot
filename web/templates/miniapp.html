@@ -340,7 +340,6 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        console.log('initData length:', tg.initData ? tg.initData.length : 0);
 
 
         let CURRENT_SUB_DATA = null;
@@ -725,7 +724,6 @@
 
         
         function getProgressColor(daysLeft, totalDays) {
-            console.log('getProgressColor called with:', daysLeft, totalDays);
             // Ограничиваем дни от 0 до totalDays
             const days = Math.max(0, Math.min(daysLeft, totalDays));
             const percent = days / totalDays; // 0..1

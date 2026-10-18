@@ -47,6 +47,8 @@ async def show_main_menu(message: Message):
         )
 
     await message.answer(text, parse_mode="HTML", reply_markup=menu)
+    # Отправляем inline-меню (админ-кнопки для админа)
+    await message.answer("Выберите действие:", reply_markup=main_inline_menu(is_admin))
 
 
 @router.message(CommandStart(deep_link=False))

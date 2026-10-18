@@ -180,7 +180,6 @@ class XUIClient:
         try:
             result = await self._post("/panel/api/clients/onlines")
             obj = result.get("obj", [])
-            logger.info(f"is_client_online: email={email}, obj_len={len(obj)}, obj={obj[:5]}")
             if result.get("success") and isinstance(obj, list):
                 return email in obj
         except Exception as e:

@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 
 import aiosqlite
-from aiogram import Router, F, Bot
+from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 
@@ -20,7 +20,7 @@ from keyboards import (
     email_conflict_keyboard, waitlist_keyboard,
 )
 from .utils import sanitize_email, make_qr_image
-from .states import RegStates, AdminStates
+from .states import AdminStates
 
 router = Router()
 logger = logging.getLogger(__name__)

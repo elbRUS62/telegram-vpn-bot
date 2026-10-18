@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 
 import aiosqlite
-from aiogram import Router, F, Bot
+from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command

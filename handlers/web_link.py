@@ -8,8 +8,6 @@
 import logging
 from aiogram import Router, F
 from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import ADMIN_IDS, BOT_NAME
 from database import (
@@ -17,7 +15,6 @@ from database import (
     get_invite_link_any,
     bind_web_user_to_telegram,
 )
-from keyboards import main_menu, admin_menu, subscription_keyboard
 from handlers.menu import show_main_menu
 
 router = Router()
