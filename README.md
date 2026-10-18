@@ -9,7 +9,7 @@
 [![3x-ui](https://img.shields.io/badge/3x--ui-API-green)](https://github.com/MHSanaei/3x-ui)
 [![Stars](https://img.shields.io/badge/⭐_Telegram_Stars-поддержка-yellow)]()
 
-[![Version](https://img.shields.io/badge/version-v3.0.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.1.0-blue)](CHANGELOG.md)
 
 **Живой пример:** [@skrepnet_bot](https://t.me/skrepnet_bot) (BOT_NAME=`SkrepNet`, SUPPORT_USERNAME=`SkrepNet_support`).    
 Это **шаблон** — разверните **свой** бот с **другим** именем, просто изменив `.env`.
