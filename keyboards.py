@@ -1,5 +1,5 @@
 from docs_config import DOCS
-from aiogram.types import (
+from aiogram.types import (, WebAppInfo
     InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton,
     KeyboardButtonRequestUsers,
@@ -27,35 +27,24 @@ def admin_menu():
 
 
 def main_inline_menu(is_admin: bool = False):
-    """Главное inline-меню. «Прогресс сбора» — только админу."""
+    """Главное inline-меню: WebApp для всех, админские кнопки — только админу."""
     rows = [
         [
-            InlineKeyboardButton(text="📦 Получить подписку", callback_data="menu_get_sub"),
-            InlineKeyboardButton(text="🔑 Моя подписка", callback_data="menu_my_sub"),
-        ],
-        [
-            InlineKeyboardButton(text="👥 Пригласить пользователя", callback_data="menu_invite"),
-            InlineKeyboardButton(text="➕ Добавить без TG", callback_data="menu_invite_no_tg"),
-        ],
-        [
             InlineKeyboardButton(
-    text="🆘 Техподдержка",
-    url=f"https://t.me/{SUPPORT_USERNAME}"
-),
-            InlineKeyboardButton(text="📚 Документы", callback_data="menu_docs"),
+                text="🚀 Открыть приложение",
+                web_app=WebAppInfo(url="https://gb-skrepnet.duckdns.org:8443/")
+            )
         ],
     ]
 
     if is_admin:
-        rows.append([
-            InlineKeyboardButton(text="📊 Прогресс сбора", callback_data="menu_progress"),
-        ])
         rows.append([
             InlineKeyboardButton(text="📊 Статистика", callback_data="admin_stats"),
             InlineKeyboardButton(text="🛠 Управление", callback_data="admin_manage"),
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
 
 
 # ============================================================

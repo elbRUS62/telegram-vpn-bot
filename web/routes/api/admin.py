@@ -82,6 +82,7 @@ def stats():
             "donated_rub": int(round(donated or 0)),
             "invites_total": invites,
             "max_users": MAX_USERS,
+            "active_slots": active,            # Занято
             "free_slots": max(MAX_USERS - active, 0),
             "bot_name": BOT_NAME,
         }
@@ -94,6 +95,48 @@ def stats():
 
 
 # ---------------- users ----------------
+
+@admin_api.route("/sync", methods=["POST"])
+@admin_required
+def sync_xui():
+    """Синхронизирует даты окончания из 3x-ui в локальную БД."""
+    async def do():
+        from datetime import datetime
+        from xui_client import XUIClient
+
+        updated = 0
+        errors = 0
+
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT telegram_id, xui_email FROM users WHERE status='active'") as cur:
+                users = await cur.fetchall()
+
+        async with XUIClient() as xui:
+            for u in users:
+                try:
+                    client = await xui.get_client(u["xui_email"])
+                    expiry = client.get("expiryTime", 0)
+                    if expiry > 0:
+                        dt = datetime.fromtimestamp(expiry / 1000).strftime("%Y-%m-%d %H:%M:%S")
+                        async with aiosqlite.connect(DB_PATH) as db:
+                            await db.execute("UPDATE users SET expires_at = ? WHERE telegram_id = ?", (dt, u["telegram_id"]))
+                            await db.commit()
+                        updated += 1
+                except Exception as e:
+                    logger.warning(f"sync failed for {u['xui_email']}: {e}")
+                    errors += 1
+
+        await _audit(request.admin_user["id"], "sync_xui", None, f"updated={updated}, errors={errors}")
+        return {"success": True, "updated": updated, "errors": errors}
+
+    try:
+        r = run_async(do())
+    except Exception as e:
+        logger.exception("admin/sync failed")
+        return jsonify({"error": str(e)}), 500
+    return jsonify(r)
+
 
 @admin_api.route("/users", methods=["POST"])
 @admin_required
@@ -125,11 +168,20 @@ def users_list():
             async with db.execute(f"SELECT COUNT(*) FROM users {where_sql}", args) as cur:
                 total = (await cur.fetchone())[0]
 
+            sort = data.get("sort") or "created_desc"
+            order_map = {
+                "created_desc": "created_at DESC",
+                "created_asc":  "created_at ASC",
+                "name":         "LOWER(COALESCE(NULLIF(first_name,''), username, CAST(telegram_id AS TEXT))) ASC",
+                "expires":      "CASE WHEN expires_at IS NULL THEN 1 ELSE 0 END, expires_at ASC",
+            }
+            order_sql = order_map.get(sort, "created_at DESC")
+
             async with db.execute(
                 f"""SELECT telegram_id, username, first_name, status, xui_email,
                            expires_at, invites_count, renew_count, created_at
                     FROM users {where_sql}
-                    ORDER BY (status='pending') DESC, created_at DESC
+                    ORDER BY {order_sql}
                     LIMIT ? OFFSET ?""",
                 (*args, limit, offset),
             ) as cur:
