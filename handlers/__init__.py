@@ -9,8 +9,8 @@ from .admin import router as admin_router
 from .invite import router as invite_router
 
 router = Router()
-router.include_router(menu_router)
 router.include_router(start_router)
+router.include_router(menu_router)
 router.include_router(subscription_router)
 router.include_router(donate_router)
 router.include_router(connect_router)

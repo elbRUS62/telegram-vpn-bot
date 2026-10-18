@@ -535,8 +535,11 @@
                     </div>
 
                     <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:10px;">
+                        ${data.has_subscription ? `<button class="btn btn-primary" data-action="switch_sub" style="margin-bottom:0;">🔑 Моя подписка</button>` : `<button class="btn btn-primary" data-action="get_sub" style="margin-bottom:0;">📦 Получить подписку</button>`}
                         <button class="btn btn-secondary" data-action="donate" style="margin-bottom:0;">❤️ Поддержать проект</button>
-                        ${buttonsHtml}
+                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_friend" style="margin-bottom:0;">👥 Пригласить друга</button>` : ''}
+                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_no_tg" style="margin-bottom:0;">➕ Добавить без TG</button>` : ''}
+                        ${data.has_subscription ? `<button class="btn btn-secondary" data-action="connect_help" style="margin-bottom:0;">📖 Как подключиться</button>` : ''}
                     </div>
 
                     <div style="text-align:center;margin-top:20px;font-size:13px;">
@@ -550,6 +553,18 @@
                         if (action === 'switch_sub') switchTab('sub');
                         else if (action === 'donate') switchTab('donate');
                         else if (action === 'get_sub') openTermsModal();
+                        else if (action === 'invite_friend') {
+                            if (!data.has_subscription) { showToast('Сначала получите подписку'); return; }
+                            openRefModal();
+                        }
+                        else if (action === 'invite_no_tg') {
+                            if (!data.has_subscription) { showToast('Сначала получите подписку'); return; }
+                            const url = `https://t.me/skrepnet_bot?start=webapp_invite_no_tg`;
+                            if (tg.openTelegramLink) tg.openTelegramLink(url);
+                            else window.open(url, '_blank');
+                            tg.close();
+                        }
+                        else if (action === 'connect_help') openConnectModal();
                     });
                 });
 
