@@ -30,7 +30,7 @@
         .tabs {
             display: flex;
             background-color: var(--secondary-bg);
-            border-bottom: 1px solid var(--border-color);
+            
             position: sticky;
             top: 0;
             z-index: 10;
@@ -266,6 +266,31 @@
         .filter-btn.active { background: var(--button-color); color: var(--button-text); border-color: var(--button-color); font-weight: 600; }
         
         .admin-empty { padding: 24px; text-align: center; color: var(--hint-color); font-size: 14px; }
+
+        .tabs-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 0;
+            background-color: var(--secondary-bg);
+            position: sticky;
+            top: 48px;
+            z-index: 9;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--hint-color);
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+        .dot.active {
+            opacity: 1;
+            background-color: var(--button-color);
+            width: 16px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +301,7 @@
         <button class="tab" data-tab="donate">❤️ Донат</button>
         <button class="tab" data-tab="support">Техподдержка</button>
     </div>
+    <div class="tabs-dots" id="tabs-dots"></div>
 
     <div id="screen-main" class="screen active">
         <div class="loading" id="main-loading">⏳ Загрузка...</div>
@@ -405,6 +431,58 @@
             return res.json();
         }
 
+        function updateDots(activeIndex = null) {
+            try {
+                const tabsContainer = document.getElementById('tabs');
+                const dotsContainer = document.getElementById('tabs-dots');
+                if (!tabsContainer || !dotsContainer) return;
+
+                const tabs = tabsContainer.querySelectorAll('.tab');
+                
+                // Создаём точки, если их нет
+                if (dotsContainer.children.length !== tabs.length) {
+                    dotsContainer.innerHTML = '';
+                    tabs.forEach(() => {
+                        const dot = document.createElement('div');
+                        dot.className = 'dot';
+                        dotsContainer.appendChild(dot);
+                    });
+                }
+
+                // Скрываем точки, если вкладки помещаются
+                if (tabsContainer.scrollWidth <= tabsContainer.clientWidth) {
+                    dotsContainer.style.display = 'none';
+                    return;
+                } else {
+                    dotsContainer.style.display = 'flex';
+                }
+
+                // Если индекс не передан — ищем активную вкладку
+                if (activeIndex === null) {
+                    tabs.forEach((tab, index) => {
+                        if (tab.classList.contains('active')) activeIndex = index;
+                    });
+                }
+
+                // Подсвечиваем нужную точку
+                dotsContainer.querySelectorAll('.dot').forEach((dot, index) => {
+                    dot.classList.toggle('active', index === activeIndex);
+                });
+            } catch (e) {
+                console.warn('updateDots error:', e);
+            }
+        }
+
+        // Слушатель скролла для вкладок
+
+        // Инициализация индикатора после загрузки
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabsEl = document.getElementById('tabs');
+            if (tabsEl) tabsEl.addEventListener('scroll', updateDots);
+            setTimeout(updateDots, 500);
+            window.addEventListener('resize', updateDots);
+        });
+
         function showToast(text, isError = false) {
             const toast = document.getElementById('toast');
             toast.textContent = text;
@@ -445,14 +523,16 @@
             });
         }
 
-        document.querySelectorAll('.tab').forEach(tab => {
+        document.querySelectorAll('.tab').forEach((tab, index) => {
             tab.addEventListener('click', () => {
                 const name = tab.dataset.tab;
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                 tab.classList.add('active');
                 document.getElementById('screen-' + name).classList.add('active');
+                updateDots(index);
 
+                setTimeout(updateDots, 100);
                 if (name === 'main') loadMain();
                 else if (name === 'sub') {
                     if (SUB_TIMER) { clearInterval(SUB_TIMER); SUB_TIMER = null; }
