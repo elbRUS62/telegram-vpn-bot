@@ -124,7 +124,7 @@ def sync_xui():
                             await db.commit()
                         updated += 1
                 except Exception as e:
-                    logger.warning(f"sync failed for {u['xui_email']}: {e}")
+                    logger.warning(f"sync failed for {u['xui_email']}")
                     errors += 1
 
         await _audit(request.admin_user["id"], "sync_xui", None, f"updated={updated}, errors={errors}")
@@ -255,7 +255,7 @@ def user_card():
                         # Онлайн
                         result["is_online"] = await xui.is_client_online(u["xui_email"])
             except Exception as e:
-                logger.warning(f"Ошибка получения данных 3x-ui для {u['xui_email']}: {e}")
+                logger.warning(f"Ошибка получения данных 3x-ui для {u['xui_email']}")
 
         # Дни до окончания
         if u["expires_at"]:
@@ -321,7 +321,7 @@ def approve():
                 await approve_user(tg_id, sub_id)
                 sub_url = xui.build_sub_url(sub_id)
         except Exception as e:
-            logger.error(f"approve failed for {tg_id}: {e}")
+            logger.error(f"approve failed for {tg_id}")
             return {"error": "Внутренняя ошибка сервера"}
 
         await _audit(request.admin_user["id"], "approve", tg_id, comment)
