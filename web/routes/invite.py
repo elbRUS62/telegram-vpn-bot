@@ -2,12 +2,12 @@
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import aiosqlite
 from flask import Blueprint, jsonify, render_template, request
 
-from config import ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS
+from config import ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS, WEB_SUBSCRIPTION_DAYS
 from database import get_invite_link, get_user, use_invite_link, get_invite_link_any
 from handlers.utils import sanitize_email
 from xui_client import XUIClient
@@ -33,7 +33,7 @@ async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, su
             try:
                 await bot.send_message(admin_id, text, disable_notification=True)
             except Exception as e:
-                logger.error("Ошибка отправки админу {admin_id}: ")
+                logger.exception("Ошибка отправки админу %s", admin_id)
     finally:
         await bot.session.close()
 
@@ -58,8 +58,6 @@ def invite_page(token):
         inviter_name=inviter_name,
         friend_username=invite["friend_username"] or "друг")
 
-
-@invite_bp.route('/api/activate/<token>', methods=['POST'])
 
 @invite_bp.route('/api/invite/<token>/status', methods=['GET'])
 def invite_status(token):
@@ -114,21 +112,32 @@ def invite_status(token):
         return jsonify(result), 404
     return jsonify(result)
 
+@invite_bp.route('/api/activate/<token>', methods=['POST'])
 def activate(token):
     data = request.json or {}
     if not data.get('accepted_terms'):
         return jsonify({'error': 'Необходимо принять условия'}), 400
 
     async def process():
-        invite = await get_invite_link(token)
+        invite = await get_invite_link_any(token)
         if not invite:
             return {'error': 'Ссылка недействительна'}
 
+        # Защита от активации просроченных (старше 7 дней) неиспользованных ссылок.
+        # Использованные ссылки не проверяем — по ним отдаём QR (повторный клик).
+        if not invite["is_used"]:
+            created = invite["created_at"]
+            try:
+                created_dt = datetime.strptime(str(created), "%Y-%m-%d %H:%M:%S")
+            except (TypeError, ValueError):
+                return {'error': 'Ссылка недействительна'}
+            if datetime.now() - created_dt > timedelta(days=7):
+                return {'error': 'Срок действия ссылки истёк', 'expired': True}
+
         # Если ссылка уже использована — возвращаем существующую подписку
-        if invite["used"]:
+        if invite["is_used"]:
             # Получаем подписку из 3x-ui по email
             from xui_client import XUIClient
-            from database import get_user_by_email  # нужно будет добавить
             email = invite["xui_email"]
             if not email:
                 return {'error': 'Подписка не найдена', 'used': True}
@@ -191,7 +200,7 @@ def activate(token):
                 )
                 sub_url = xui.build_sub_url(sub_id)
         except Exception as e:
-            logger.error("Ошибка создания клиента: ")
+            logger.exception("Ошибка создания клиента (email=%s)", xui_email)
             return {'error': 'Внутренняя ошибка сервера'}
 
         await use_invite_link(token, xui_email, sub_id)
@@ -209,7 +218,7 @@ def activate(token):
                     invite_type="no_tg",
                 )
         except Exception as e:
-            logger.error("Ошибка засчёта приглашения: ")
+            logger.exception("Ошибка засчёта приглашения (token=%s)", token)
 
         try:
             await notify_admin_new_web_user(
@@ -219,7 +228,7 @@ def activate(token):
                 sub_url=sub_url
             )
         except Exception as e:
-            logger.error("Ошибка уведомления: ")
+            logger.exception("Ошибка уведомления админов о новом веб-пользователе")
 
         import base64
         import io
