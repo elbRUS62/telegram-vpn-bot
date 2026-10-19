@@ -72,6 +72,35 @@ def stats():
             )
             invites  = await one("SELECT COUNT(*) FROM invites")
 
+            # --- Трафик (накопительный, из 3x-ui) ---
+            traffic_gb = None
+            try:
+                from xui_client import XUIClient
+                from asyncio import gather
+
+                async with db.execute(
+                    "SELECT xui_email FROM users WHERE status='active' "
+                    "AND xui_email IS NOT NULL AND xui_email != ''"
+                ) as cur2:
+                    emails = [row[0] for row in await cur2.fetchall()]
+
+                if emails:
+                    async with XUIClient() as xui:
+                        results = await gather(
+                            *[xui.get_client_traffic(e) for e in emails],
+                            return_exceptions=True,
+                        )
+                        traffic_total = 0
+                        for r in results:
+                            if isinstance(r, dict):
+                                traffic_total += r.get("up", 0) + r.get("down", 0)
+                        traffic_gb = round(traffic_total / (1024 ** 3), 1)
+                else:
+                    traffic_gb = 0
+            except Exception:
+                logger.exception("admin/stats: traffic failed")
+                traffic_gb = None
+
         return {
             "users_total": total,
             "active": active,
@@ -81,6 +110,7 @@ def stats():
             "waitlist": waitlist,
             "donated_rub": int(round(donated or 0)),
             "invites_total": invites,
+            "traffic_gb": traffic_gb,
             "max_users": MAX_USERS,
             "active_slots": active,            # Занято
             "free_slots": max(MAX_USERS - active, 0),

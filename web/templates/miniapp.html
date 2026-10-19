@@ -27,9 +27,13 @@
  overflow-x: hidden;
  transition: background-color 0.3s, color 0.3s;
  }
+button, input, select, textarea { font-family: inherit; }
+
  .tabs {
  display: flex;
- background-color: var(--secondary-bg);
+ background-color: rgba(22, 27, 34, 0.25);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
  
  position: sticky;
  top: 0;
@@ -49,8 +53,8 @@
  border: 1.5px solid var(--border-color);
  border-radius: 20px;
  color: var(--hint-color);
- font-size: 14px;
- font-weight: 700;
+ font-size: 15px;
+ font-weight: 400;
  cursor: pointer;
  transition: all 0.2s ease;
  white-space: nowrap;
@@ -62,13 +66,13 @@
  border-color: var(--button-color);
  font-weight: 600;
  }
- .screen { display: none; padding: 20px; max-width: 440px; margin: 0 auto; }
+ .screen { display: none; padding: 20px; max-width: 100%; margin: 0 auto; }
  .screen.active { display: block; }
 
 /* ===== Анимированный фон главного экрана ===== */
 @keyframes main-bg-shift {
-  0%   { background-position: 0% 0%, 100% 100%, 0 0; }
-  100% { background-position: 100% 100%, 0% 0%, 0 0; }
+  0%   { background-position: 50% 0%, 0% 0%, 100% 100%; }
+  100% { background-position: 50% 0%, 100% 100%, 0% 0%; }
 }
 #screen-main {
   position: relative;
@@ -77,9 +81,10 @@
 body {
   background-color: var(--bg-color);
   background-image:
-    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(88, 166, 255, 0.14), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.10), transparent 60%);
-  background-size: 200% 200%, 200% 200%;
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(88, 166, 255, 0.35), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(88, 166, 255, 0.25), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.18), transparent 60%);
+  background-size: 200% 200%, 200% 200%, 200% 200%;
   animation: main-bg-shift 25s ease-in-out infinite alternate;
 }
 /* Плавающие точки — fixed, всегда на фоне */
@@ -96,7 +101,7 @@ body {
   left: 8%;
   width: 90px;
   height: 90px;
-  background: rgba(88, 166, 255, 0.18);
+  background: rgba(88, 166, 255, 0.30);
   animation: main-dot-1 32s ease-in-out infinite alternate;
 }
 .main-bg-dot--2 {
@@ -104,7 +109,7 @@ body {
   right: 6%;
   width: 110px;
   height: 110px;
-  background: rgba(139, 92, 246, 0.14);
+  background: rgba(139, 92, 246, 0.24);
   animation: main-dot-2 38s ease-in-out infinite alternate;
 }
 .main-bg-dot--3 {
@@ -112,7 +117,7 @@ body {
   left: 20%;
   width: 80px;
   height: 80px;
-  background: rgba(88, 166, 255, 0.14);
+  background: rgba(88, 166, 255, 0.24);
   animation: main-dot-3 44s ease-in-out infinite alternate;
 }
 @keyframes main-dot-1 {
@@ -128,6 +133,19 @@ body {
   100% { transform: translate(20px, -30px); }
 }
 @media (prefers-color-scheme: light) {
+  .admin-sort__btn { background: rgba(255, 255, 255, 0.7); }
+  .admin-sort__list { background: rgba(255, 255, 255, 0.95); }
+  .tabs { background-color: rgba(255, 255, 255, 0.25); }
+  .admin-sync { background: rgba(255, 255, 255, 0.7); }
+  body {
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% 0%, rgba(88, 166, 255, 0.18), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(88, 166, 255, 0.12), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.08), transparent 60%);
+  }
+  .stat-card { background: rgba(255, 255, 255, 0.7); }
+  .admin-search input, .admin-search select { background: rgba(255, 255, 255, 0.7); }
+  .admin-user:hover { background-color: rgba(88, 166, 255, 0.08); }
   .main-bg-dot--1 { background: rgba(88, 166, 255, 0.10); }
   .main-bg-dot--2 { background: rgba(139, 92, 246, 0.08); }
   .main-bg-dot--3 { background: rgba(88, 166, 255, 0.08); }
@@ -149,15 +167,7 @@ body {
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 8px;
-  background-image: linear-gradient(
-    90deg,
-    #3b82f6 0%,
-    #58a6ff 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: var(--link-color);
 }
  .status-badge {
  display: inline-block;
@@ -445,7 +455,7 @@ body {
  bottom: 20px;
  left: 50%;
  transform: translateX(-50%);
- background-color: var(--button-color);
+ background-color: #238636;
  color: white;
  padding: 12px 20px;
  border-radius: 12px;
@@ -468,7 +478,7 @@ body {
  .modal-backdrop {
  position: fixed;
  top: 0; left: 0; right: 0; bottom: 0;
- background: rgba(0,0,0,0.5);
+ background: rgba(0,0,0,0.4);
  display: none;
  align-items: center;
  justify-content: center;
@@ -478,13 +488,16 @@ body {
  }
  .modal-backdrop.show { display: flex; }
  .modal {
- background-color: var(--secondary-bg);
+ background-color: rgba(22, 27, 34, 0.85);
+ -webkit-backdrop-filter: blur(12px);
+ backdrop-filter: blur(12px);
  border: 1px solid var(--border-color);
  border-radius: 20px;
  padding: 24px;
  max-width: 360px;
  width: 100%;
  max-height: 85vh;
+ overflow-y: auto;
  display: flex;
  flex-direction: column;
  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
@@ -498,13 +511,71 @@ body {
 
  /* --- Admin tab --- */
  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
- .stat-card { background: var(--secondary-bg); border-radius: 14px; padding: 14px; }
- .stat-num { font-size: 22px; font-weight: 700; color: var(--text-color); }
+ .stat-card {
+  background: rgba(22, 27, 34, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  padding: 14px;
+}
+ .stat-num { font-size: 28px; font-weight: 700; color: var(--text-color); }
  .stat-lbl { font-size: 12px; color: var(--hint-color); margin-top: 4px; }
  
  .admin-user { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border-color); gap: 12px; transition: background-color 0.1s; cursor: pointer; }
- .admin-user:active { background-color: rgba(255,255,255,0.05); }
+ .admin-user:hover { background-color: rgba(88, 166, 255, 0.05); }
+.admin-user:active { background-color: rgba(255,255,255,0.05); }
  .admin-user-status { width: 20px; text-align: center; font-size: 12px; flex-shrink: 0; }
+
+/* Кружки статуса в списке пользователей */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8b949e;
+  vertical-align: middle;
+}
+.status-dot--active {
+  background: #34c759;
+  animation: status-pulse-green 8s ease-in-out infinite;
+}
+.status-dot--pending {
+  background: #f0b429;
+  animation: status-pulse-yellow 3.5s ease-in-out infinite;
+}
+.status-dot--rejected {
+  background: #f85149;
+  animation: status-pulse-red 3.5s ease-in-out infinite;
+}
+.status-dot--blocked {
+  background: #6e7681;
+  animation: status-pulse-gray 3.5s ease-in-out infinite;
+}
+.status-dot--new {
+  background: #8b949e;
+  animation: status-pulse-gray 3.5s ease-in-out infinite;
+}
+@keyframes status-pulse-green {
+  0%, 50%, 100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.55); }
+  75%           { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
+}
+@keyframes status-pulse-yellow {
+  0%, 50%, 100% { box-shadow: 0 0 0 8px rgba(240, 180, 41, 0); }
+  75%           { box-shadow: 0 0 0 0 rgba(240, 180, 41, 0.55); }
+}
+@keyframes status-pulse-red {
+  0%, 50%, 100% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0); }
+  75%           { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.55); }
+}
+@keyframes status-pulse-gray {
+  0%, 50%, 100% { box-shadow: 0 0 0 8px rgba(139, 148, 158, 0); }
+  75%           { box-shadow: 0 0 0 0 rgba(139, 148, 158, 0.55); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot--active, .status-dot--pending { animation: none; }
+}
+
  .admin-user-info { flex: 1; min-width: 0; }
  .admin-user-name { font-weight: 600; font-size: 15px; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
  .admin-user-username { color: var(--hint-color); font-weight: 400; }
@@ -526,12 +597,114 @@ body {
  .badge.pending { background: var(--button-color); color: #fff; margin-left: 6px; }
  
  .admin-search { display: flex; gap: 8px; margin-bottom: 12px; }
- .admin-search input, .admin-search select { padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--secondary-bg); color: var(--text-color); font-size: 14px; }
+ .admin-search input, .admin-search select {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(22, 27, 34, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--text-color);
+  font-size: 15px;
+}
  .admin-search input { flex: 1; min-width: 0; }
+
+/* Кастомный select сортировки (тёмный, работает в Android) */
+.admin-sort { position: relative; flex-shrink: 0; }
+.admin-sort__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(22, 27, 34, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--text-color);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.admin-sort__arrow { font-size: 10px; opacity: 0.6; }
+.admin-sort__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 160px;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(22, 27, 34, 0.95);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.admin-sort__list[hidden] { display: none; }
+.admin-sort__list button {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.admin-sort__list button:hover { background: rgba(88, 166, 255, 0.12); }
+.admin-sort__list button.is-active {
+  background: rgba(88, 166, 255, 0.2);
+  font-weight: 600;
+}
+
+
+.admin-sync {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(22, 27, 34, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.admin-sync:hover { background: rgba(88, 166, 255, 0.1); }
+.admin-sync:active { transform: scale(0.95); }
+.admin-sync svg { display: block; }
+
  
- .admin-filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
- .filter-btn { padding: 6px 12px; border-radius: 16px; border: 1.5px solid var(--border-color);
- background: transparent; color: var(--hint-color); font-size: 13px; cursor: pointer; display: flex; align-items: center; }
+ .admin-filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px; }
+.admin-filter-row::-webkit-scrollbar { display: none; }
+
+ .filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-color);
+  background: transparent;
+  color: var(--hint-color);
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
  .filter-btn.active { background: var(--button-color); color: var(--button-text); border-color: var(--button-color); font-weight: 600; }
  
  .admin-empty { padding: 24px; text-align: center; color: var(--hint-color); font-size: 14px; }
@@ -541,7 +714,7 @@ body {
  justify-content: center;
  gap: 6px;
  padding: 8px 0;
- background-color: var(--secondary-bg);
+ background-color: transparent;
  position: sticky;
  top: 48px;
  z-index: 9;
@@ -570,7 +743,8 @@ body {
  .user-card-row:last-child { border-bottom: none; }
  .user-card-row .label { color: var(--hint-color); }
  .user-card-row .value { font-weight: 500; color: var(--text-color); }
- .user-card-comment { background: var(--bg-color); border-radius: 10px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--hint-color); margin: 12px 0; word-break: break-all; }
+ .user-card-comment { background: var(--bg-color); border-radius: 10px; padding: 12px; font-family: inherit;
+  font-size: 12px; color: var(--hint-color); margin: 12px 0; word-break: break-all; }
  .user-card-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
  .user-card-actions-row { display: flex; gap: 8px; }
  .user-card-actions-row button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.1s; }
@@ -763,7 +937,7 @@ body {
  </div>
 
  <div class="modal-backdrop" id="docs-modal">
- <div class="modal" style="max-height: 80vh; overflow-y: auto;">
+ <div class="modal">
  <h2 id="docs-title">Документ</h2>
  <div id="docs-content" style="line-height: 1.6; font-size: 15px; color: var(--text-color); margin-bottom: 16px;"></div>
  <div class="actions">
@@ -792,7 +966,7 @@ body {
  </div>
 
  <div class="modal-backdrop" id="connect-modal">
- <div class="modal" style="max-height: 85vh; overflow-y: auto;">
+ <div class="modal">
  <h2 id="connect-title">Как подключиться</h2>
  <div id="connect-content" style="margin-bottom: 16px;"></div>
  <button class="btn btn-secondary" id="connect-close">Закрыть</button>
@@ -800,7 +974,7 @@ body {
  </div>
 
  <div class="modal-backdrop" id="terms-modal">
- <div class="modal" style="max-height: 85vh; overflow-y: auto;">
+ <div class="modal">
  <h2>Для получения подписки</h2>
  <p style="margin-bottom: 12px; font-size: 14px; color: var(--hint-color);">
  Ознакомься с документами и подтверди согласие:
@@ -819,7 +993,7 @@ body {
 
  <!-- Модалка карточки пользователя -->
  <div class="modal-backdrop" id="admin-user-modal">
- <div class="modal" style="max-height: 85vh; overflow-y: auto;">
+ <div class="modal">
  <div id="admin-user-content"></div>
  <button class="btn btn-secondary" id="admin-user-close" style="margin-top:16px;">Закрыть</button>
  </div>
@@ -918,7 +1092,7 @@ body {
  function showToast(text, isError = false) {
  const toast = document.getElementById('toast');
  toast.textContent = text;
- const errorKeywords = ['максимальный срок', 'Сначала получите', 'Ошибка', '', 'Не удалось', 'Нет активной', 'Доступ запрещён', 'Неверная авторизация'];
+ const errorKeywords = ['максимальный срок', 'Сначала получите', 'Ошибка', 'Не удалось', 'Нет активной', 'Доступ запрещён', 'Неверная авторизация'];
  const looksLikeError = isError || errorKeywords.some(kw => text.includes(kw));
  if (looksLikeError) toast.classList.add('error');
  else toast.classList.remove('error');
@@ -1521,7 +1695,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
  async function adminCall(path, body = {}) {
  const r = await apiCall('/api/miniapp/admin' + path, body);
- if (r && r.error) showToast(r.error, true);
+ // toast убран — вызывающий код сам решает
  return r || {};
  }
 
@@ -1539,12 +1713,12 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  }
 
  function adminUserRow(u) {
- const statusMap = { active: '', pending: '🟡', rejected: '🔴', new: '⚪', blocked: '⛔' };
- const icon = (u.status in statusMap) ? statusMap[u.status] : '⚪';
+ const statusMap = { active: 'active', pending: 'pending', rejected: 'rejected', new: 'new', blocked: 'blocked' };
+ const statusClass = (u.status in statusMap) ? statusMap[u.status] : 'new';
  
  return `
  <div class="admin-user" data-tg="${u.telegram_id}">
- <div class="admin-user-status">${icon}</div>
+ <div class="admin-user-status"><span class="status-dot status-dot--${statusClass}"></span></div>
  <div class="admin-user-info">
  <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}</div>
  </div>
@@ -1563,6 +1737,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  <div class="stat-card"><div class="stat-num">${r.expiring_3d}</div><div class="stat-lbl">Истекают ≤3д</div></div>
  <div class="stat-card"><div class="stat-num">${r.active} / ${r.max_users}</div><div class="stat-lbl">Занято мест</div></div>
  <div class="stat-card"><div class="stat-num">${r.donated_rub} ₽</div><div class="stat-lbl">Донаты</div></div>
+ <div class="stat-card"><div class="stat-num">${r.traffic_gb ?? '—'} ГБ</div><div class="stat-lbl">Трафик</div></div>
  `;
  const pendingBtn = document.getElementById('pending-count');
  if (pendingBtn) {
@@ -1602,7 +1777,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  if (!modal || !container) { showToast('Модалка не найдена', true); return; }
 
  const u = r.user || r;
- const statusMap = { active: '🟢 Активна', pending: '🟡 Заявка', rejected: '🔴 Отклонён', new: '⚪ Новая', blocked: '🔴 Заблокирована' };
+ const statusMap = { active: 'Активна', pending: 'Заявка', rejected: 'Отклонён', new: 'Новая', blocked: 'Заблокирована' };
  const statusText = statusMap[u.status] || u.status;
  const isBlocked = u.is_blocked || false;
 
@@ -1720,13 +1895,22 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  <div class="stats-grid" id="admin-stats"></div>
  <div class="admin-search">
  <input id="admin-q" placeholder="Поиск: ID / @username / имя">
- <select id="admin-sort">
- <option value="created_desc">Новые</option>
- <option value="created_asc">Старые</option>
- <option value="name">По имени</option>
- <option value="expires">По сроку</option>
- </select>
- <button id="admin-sync" style="padding:10px 12px;background:var(--secondary-bg);border:1px solid var(--border-color);border-radius:10px;color:var(--text-color);cursor:pointer;" title="Обновить даты из 3x-ui"></button>
+ <div class="admin-sort" id="admin-sort">
+  <button type="button" class="admin-sort__btn" id="admin-sort-btn">Новые <span class="admin-sort__arrow">▼</span></button>
+  <div class="admin-sort__list" id="admin-sort-list" hidden>
+    <button type="button" data-value="created_desc">Новые</button>
+    <button type="button" data-value="created_asc">Старые</button>
+    <button type="button" data-value="name">По имени</button>
+    <button type="button" data-value="expires">По сроку</button>
+  </div>
+ </div>
+ <button id="admin-sync" class="admin-sync" title="Обновить даты из 3x-ui">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <polyline points="23 4 23 10 17 10"></polyline>
+    <polyline points="1 20 1 14 7 14"></polyline>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+  </svg>
+</button>
  </div>
  <div class="admin-filter-row">
  <button class="filter-btn active" data-filter="all">Все</button>
@@ -1749,7 +1933,32 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  btn.textContent = oldText; btn.disabled = false;
  if (r.success) { showToast(`Синхронизировано: ${r.updated}`); loadAdminUsers(); loadAdminStats(); }
  });
- document.getElementById('admin-sort').addEventListener('change', (e) => { ADMIN.sort = e.target.value; loadAdminUsers(); });
+ // Кастомный select сортировки
+ (function () {
+   const btn = document.getElementById('admin-sort-btn');
+   const list = document.getElementById('admin-sort-list');
+   if (!btn || !list) return;
+   const labels = { created_desc: 'Новые', created_asc: 'Старые', name: 'По имени', expires: 'По сроку' };
+   const close = () => { list.hidden = true; };
+   btn.addEventListener('click', (e) => {
+     e.stopPropagation();
+     list.hidden = !list.hidden;
+   });
+   list.querySelectorAll('button[data-value]').forEach(b => {
+     b.addEventListener('click', (e) => {
+       e.stopPropagation();
+       ADMIN.sort = b.dataset.value;
+       btn.childNodes[0].textContent = (labels[b.dataset.value] || b.textContent) + ' ';
+       list.querySelectorAll('button').forEach(x => x.classList.remove('is-active'));
+       b.classList.add('is-active');
+       close();
+       loadAdminUsers();
+     });
+   });
+   document.addEventListener('click', (e) => {
+     if (!list.hidden && !e.target.closest('#admin-sort')) close();
+   });
+ })();
  document.querySelectorAll('.filter-btn').forEach(btn => {
  btn.addEventListener('click', () => {
  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1789,8 +1998,11 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
 
 
- document.getElementById('stars-close').addEventListener('click', () => {
+ // Делегирование: ловит #stars-close даже если элемент появился позже скрипта
+ document.addEventListener('click', (e) => {
+ if (e.target && e.target.closest && e.target.closest('#stars-close')) {
  document.getElementById('stars-modal').classList.remove('show');
+ }
  });
 
  // Функция покупки звёзд
@@ -1814,19 +2026,49 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  showToast('Ошибка: ' + e.message); 
  }
  }
+
+function buyStarsCustom() {
+  const input = document.getElementById('custom-stars');
+  const n = parseInt(input.value, 10);
+  if (!n || n < 1 || n > 10000) {
+    showToast('Введите сумму от 1 до 10000');
+    input.focus();
+    return;
+  }
+  buyStars(n);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.closest && e.target.closest('#custom-stars-btn')) {
+    const row = document.getElementById('custom-stars-row');
+    if (row) {
+      row.style.display = 'flex';
+      const inp = document.getElementById('custom-stars');
+      if (inp) inp.focus();
+    }
+  }
+});
+
  </script>
 
  <!-- Модалка выбора суммы звёзд -->
  <div class="modal-backdrop" id="stars-modal">
  <div class="modal">
- <h2>Поддержать звёздами</h2>
+ <h2>⭐ Поддержать звёздами</h2>
  <p style="text-align:center;color:var(--hint-color);margin-bottom:16px;">Выберите сумму:</p>
- <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
- <button class="btn btn-primary" onclick="buyStars(10)" style="margin-bottom:0;"> 10</button>
- <button class="btn btn-primary" onclick="buyStars(50)" style="margin-bottom:0;"> 50</button>
- <button class="btn btn-primary" onclick="buyStars(100)" style="margin-bottom:0;"> 100</button>
- <button class="btn btn-primary" onclick="buyStars(500)" style="margin-bottom:0;"> 500</button>
- </div>
+ <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px;">
+ <button class="btn btn-link" onclick="buyStars(10)" style="margin-bottom:0;">⭐ 10 звёзд</button>
+ <button class="btn btn-link" onclick="buyStars(50)" style="margin-bottom:0;">⭐ 50 звёзд</button>
+ <button class="btn btn-link" onclick="buyStars(100)" style="margin-bottom:0;">⭐ 100 звёзд</button>
+ <button class="btn btn-link" onclick="buyStars(500)" style="margin-bottom:0;">⭐ 500 звёзд</button>
+</div>
+<div style="margin-bottom:16px;">
+  <button class="btn btn-secondary" id="custom-stars-btn" type="button" style="width:100%;margin-bottom:8px;">⭐ Своя сумма</button>
+  <div id="custom-stars-row" style="display:none;gap:8px;">
+    <input type="number" id="custom-stars" placeholder="Введите сумму (1–10000)" min="1" max="10000" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--border-color);background:rgba(22,27,34,0.6);color:var(--text-color);font-size:15px;font-family:inherit;">
+    <button class="btn btn-link" onclick="buyStarsCustom()" style="width:auto;padding:10px 16px;margin-bottom:0;">⭐ Отправить</button>
+  </div>
+</div>
  <button class="btn btn-secondary" id="stars-close">Отмена</button>
  </div>
  </div>
