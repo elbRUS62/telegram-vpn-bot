@@ -60,6 +60,20 @@ read -p "  Домен (например gb-skrepnet.duckdns.org): " WEB_DOMAIN
 read -p "  Порт (по умолчанию 8443): " WEB_PORT_INPUT
 WEB_PORT=${WEB_PORT_INPUT:-8443}
 
+# Добавляем MINIAPP_URL в .env (если нет)
+if ! grep -q "^MINIAPP_URL=" .env 2>/dev/null; then
+    echo "" >> .env
+    echo "# Mini App" >> .env
+    echo "MINIAPP_URL=https://${WEB_DOMAIN}:${WEB_PORT}/v3" >> .env
+    success "MINIAPP_URL добавлен в .env"
+fi
+
+# Добавляем WEB_SUBSCRIPTION_DAYS в .env (если нет)
+if ! grep -q "^WEB_SUBSCRIPTION_DAYS=" .env 2>/dev/null; then
+    echo "WEB_SUBSCRIPTION_DAYS=3" >> .env
+    success "WEB_SUBSCRIPTION_DAYS добавлен в .env"
+fi
+
 SSL_CERT_DIR="/root/cert/${WEB_DOMAIN}"
 SSL_CERT="${SSL_CERT_DIR}/fullchain.pem"
 SSL_KEY="${SSL_CERT_DIR}/privkey.pem"
@@ -111,7 +125,7 @@ header "Обновляю web_app.py (пути к сертификатам)"
 # Меняем пути SSL в web_app.py под текущий домен
 sed -i "s|SSL_CERT = '.*'|SSL_CERT = '${SSL_CERT}'|" web_app.py
 sed -i "s|SSL_KEY = '.*'|SSL_KEY = '${SSL_KEY}'|" web_app.py
-sed -i "s|app.run(host='0.0.0.0', port=[0-9]*|app.run(host='0.0.0.0', port=${WEB_PORT}|" web_app.py
+sed -i "s|app.run(host='0.0.0.0', port=[0-9]*|app.run(host='0.0.0.0', port=${WEB_PORT}|g" web_app.py
 success "web_app.py обновлён под $WEB_DOMAIN:$WEB_PORT"
 
 header "Устанавливаю зависимости (если нужно)"
