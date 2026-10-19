@@ -45,8 +45,8 @@ async def notify_next_in_queue(bot: Bot) -> bool:
         )
         logger.info(f"? Уведомлён {telegram_id} ({first_name}) из листа ожидания")
         return True
-    except Exception as e:
-        logger.error("? Не удалось уведомить {telegram_id}: ")
+    except Exception:
+        logger.exception("Не удалось уведомить %s из листа ожидания", telegram_id)
         return False
 
 

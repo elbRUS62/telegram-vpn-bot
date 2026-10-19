@@ -143,8 +143,8 @@ async def handle_web_link(message: Message, token: str):
                 parse_mode="HTML",
                 disable_notification=True
             )
-        except Exception as e:
-            logger.error("Ошибка отправки админу {admin_id}: ")
+        except Exception:
+            logger.exception("Ошибка отправки админу %s", admin_id)
 
     logger.info(f"✅ Веб-пользователь {tg_id} привязан к боту (token={token})")
 
@@ -217,8 +217,8 @@ async def bind_by_tg_id(message: Message, link):
                 parse_mode="HTML",
                 disable_notification=True
             )
-        except Exception as e:
-            logger.error("Ошибка отправки админу {admin_id}: ")
+        except Exception:
+            logger.exception("Ошибка отправки админу %s", admin_id)
 
     logger.info(f"✅ Автопривязка: TG={tg_id} → token={link['token']}")
 

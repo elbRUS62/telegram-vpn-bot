@@ -192,6 +192,6 @@ class XUIClient:
             if result.get("success"):
                 return result.get("obj", {})
             logger.warning(f"get_client_traffic: success=False для {email}: {result}")
-        except Exception as e:
-            logger.error("get_client_traffic error для {email}: ")
+        except Exception:
+            logger.exception("get_client_traffic error для %s", email)
         return {}

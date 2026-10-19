@@ -134,8 +134,8 @@ async def accept_terms(callback: CallbackQuery):
                     reply_markup=admin_approve_keyboard(callback.from_user.id),
                     parse_mode="HTML"
                 )
-            except Exception as e:
-                logger.error("❌ Ошибка уведомления админу {admin_id}: ")
+            except Exception:
+                logger.exception("Ошибка уведомления админу %s", admin_id)
 
         await callback.message.edit_text(
             "✅ Спасибо! Заявка отправлена.\n\n"
@@ -391,8 +391,8 @@ async def retry_email_callback(callback: CallbackQuery):
 
         logger.info(f"✅ Клиент {new_email} создан (subId={sub_id})")
 
-    except Exception as e:
-        logger.error("❌ Ошибка при создании {new_email}: ")
+    except Exception:
+        logger.exception("Ошибка при создании %s", new_email)
         await callback.answer("Ошибка", show_alert=True)
 
     await callback.answer()
@@ -603,8 +603,8 @@ async def use_existing_email_callback(callback: CallbackQuery):
 
         logger.info(f"✅ Использован существующий клиент {existing_email} (subId={sub_id})")
 
-    except Exception as e:
-        logger.error("❌ Ошибка при использовании {existing_email}: ")
+    except Exception:
+        logger.exception("Ошибка при использовании %s", existing_email)
         await callback.answer("Ошибка", show_alert=True)
 
     await callback.answer()

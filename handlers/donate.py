@@ -86,8 +86,8 @@ async def process_successful_payment(message: Message):
                 parse_mode="HTML",
                 disable_notification=True
             )
-        except Exception as e:
-            logger.error("Ошибка отправки админу {admin_id}: ")
+        except Exception:
+            logger.exception("Ошибка отправки админу %s", admin_id)
 
     await message.answer(
         f"⭐ <b>Спасибо за поддержку!</b>\n\n"

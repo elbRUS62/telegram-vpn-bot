@@ -103,11 +103,11 @@ class DonationAlertsCentrifugo:
                         disable_notification=True
                     )
                     logger.info(f"✅ Отправлено админу {admin_id}: message_id={result.message_id}")
-                except Exception as e:
-                    logger.error("❌ Ошибка отправки админу {admin_id}: {type(e).__name__}: ")
+                except Exception:
+                    logger.exception("Ошибка отправки админу %s", admin_id)
 
-        except Exception as e:
-            logger.error("❌ Ошибка обработки доната: {type(e).__name__}: ")
+        except Exception:
+            logger.exception("Ошибка обработки доната")
 
     async def start(self, bot: Bot, admin_ids: list):
         self.bot = bot
@@ -164,8 +164,8 @@ async def _notify_admins(bot: Bot, admin_ids: list, text: str):
                 parse_mode="HTML",
                 disable_notification=True
             )
-        except Exception as e:
-            logger.error("Не удалось уведомить админа {admin_id}: ")
+        except Exception:
+            logger.exception("Не удалось уведомить админа %s", admin_id)
 
 
 async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
