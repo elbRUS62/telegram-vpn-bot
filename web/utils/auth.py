@@ -35,5 +35,5 @@ def validate_init_data(init_data: str) -> dict | None:
             return None
         return json.loads(parsed.get("user", "{}"))
     except Exception as e:
-        logger.error(f"initData validation error: {e}")
+        logger.error("initData validation error: ")
         return None

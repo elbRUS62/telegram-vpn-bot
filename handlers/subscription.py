@@ -117,7 +117,7 @@ async def accept_terms(callback: CallbackQuery):
                     pass
 
         except Exception as e:
-            logger.error(f"❌ Ошибка при создании реферала: {e}")
+            logger.error("❌ Ошибка при создании реферала: ")
             await callback.message.edit_text(
                 f"❌ Ошибка. Обратись в поддержку: @{SUPPORT_USERNAME}"
             )
@@ -135,7 +135,7 @@ async def accept_terms(callback: CallbackQuery):
                     parse_mode="HTML"
                 )
             except Exception as e:
-                logger.error(f"❌ Ошибка уведомления админу {admin_id}: {e}")
+                logger.error("❌ Ошибка уведомления админу {admin_id}: ")
 
         await callback.message.edit_text(
             "✅ Спасибо! Заявка отправлена.\n\n"
@@ -280,7 +280,7 @@ async def show_qr_callback(callback: CallbackQuery):
         )
         await callback.answer()
     except Exception as e:
-        logger.error(f"Ошибка QR: {e}")
+        logger.error("Ошибка QR: ")
         await callback.answer("Ошибка при создании QR", show_alert=True)
 
 
@@ -308,7 +308,7 @@ async def renew_callback(callback: CallbackQuery):
                 await xui.update_comment(user["xui_email"], comment)
                 logger.info(f"✅ Comment обновлён: {comment}")
             except Exception as e:
-                logger.error(f"⚠️ Не удалось обновить comment: {e}")
+                logger.error("⚠️ Не удалось обновить comment: ")
 
         await renew_user(callback.from_user.id, new_expires=new_expiry)
         exp_date = new_expiry.strftime("%d.%m.%Y")
@@ -322,7 +322,7 @@ async def renew_callback(callback: CallbackQuery):
         )
 
     except Exception as e:
-        await callback.answer(f"Ошибка: {e}", show_alert=True)
+        await callback.answer("Ошибка", show_alert=True)
 
 
 # ============================================================
@@ -392,8 +392,8 @@ async def retry_email_callback(callback: CallbackQuery):
         logger.info(f"✅ Клиент {new_email} создан (subId={sub_id})")
 
     except Exception as e:
-        logger.error(f"❌ Ошибка при создании {new_email}: {e}")
-        await callback.answer(f"Ошибка: {e}", show_alert=True)
+        logger.error("❌ Ошибка при создании {new_email}: ")
+        await callback.answer("Ошибка", show_alert=True)
 
     await callback.answer()
 
@@ -526,7 +526,7 @@ async def manual_email_process(message: Message, state: FSMContext):
         logger.info(f"✅ Клиент {new_email} создан вручную (subId={sub_id})")
 
     except Exception as e:
-        await message.answer(f"❌ Ошибка: {e}")
+        await message.answer("❌ Ошибка")
 
     await state.clear()
 
@@ -604,8 +604,8 @@ async def use_existing_email_callback(callback: CallbackQuery):
         logger.info(f"✅ Использован существующий клиент {existing_email} (subId={sub_id})")
 
     except Exception as e:
-        logger.error(f"❌ Ошибка при использовании {existing_email}: {e}")
-        await callback.answer(f"Ошибка: {e}", show_alert=True)
+        logger.error("❌ Ошибка при использовании {existing_email}: ")
+        await callback.answer("Ошибка", show_alert=True)
 
     await callback.answer()
 
@@ -676,8 +676,8 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
         logger.info(f"✅ Одобрен из уведомления {user['xui_email']} | comment={comment}")
 
     except Exception as e:
-        logger.error(f"❌ Ошибка при одобрении {user['xui_email']}: {e}")
-        await bot.send_message(chat_id, f"❌ Ошибка: {e}")
+        logger.error(f"Ошибка при одобрении {user['xui_email']}")
+        await bot.send_message(chat_id, "❌ Ошибка")
 
 
 @router.callback_query(F.data.startswith("approve_skip_comment:"))
@@ -745,7 +745,7 @@ async def webapp_data_handler(message: Message):
     try:
         data = json.loads(message.web_app_data.data)
     except Exception as e:
-        logger.error(f"web_app_data parse error: {e}")
+        logger.error("web_app_data parse error: ")
         return
 
     action = data.get("action")

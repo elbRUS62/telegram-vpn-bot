@@ -154,7 +154,7 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 f"Спасибо, что помогаешь проекту расти ❤️"
             )
         except Exception as e:
-            logger.warning(f"Не удалось уведомить пригласившего {invited_by}: {e}")
+            logger.warning("Не удалось уведомить пригласившего {invited_by}: ")
 
     # Ветка 3: обычный deep-link (не ref, не link) — просто показать меню
     await show_main_menu(message)

@@ -721,7 +721,7 @@ async def bind_web_user_to_telegram(
             else:
                 logger.warning(f"⚠️ Не удалось обновить tgId для {link['xui_email']}")
     except Exception as e:
-        logger.warning(f"⚠️ Ошибка update_tg_id для {link['xui_email']}: {e}")
+        logger.warning(f"Ошибка update_tg_id для {link['xui_email']}")
 
     return telegram_id
 

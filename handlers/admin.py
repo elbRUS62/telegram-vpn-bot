@@ -600,7 +600,7 @@ async def user_action_callback(callback: CallbackQuery, state: FSMContext):
                 except Exception:
                     pass
         except Exception as e:
-            logger.error(f"Ошибка удаления из 3x-ui: {e}")
+            logger.error("Ошибка удаления из 3x-ui: ")
 
         await delete_user(telegram_id)
         await notify_next_in_queue(callback.bot)
@@ -709,7 +709,7 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
                 await xui.update_comment(user["xui_email"], comment)
                 logger.info(f"✅ Comment обновлён: {comment}")
             except Exception as e:
-                logger.error(f"⚠️ Не удалось обновить comment: {e}")
+                logger.error("⚠️ Не удалось обновить comment: ")
 
         await renew_user(telegram_id, new_expires=new_expiry)
 
@@ -739,9 +739,9 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
         logger.info(f"✅ Продлено {user['xui_email']} на {days} дней")
 
     except Exception as e:
-        logger.error(f"❌ Ошибка продления: {e}")
+        logger.error("❌ Ошибка продления: ")
         await message.answer(
-            f"❌ Ошибка: {e}",
+            f"❌ Ошибка",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")]
             ])
@@ -835,8 +835,8 @@ async def _do_approve(bot, chat_id: int, telegram_id: int, custom_comment: str =
         logger.info(f"✅ Одобрен {user['xui_email']} | comment={comment}")
 
     except Exception as e:
-        logger.error(f"❌ Ошибка при одобрении {user['xui_email']}: {e}")
-        await bot.send_message(chat_id, f"❌ Ошибка: {e}")
+        logger.error(f"Ошибка при одобрении {user['xui_email']}")
+        await bot.send_message(chat_id, "❌ Ошибка")
 
 
 @router.message(AdminStates.waiting_comment)

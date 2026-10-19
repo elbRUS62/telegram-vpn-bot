@@ -33,7 +33,7 @@ async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, su
             try:
                 await bot.send_message(admin_id, text, disable_notification=True)
             except Exception as e:
-                logger.error(f"Ошибка отправки админу {admin_id}: {e}")
+                logger.error("Ошибка отправки админу {admin_id}: ")
     finally:
         await bot.session.close()
 
@@ -107,7 +107,7 @@ def invite_status(token):
                     'message': 'Вы уже получили подписку по этой ссылке'
                 }
         except Exception as e:
-            return {'used': True, 'error': str(e)}
+            return {'used': True, 'error': 'Внутренняя ошибка сервера'}
     
     result = asyncio.run(check())
     if 'error' in result and not result.get('used'):
@@ -162,7 +162,7 @@ def activate(token):
                         'message': 'Вы уже получили подписку по этой ссылке'
                     }
             except Exception as e:
-                return {'error': f'Ошибка: {e}', 'used': True}
+                return {'error': 'Внутренняя ошибка сервера', 'used': True}
 
         if invite["friend_username"]:
             name = invite["friend_username"]
@@ -191,8 +191,8 @@ def activate(token):
                 )
                 sub_url = xui.build_sub_url(sub_id)
         except Exception as e:
-            logger.error(f"Ошибка создания клиента: {e}")
-            return {'error': f'Ошибка создания подписки: {e}'}
+            logger.error("Ошибка создания клиента: ")
+            return {'error': 'Внутренняя ошибка сервера'}
 
         await use_invite_link(token, xui_email, sub_id)
 
@@ -209,7 +209,7 @@ def activate(token):
                     invite_type="no_tg",
                 )
         except Exception as e:
-            logger.error(f"Ошибка засчёта приглашения: {e}")
+            logger.error("Ошибка засчёта приглашения: ")
 
         try:
             await notify_admin_new_web_user(
@@ -219,7 +219,7 @@ def activate(token):
                 sub_url=sub_url
             )
         except Exception as e:
-            logger.error(f"Ошибка уведомления: {e}")
+            logger.error("Ошибка уведомления: ")
 
         import base64
         import io

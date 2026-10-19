@@ -11,5 +11,5 @@ def run_async(coro):
     try:
         return asyncio.run(coro)
     except Exception as e:
-        logger.error(f"Async error: {e}")
-        return {'error': str(e)}
+        logger.error("Async error: ")
+        return {'error': 'Внутренняя ошибка сервера'}

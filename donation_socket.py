@@ -82,7 +82,7 @@ class DonationAlertsCentrifugo:
                 )
                 logger.info(f"✅ Донат записан в БД: {username} - {amount} {currency}")
             except Exception as e:
-                logger.error(f"❌ Ошибка записи доната в БД: {e}")
+                logger.error("❌ Ошибка записи доната в БД: ")
 
             text = (
                 f"💰 <b>Новый донат!</b>\n"
@@ -104,10 +104,10 @@ class DonationAlertsCentrifugo:
                     )
                     logger.info(f"✅ Отправлено админу {admin_id}: message_id={result.message_id}")
                 except Exception as e:
-                    logger.error(f"❌ Ошибка отправки админу {admin_id}: {type(e).__name__}: {e}")
+                    logger.error("❌ Ошибка отправки админу {admin_id}: {type(e).__name__}: ")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка обработки доната: {type(e).__name__}: {e}")
+            logger.error("❌ Ошибка обработки доната: {type(e).__name__}: ")
 
     async def start(self, bot: Bot, admin_ids: list):
         self.bot = bot
@@ -151,7 +151,7 @@ class DonationAlertsCentrifugo:
                         await self._handle_donation(donation)
 
                 except Exception as e:
-                    logger.error(f"Ошибка обработки сообщения: {e}")
+                    logger.error("Ошибка обработки сообщения: ")
 
 
 async def _notify_admins(bot: Bot, admin_ids: list, text: str):
@@ -165,7 +165,7 @@ async def _notify_admins(bot: Bot, admin_ids: list, text: str):
                 disable_notification=True
             )
         except Exception as e:
-            logger.error(f"Не удалось уведомить админа {admin_id}: {e}")
+            logger.error("Не удалось уведомить админа {admin_id}: ")
 
 
 async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
@@ -200,7 +200,7 @@ async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
             first_attempt = False
 
         except Exception as e:
-            err_msg = f"{type(e).__name__}: {e}"
+            err_msg = "Внутренняя ошибка"
             logger.error(f"❌ Ошибка Centrifugo: {err_msg}")
 
             if was_connected:

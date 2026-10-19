@@ -100,7 +100,7 @@ async def check_subscriptions(bot: Bot):
             try:
                 await bot.send_message(
                     ADMIN_ID,
-                    f"⚠️ Ошибка напоминания для {user['xui_email']}: {e}"
+                    f"Ошибка напоминания для {user['xui_email']}"
                 )
             except Exception:
                 pass
@@ -125,7 +125,7 @@ async def cleanup_inactive_users(bot: Bot):
             await delete_user(user["telegram_id"])
             deleted += 1
         except Exception as e:
-            logger.error(f"Ошибка удаления {user['xui_email']}: {e}")
+            logger.error(f"Ошибка удаления {user['xui_email']}")
 
     if deleted:
         try:
@@ -163,7 +163,7 @@ async def cleanup_abandoned_web_invites(bot: Bot):
                 try:
                     await xui.delete_client(link["xui_email"])
                 except Exception as e:
-                    logger.warning(f"Не удалось удалить клиента {link['xui_email']}: {e}")
+                    logger.warning(f"Не удалось удалить клиента {link['xui_email']}")
 
             # Удаляем запись из invite_links
             async with aiosqlite.connect(DB_PATH) as db:
@@ -176,7 +176,7 @@ async def cleanup_abandoned_web_invites(bot: Bot):
             deleted += 1
             logger.info(f"🗑 Удалена брошенная веб-выдача: {link['xui_email']}")
         except Exception as e:
-            logger.error(f"❌ Ошибка удаления {link['xui_email']}: {e}")
+            logger.error(f"Ошибка удаления {link['xui_email']}")
 
     if deleted:
         try:

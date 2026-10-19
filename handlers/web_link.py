@@ -125,7 +125,7 @@ async def handle_web_link(message: Message, token: str):
             disable_notification=True,
         )
     except Exception as e:
-        logger.warning(f"Не удалось уведомить пригласившего {inviter_id}: {e}")
+        logger.warning("Не удалось уведомить пригласившего {inviter_id}: ")
 
     # 7. Уведомить админов
     admin_text = (
@@ -144,7 +144,7 @@ async def handle_web_link(message: Message, token: str):
                 disable_notification=True
             )
         except Exception as e:
-            logger.error(f"Ошибка отправки админу {admin_id}: {e}")
+            logger.error("Ошибка отправки админу {admin_id}: ")
 
     logger.info(f"✅ Веб-пользователь {tg_id} привязан к боту (token={token})")
 
@@ -199,7 +199,7 @@ async def bind_by_tg_id(message: Message, link):
             disable_notification=True,
         )
     except Exception as e:
-        logger.warning(f"Не удалось уведомить пригласившего {inviter_id}: {e}")
+        logger.warning("Не удалось уведомить пригласившего {inviter_id}: ")
 
     # Уведомить админов
     admin_text = (
@@ -218,7 +218,7 @@ async def bind_by_tg_id(message: Message, link):
                 disable_notification=True
             )
         except Exception as e:
-            logger.error(f"Ошибка отправки админу {admin_id}: {e}")
+            logger.error("Ошибка отправки админу {admin_id}: ")
 
     logger.info(f"✅ Автопривязка: TG={tg_id} → token={link['token']}")
 
