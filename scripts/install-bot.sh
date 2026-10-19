@@ -117,10 +117,23 @@ SUBSCRIPTION_DAYS=${SUBSCRIPTION_DAYS_INPUT:-30}
 read -p "  MAX_USERS (максимум пользователей, по умолчанию 100): " MAX_USERS_INPUT
 MAX_USERS=${MAX_USERS_INPUT:-100}
 
+# Сохраняем значения из существующего .env (если переустановка)
+OLD_MINIAPP_URL=""
+OLD_WEB_SUBSCRIPTION_DAYS=""
+OLD_DONATION_ALERTS_TOKEN=""
+if [ -f .env ]; then
+    OLD_MINIAPP_URL=$(grep '^MINIAPP_URL=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+    OLD_WEB_SUBSCRIPTION_DAYS=$(grep '^WEB_SUBSCRIPTION_DAYS=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+    OLD_DONATION_ALERTS_TOKEN=$(grep '^DONATION_ALERTS_TOKEN=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+fi
+
 header "Mini App (WebApp)"
-read -p "  MINIAPP_URL (например https://gb-skrepnet.duckdns.org:8443/v3): " MINIAPP_URL
-read -p "  WEB_SUBSCRIPTION_DAYS (срок для веб-выдачи, по умолчанию 3): " WEB_DAYS_INPUT
-WEB_SUBSCRIPTION_DAYS=${WEB_DAYS_INPUT:-3}
+read -p "  MINIAPP_URL (по умолчанию ${OLD_MINIAPP_URL:-https://gb-skrepnet.duckdns.org:8443/v3}): " MINIAPP_URL_INPUT
+MINIAPP_URL=${MINIAPP_URL_INPUT:-${OLD_MINIAPP_URL:-https://gb-skrepnet.duckdns.org:8443/v3}}
+read -p "  WEB_SUBSCRIPTION_DAYS (по умолчанию ${OLD_WEB_SUBSCRIPTION_DAYS:-3}): " WEB_DAYS_INPUT
+WEB_SUBSCRIPTION_DAYS=${WEB_DAYS_INPUT:-${OLD_WEB_SUBSCRIPTION_DAYS:-3}}
+read -p "  DONATION_ALERTS_TOKEN (Enter — оставить текущий): " DONATION_TOKEN_INPUT
+DONATION_ALERTS_TOKEN=${DONATION_TOKEN_INPUT:-$OLD_DONATION_ALERTS_TOKEN}
 
 
 read -p "  SERVER_COST (стоимость сервера в ₽/мес, например 150): " SERVER_COST
@@ -162,7 +175,7 @@ WEB_SUBSCRIPTION_DAYS=$WEB_SUBSCRIPTION_DAYS
 DONATE_URL=$DONATE_URL
 DONATE_TEXT=$DONATE_TEXT
 SERVER_COST=$SERVER_COST
-DONATION_ALERTS_TOKEN=
+DONATION_ALERTS_TOKEN=$DONATION_ALERTS_TOKEN
 
 # Database
 DB_PATH=skrepnet.db
