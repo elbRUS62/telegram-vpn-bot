@@ -114,10 +114,18 @@ read -p "  LIMIT_IP (по умолчанию 3): " LIMIT_IP_INPUT
 LIMIT_IP=${LIMIT_IP_INPUT:-3}
 read -p "  SUBSCRIPTION_DAYS (по умолчанию 30): " SUBSCRIPTION_DAYS_INPUT
 SUBSCRIPTION_DAYS=${SUBSCRIPTION_DAYS_INPUT:-30}
+read -p "  MAX_USERS (максимум пользователей, по умолчанию 100): " MAX_USERS_INPUT
+MAX_USERS=${MAX_USERS_INPUT:-100}
 
-header "Донат"
-read -p "  DONATE_URL (ссылка на DonationAlerts): " DONATE_URL
-read -p "  DONATE_TEXT (текст плашки): " DONATE_TEXT
+header "Mini App (WebApp)"
+read -p "  MINIAPP_URL (например https://gb-skrepnet.duckdns.org:8443/v3): " MINIAPP_URL
+read -p "  WEB_SUBSCRIPTION_DAYS (срок для веб-выдачи, по умолчанию 3): " WEB_DAYS_INPUT
+WEB_SUBSCRIPTION_DAYS=${WEB_DAYS_INPUT:-3}
+
+
+read -p "  SERVER_COST (стоимость сервера в ₽/мес, например 150): " SERVER_COST
+
+
 
 header "Создаю .env"
 
@@ -144,14 +152,23 @@ SUB_PATH=$SUB_PATH
 # Limits
 LIMIT_IP=$LIMIT_IP
 SUBSCRIPTION_DAYS=$SUBSCRIPTION_DAYS
+MAX_USERS=$MAX_USERS
+
+# Mini App
+MINIAPP_URL=$MINIAPP_URL
+WEB_SUBSCRIPTION_DAYS=$WEB_SUBSCRIPTION_DAYS
 
 # Donate
 DONATE_URL=$DONATE_URL
 DONATE_TEXT=$DONATE_TEXT
+SERVER_COST=$SERVER_COST
 DONATION_ALERTS_TOKEN=
 
 # Database
 DB_PATH=skrepnet.db
+
+# Version
+BOT_VERSION=3.2.10
 EOF
 
 chmod 600 .env
