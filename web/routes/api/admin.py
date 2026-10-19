@@ -91,7 +91,7 @@ def stats():
         return jsonify(run_async(get_data()))
     except Exception as e:
         logger.exception("admin/stats failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
 # ---------------- users ----------------
@@ -134,7 +134,7 @@ def sync_xui():
         r = run_async(do())
     except Exception as e:
         logger.exception("admin/sync failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
     return jsonify(r)
 
 
@@ -199,7 +199,7 @@ def users_list():
         return jsonify(run_async(get_data()))
     except Exception as e:
         logger.exception("admin/users failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
 @admin_api.route("/user", methods=["POST"])
@@ -287,7 +287,7 @@ def requests_list():
         return jsonify(run_async(get_data()))
     except Exception as e:
         logger.exception("admin/requests failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
 # ---------------- actions ----------------
@@ -322,7 +322,7 @@ def approve():
                 sub_url = xui.build_sub_url(sub_id)
         except Exception as e:
             logger.error(f"approve failed for {tg_id}: {e}")
-            return {"error": str(e)}
+            return {"error": "Внутренняя ошибка сервера"}
 
         await _audit(request.admin_user["id"], "approve", tg_id, comment)
         return {"success": True, "sub_url": sub_url}
@@ -331,7 +331,7 @@ def approve():
         r = run_async(do())
     except Exception as e:
         logger.exception("admin/approve failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
     if "error" in r:
         return jsonify(r), 400
     return jsonify(r)
@@ -353,7 +353,7 @@ def reject():
         return jsonify(run_async(do()))
     except Exception as e:
         logger.exception("admin/reject failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
 @admin_api.route("/extend", methods=["POST"])
@@ -401,7 +401,7 @@ def extend():
         r = run_async(do())
     except Exception as e:
         logger.exception("admin/extend failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
     if "error" in r:
         return jsonify(r), 400
     return jsonify(r)
@@ -431,7 +431,7 @@ def delete():
         return jsonify(run_async(do()))
     except Exception as e:
         logger.exception("admin/delete failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
 # ---------------- block / unblock ----------------
@@ -479,7 +479,7 @@ def block():
         return jsonify(r)
     except Exception as e:
         logger.exception("admin/block failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
 @admin_api.route("/unblock", methods=["POST"])
@@ -525,4 +525,4 @@ def unblock():
         return jsonify(r)
     except Exception as e:
         logger.exception("admin/unblock failed")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
