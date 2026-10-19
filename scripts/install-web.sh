@@ -132,12 +132,18 @@ else
     fi
 fi
 
-header "Обновляю web_app.py (пути к сертификатам)"
-# Меняем пути SSL в web_app.py под текущий домен
-sed -i "s|SSL_CERT = '.*'|SSL_CERT = '${SSL_CERT}'|" web_app.py
-sed -i "s|SSL_KEY = '.*'|SSL_KEY = '${SSL_KEY}'|" web_app.py
-sed -i "s|app.run(host='0.0.0.0', port=[0-9]*|app.run(host='0.0.0.0', port=${WEB_PORT}|g" web_app.py
-success "web_app.py обновлён под $WEB_DOMAIN:$WEB_PORT"
+header "Прописываю SSL/port в .env"
+# SSL_CERT / SSL_KEY / WEB_PORT — идемпотентно (как MINIAPP_URL выше)
+for _var in SSL_CERT SSL_KEY WEB_PORT; do
+    if ! grep -q "^${_var}=" .env 2>/dev/null; then
+        case $_var in
+            SSL_CERT) echo "SSL_CERT=${SSL_CERT}" >> .env ;;
+            SSL_KEY)  echo "SSL_KEY=${SSL_KEY}"   >> .env ;;
+            WEB_PORT) echo "WEB_PORT=${WEB_PORT}" >> .env ;;
+        esac
+    fi
+done
+success "SSL/port прописаны в .env (web_app.py не трогаем)"
 
 header "Устанавливаю зависимости (если нужно)"
 pip install -r requirements.txt -q

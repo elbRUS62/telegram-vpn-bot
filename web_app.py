@@ -29,11 +29,10 @@ app.register_blueprint(admin_api)
 if __name__ == '__main__':
     asyncio.run(init_db())
 
-    SSL_CERT = '/root/cert/gb-skrepnet.duckdns.org/fullchain.pem'
-    SSL_KEY = '/root/cert/gb-skrepnet.duckdns.org/privkey.pem'
+    from config import SSL_CERT, SSL_KEY, WEB_PORT
 
     if os.path.exists(SSL_CERT) and os.path.exists(SSL_KEY):
-        app.run(host='0.0.0.0', port=8443, ssl_context=(SSL_CERT, SSL_KEY))
+        app.run(host='0.0.0.0', port=WEB_PORT, ssl_context=(SSL_CERT, SSL_KEY))
     else:
         logger.warning("SSL сертификаты не найдены — запуск без HTTPS")
-        app.run(host='0.0.0.0', port=8443)
+        app.run(host='0.0.0.0', port=WEB_PORT)

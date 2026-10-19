@@ -44,6 +44,11 @@ MAX_USERS = int(os.getenv("MAX_USERS", "100"))
 # Mini App
 MINIAPP_URL = os.getenv("MINIAPP_URL", "")
 
+# Web (SSL/port)
+SSL_CERT = os.getenv("SSL_CERT", "/root/cert/gb-skrepnet.duckdns.org/fullchain.pem")
+SSL_KEY  = os.getenv("SSL_KEY",  "/root/cert/gb-skrepnet.duckdns.org/privkey.pem")
+WEB_PORT = int(os.getenv("WEB_PORT", "8443"))
+
 # Database
 DB_PATH = os.getenv("DB_PATH", "skrepnet.db")
 
