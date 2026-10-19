@@ -103,11 +103,11 @@
 
 | Главное меню | Моя подписка |
 |:---:|:---:|
-| ![Главное меню](screenshots/main.png) | ![Моя подписка](screenshots/subscription.png) |
+| [![Главное меню](screenshots/thumbs/main.png)](screenshots/main.png) | [![Моя подписка](screenshots/thumbs/subscription.png)](screenshots/subscription.png) |
 
 | Поддержать проект | Админ-панель |
 |:---:|:---:|
-| ![Поддержать проект](screenshots/donate.png) | ![Админ-панель](screenshots/admin.png) |
+| [![Поддержать проект](screenshots/thumbs/donate.png)](screenshots/donate.png) | [![Админ-панель](screenshots/thumbs/admin.png)](screenshots/admin.png) |
 
 ---
 
