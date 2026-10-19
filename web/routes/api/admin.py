@@ -90,7 +90,7 @@ def stats():
     try:
         return jsonify(run_async(get_data()))
     except Exception as e:
-        logger.exception("admin/stats failed")
+        logger.error("admin/stats failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
@@ -133,7 +133,7 @@ def sync_xui():
     try:
         r = run_async(do())
     except Exception as e:
-        logger.exception("admin/sync failed")
+        logger.error("admin/sync failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
     return jsonify(r)
 
@@ -198,7 +198,7 @@ def users_list():
     try:
         return jsonify(run_async(get_data()))
     except Exception as e:
-        logger.exception("admin/users failed")
+        logger.error("admin/users failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
@@ -286,7 +286,7 @@ def requests_list():
     try:
         return jsonify(run_async(get_data()))
     except Exception as e:
-        logger.exception("admin/requests failed")
+        logger.error("admin/requests failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
@@ -330,7 +330,7 @@ def approve():
     try:
         r = run_async(do())
     except Exception as e:
-        logger.exception("admin/approve failed")
+        logger.error("admin/approve failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
     if "error" in r:
         return jsonify(r), 400
@@ -352,7 +352,7 @@ def reject():
     try:
         return jsonify(run_async(do()))
     except Exception as e:
-        logger.exception("admin/reject failed")
+        logger.error("admin/reject failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
@@ -400,7 +400,7 @@ def extend():
     try:
         r = run_async(do())
     except Exception as e:
-        logger.exception("admin/extend failed")
+        logger.error("admin/extend failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
     if "error" in r:
         return jsonify(r), 400
@@ -430,7 +430,7 @@ def delete():
     try:
         return jsonify(run_async(do()))
     except Exception as e:
-        logger.exception("admin/delete failed")
+        logger.error("admin/delete failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
@@ -478,7 +478,7 @@ def block():
             return jsonify(r), 400
         return jsonify(r)
     except Exception as e:
-        logger.exception("admin/block failed")
+        logger.error("admin/block failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 
@@ -524,5 +524,5 @@ def unblock():
             return jsonify(r), 400
         return jsonify(r)
     except Exception as e:
-        logger.exception("admin/unblock failed")
+        logger.error("admin/unblock failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
