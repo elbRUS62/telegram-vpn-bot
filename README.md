@@ -99,6 +99,18 @@
 - 🔧 Systemd-автозапуск (Restart=always)
 - 🔌 DonationAlerts WebSocket через Centrifugo (экспоненциальный ретрай + уведомления админам)
 
+## 📸 Скриншоты
+
+| Главное меню | Моя подписка |
+|:---:|:---:|
+| ![Главное меню](screenshots/main.png) | ![Моя подписка](screenshots/subscription.png) |
+
+| Поддержать проект | Админ-панель |
+|:---:|:---:|
+| ![Поддержать проект](screenshots/donate.png) | ![Админ-панель](screenshots/admin.png) |
+
+---
+
 ## 🏗️ Архитектура
 
 - **Бот** работает на зарубежном VPS (прямой доступ к Telegram API)
