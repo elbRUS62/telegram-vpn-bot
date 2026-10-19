@@ -165,8 +165,8 @@ def subscription():
                 'username': user.get('username', ''),
             }
         except Exception as e:
-            logger.error(f"Subscription error: {e}")
-            return {'error': f'Ошибка: {e}'}
+            logger.error("Subscription error")
+            return {'error': 'Внутренняя ошибка сервера'}
 
     result = run_async(get_data())
     if 'error' in result:
@@ -236,8 +236,8 @@ def renew():
                 'days_added': 30,
             }
         except Exception as e:
-            logger.error(f"Renew error: {e}")
-            return {'error': f'Ошибка: {e}'}
+            logger.error("Renew error")
+            return {'error': 'Внутренняя ошибка сервера'}
 
     result = run_async(do_renew())
     if 'error' in result:
@@ -534,8 +534,8 @@ def create_invoice():
             return jsonify({'error': 'Не удалось создать инвойс'}), 500
         return jsonify({'invoice_link': link})
     except Exception as e:
-        logger.error(f"Invoice error: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error("Invoice error")
+        return jsonify({'error': 'Внутренняя ошибка сервера'}), 500
 
 
 # ============================================================
@@ -649,7 +649,7 @@ def accept_terms():
                     
                     return {'success': True, 'type': 'auto_approved'}
             except Exception as e:
-                return {'error': f'Ошибка создания подписки: {e}'}
+                return {'error': 'Ошибка создания подписки'}
         else:
             # Отправляем уведомление админам
             from aiogram import Bot
@@ -674,7 +674,7 @@ def accept_terms():
                         )
                         logger.info(f"✅ Уведомление отправлено админу {admin_id}")
                     except Exception as e:
-                        logger.error(f"❌ Ошибка отправки админу {admin_id}: {e}")
+                        logger.error(f"Ошибка отправки админу {admin_id}")
             finally:
                 await bot.session.close()
             
