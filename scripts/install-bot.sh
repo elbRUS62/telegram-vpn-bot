@@ -186,7 +186,9 @@ EOF
 
 chmod 600 .env
 success ".env создан (права 600)"
-warning "Не забудь вписать DONATION_ALERTS_TOKEN в .env (сейчас пустой)"
+if ! grep -qE '^DONATION_ALERTS_TOKEN=.+' .env 2>/dev/null; then
+    warning "DONATION_ALERTS_TOKEN пуст — впиши в .env, если используешь DonationAlerts"
+fi
 
 header "Устанавливаю зависимости"
 

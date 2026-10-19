@@ -185,7 +185,7 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable skrepnet-web
+systemctl enable skrepnet-web.service
 systemctl restart skrepnet-web
 success "Сервис skrepnet-web настроен и запущен"
 
