@@ -2,23 +2,196 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkrepNet - Подписка</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>SkrepNet — Подписка</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --secondary-bg: #161b22;
+            --text-color: #c9d1d9;
+            --hint-color: #8b949e;
+            --link-color: #58a6ff;
+            --button-color: #238636;
+            --button-text: #ffffff;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: var(--text-color);
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .subtitle {
+            color: var(--hint-color);
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .terms {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .terms p {
+            color: var(--text-color);
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .terms ul {
+            list-style: none;
+            padding: 0;
+        }
+        .terms li {
+            margin-bottom: 8px;
+        }
+        .terms a {
+            color: var(--link-color);
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .terms a:hover {
+            text-decoration: underline;
+        }
+        .checkbox-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+        .checkbox-wrap input {
+            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn-primary { background-color: var(--button-color); color: var(--button-text); box-shadow: 0 4px 12px rgba(35, 134, 54, 0.2); }
+        .btn-secondary { background-color: var(--secondary-bg); color: var(--text-color); border: 1px solid var(--border-color); }
+        .btn:disabled { background-color: var(--hint-color); opacity: 0.5; cursor: not-allowed; }
+        .result { margin-top: 20px; font-size: 14px; line-height: 1.6; }
+        .result.error { color: #f85149; }
+        .result.success { color: #3fb950; }
+        .qr-wrap { text-align: center; margin: 16px 0; }
+        .qr-wrap img { width: 100%; max-width: 260px; background: white; padding: 16px; border-radius: 16px; }
+        .link-box { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin: 12px 0; word-break: break-all; font-family: monospace; font-size: 13px; color: var(--link-color); }
+        
+        /* Модалка */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-backdrop.show { display: flex; }
+        .modal {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .modal h2 { color: var(--text-color); margin-bottom: 16px; font-size: 20px; font-weight: 600; text-align: center; }
+        #docs-content { line-height: 1.6; font-size: 15px; color: var(--hint-color); overflow-y: auto; max-height: 60vh; padding-right: 8px; }
+        #docs-content h2 { color: var(--text-color); font-size: 16px; margin-top: 16px; margin-bottom: 8px; text-align: left; }
+        #docs-content p, #docs-content ul { margin-bottom: 12px; }
+        #docs-content ul { padding-left: 20px; }
+
+        .link-box.clickable {
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+            position: relative;
+        }
+        .link-box.clickable:hover {
+            border-color: var(--link-color);
+        }
+        .link-box.clickable:active {
+            background-color: var(--secondary-bg);
+        }
+
+        .link-box .copied-toast {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--button-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .link-box .copied-toast.show {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <div class="card">
         <h1>SkrepNet</h1>
-        <p class="subtitle">
-            Бесплатный VPN на 30 дней, с возможностью продления.
-        </p>
+        <p class="subtitle">Бесплатный VPN на 3 дня, с возможностью продления.</p>
 
         <div class="terms">
             <p>Для получения подписки ознакомься с документами:</p>
             <ul>
-                <li><a href="https://telegra.ph/Pravila-ispolzovaniya-10-09" target="_blank">Правила использования</a></li>
-                <li><a href="https://telegra.ph/Politika-konfidencialnosti-10-09-83" target="_blank">Политика конфиденциальности</a></li>
-                <li><a href="https://telegra.ph/Polzovatelskoe-soglashenie-10-09-52" target="_blank">Пользовательское соглашение</a></li>
+                <li><a onclick="openDoc('rules'); return false;">Правила использования</a></li>
+                <li><a onclick="openDoc('privacy'); return false;">Политика конфиденциальности</a></li>
+                <li><a onclick="openDoc('terms'); return false;">Пользовательское соглашение</a></li>
             </ul>
         </div>
 
@@ -27,15 +200,60 @@
             <span>Я прочитал и принимаю все условия</span>
         </label>
 
-        <button id="activateBtn" onclick="activate()" disabled>
-            Получить подписку
-        </button>
+        <button class="btn btn-primary" id="activateBtn" onclick="activate()" disabled>Получить подписку</button>
 
         <div class="result" id="result"></div>
     </div>
 
+    <!-- Модалка для документов -->
+    <div class="modal-backdrop" id="docs-modal">
+        <div class="modal">
+            <h2 id="docs-title">Документ</h2>
+            <div id="docs-content"></div>
+            <button class="btn btn-secondary" id="docs-close" style="margin-top:16px;">Закрыть</button>
+        </div>
+    </div>
+
     <script>
         const token = "{{ token }}";
+
+        // Проверяем при загрузке, использована ли ссылка
+        (async function checkStatus() {
+            try {
+                const res = await fetch(`/api/invite/${token}/status`);
+                const data = await res.json();
+                
+                if (data.used) {
+                    const result = document.getElementById('result');
+                    const btn = document.getElementById('activateBtn');
+                    const checkbox = document.querySelector('.checkbox-wrap');
+                    
+                    if (data.error) {
+                        result.className = 'result error';
+                        result.textContent = data.error;
+                    } else {
+                        result.innerHTML = `
+                            <div style="text-align:center;">
+                                <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка уже получена</div>
+                                <div class="qr-wrap">
+                                    <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
+                                    <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
+                                </div>
+                                <div class="link-box clickable" onclick="copyLink('${data.sub_url}')">${data.sub_url}</div>
+                                <div style="background:linear-gradient(135deg,#238636 0%,#2ea043 100%);border-radius:12px;padding:20px;margin-top:20px;">
+                                    <div style="font-size:17px;font-weight:700;color:white;margin-bottom:12px;">Продление подписки в боте</div>
+                                    <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:white;color:#238636;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть бота в Telegram</a>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    btn.style.display = 'none';
+                    checkbox.style.display = 'none';
+                }
+            } catch (e) {
+                console.warn('Ошибка проверки статуса:', e);
+            }
+        })();
 
         function toggleButton() {
             document.getElementById('activateBtn').disabled = !document.getElementById('agree').checked;
@@ -71,40 +289,15 @@
                 } else {
                     result.innerHTML = `
                         <div style="text-align:center;">
-                            <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">
-                                Подписка активирована!
+                            <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка активирована!</div>
+                            <div class="qr-wrap">
+                                <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
+                                <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
                             </div>
-
-                            <div style="background:linear-gradient(135deg,#238636 0%,#2ea043 100%);border-radius:12px;padding:20px;margin-bottom:24px;">
-                                <div style="font-size:17px;font-weight:700;color:white;margin-bottom:12px;">
-                                    Продление и управление подпиской через бота
-                                </div>
-                                <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:white;color:#238636;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">
-                                    Открыть бота в Telegram
-                                </a>
-                            </div>
-
-                            <div style="background:#0d1117;border:2px solid #3fb950;border-radius:12px;padding:20px;margin-bottom:20px;">
-                                <div style="font-size:15px;font-weight:600;color:#c9d1d9;margin-bottom:12px;">
-                                    Отсканируй QR-код в Happ
-                                </div>
-                                <img src="data:image/png;base64,${data.qr_base64}"
-                                     style="width:100%;max-width:280px;height:auto;background:white;padding:12px;border-radius:8px;display:block;margin:0 auto;">
-                            </div>
-
-                            <div style="background:#0d1117;border-radius:8px;padding:16px;margin-bottom:20px;">
-                                <div style="font-size:14px;color:#8b949e;margin-bottom:8px;">Ссылка на подписку:</div>
-                                <code style="display:block;color:#58a6ff;font-size:12px;word-break:break-all;padding:10px;background:#161b22;border-radius:6px;border:1px solid #30363d;">${data.sub_url}</code>
-                            </div>
-
-                            <div style="background:linear-gradient(135deg,#1f6feb 0%,#388bfd 100%);border-radius:12px;padding:18px;text-align:left;">
-                                <div style="font-size:16px;font-weight:700;color:white;margin-bottom:10px;">Как подключиться:</div>
-                                <ol style="margin:0;padding-left:20px;color:white;font-size:14px;line-height:1.8;">
-                                    <li>Скачай <b>Happ</b> (App Store / Google Play / happ.su)</li>
-                                    <li>Открой Happ → «+» → «Добавить подписку»</li>
-                                    <li>Вставь ссылку или отсканируй QR</li>
-                                    <li>Выбери сервер → подключись</li>
-                                </ol>
+                            <div class="link-box clickable" onclick="copyLink('${data.sub_url}')">${data.sub_url}</div>
+                            <div style="background:linear-gradient(135deg,#238636 0%,#2ea043 100%);border-radius:12px;padding:20px;margin-top:20px;">
+                                <div style="font-size:17px;font-weight:700;color:white;margin-bottom:12px;">Продление подписки в боте</div>
+                                <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:white;color:#238636;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть бота в Telegram</a>
                             </div>
                         </div>
                     `;
@@ -117,6 +310,158 @@
                 btn.disabled = false;
                 btn.textContent = 'Попробовать снова';
             }
+        }
+
+        // Документы
+        const DOCS = {
+            rules: {
+                title: 'Правила использования',
+                content: `
+                    <h2>1. Общие положения</h2>
+                    <p>Сервис предоставляется <strong>бесплатно</strong> для личного некоммерческого использования.</p>
+                    <p>Используя Сервис, вы соглашаетесь с настоящими Правилами.</p>
+                    <p>Сервис не является средством для обхода закона.</p>
+                    <h2>2. Что запрещено</h2>
+                    <ul>
+                        <li>Использование Сервиса в противоправных целях.</li>
+                        <li>Распространение вредоносного ПО, спама, CSAM, материалов экстремистского характера.</li>
+                        <li>Попытки взлома, DDoS-атаки, сканирование чужих сетей.</li>
+                        <li>Передача доступа третьим лицам (кроме личных устройств).</li>
+                        <li>Использование более 3 IP-адресов одновременно.</li>
+                    </ul>
+                    <h2>3. Ограничения</h2>
+                    <ul>
+                        <li>Один пользователь — одна подписка.</li>
+                        <li>Лимит: <strong>3 IP одновременно</strong>.</li>
+                        <li>Срок подписки: <strong>3 дня</strong> с возможностью продления.</li>
+                    </ul>
+                    <h2>4. Ответственность</h2>
+                    <ul>
+                        <li>Пользователь несёт полную ответственность за свои действия в сети.</li>
+                        <li>Администрация не несёт ответственности за возможные сбои, перебои или ущерб.</li>
+                        <li>При нарушении правил доступ может быть заблокирован без предупреждения.</li>
+                    </ul>
+                    <h2>5. Изменения</h2>
+                    <p>Правила могут быть изменены. Актуальная версия всегда доступна по этому адресу.</p>
+                `
+            },
+            privacy: {
+                title: 'Политика конфиденциальности',
+                content: `
+                    <h2>1. Какие данные мы собираем</h2>
+                    <ul>
+                        <li><strong>Telegram ID, username, имя</strong> — для идентификации пользователя.</li>
+                        <li><strong>Дата регистрации и продлений</strong> — для учёта подписки.</li>
+                        <li><strong>Технический лог</strong> — для диагностики и защиты от злоупотреблений.</li>
+                    </ul>
+                    <h2>2. Что мы НЕ собираем</h2>
+                    <ul>
+                        <li>Историю посещений сайтов.</li>
+                        <li>Содержимое вашего трафика.</li>
+                        <li>Пароли, банковские данные, документы.</li>
+                    </ul>
+                    <h2>3. Как используем данные</h2>
+                    <ul>
+                        <li>Для работы Сервиса (выдача и продление подписки).</li>
+                        <li>Для связи с вами (уведомления, техподдержка).</li>
+                        <li>Для статистики в обезличенном виде.</li>
+                    </ul>
+                    <h2>4. Передача третьим лицам</h2>
+                    <p>Мы <strong>не передаём</strong> ваши персональные данные третьим лицам, кроме случаев, предусмотренных законом.</p>
+                    <h2>5. Хранение</h2>
+                    <p>Данные хранятся на защищённом сервере. Доступ имеет только администрация Сервиса.</p>
+                    <h2>6. Удаление данных</h2>
+                    <p>Вы можете запросить удаление своих данных через техподдержку. Данные удаляются в течение 30 дней.</p>
+                `
+            },
+            terms: {
+                title: 'Пользовательское соглашение',
+                content: `
+                    <h2>1. Предмет соглашения</h2>
+                    <p>Сервис предоставляет пользователю доступ к VPN-подключению на условиях <strong>бесплатного</strong> использования.</p>
+                    <h2>2. Права и обязанности сторон</h2>
+                    <p><strong>Сервис обязуется:</strong></p>
+                    <ul>
+                        <li>Предоставить доступ к VPN-серверу.</li>
+                        <li>Обеспечивать работу Сервиса в разумных пределах.</li>
+                        <li>Уведомлять об изменениях в работе.</li>
+                    </ul>
+                    <p><strong>Пользователь обязуется:</strong></p>
+                    <ul>
+                        <li>Соблюдать Правила использования.</li>
+                        <li>Не передавать доступ третьим лицам.</li>
+                        <li>Не использовать Сервис в противоправных целях.</li>
+                    </ul>
+                    <h2>3. Стоимость</h2>
+                    <p>Сервис предоставляется <strong>бесплатно</strong>. Добровольные донаты приветствуются и не влияют на доступ.</p>
+                    <h2>4. Срок действия</h2>
+                    <p>Подписка действует <strong>3 дня</strong>. Продление — по желанию, через бот.</p>
+                    <h2>5. Прекращение доступа</h2>
+                    <ul>
+                        <li>По истечении срока подписки.</li>
+                        <li>При нарушении Правил.</li>
+                        <li>По решению администрации без объяснения причин.</li>
+                    </ul>
+                    <h2>6. Ограничение ответственности</h2>
+                    <p>Сервис предоставляется «как есть». Администрация не гарантирует бесперебойную работу и не несёт ответственности за возможный ущерб.</p>
+                    <h2>7. Изменение условий</h2>
+                    <p>Соглашение может быть изменено. Продолжая использовать Сервис, вы принимаете новые условия.</p>
+                `
+            }
+        };
+
+        function openDoc(key) {
+            const doc = DOCS[key];
+            if (!doc) return;
+            
+            document.getElementById('docs-title').textContent = doc.title;
+            document.getElementById('docs-content').innerHTML = doc.content;
+            document.getElementById('docs-modal').classList.add('show');
+        }
+
+        document.getElementById('docs-close').addEventListener('click', () => {
+            document.getElementById('docs-modal').classList.remove('show');
+        });
+
+        // Копирование ссылки
+        function copyLink(url) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showCopied();
+                }).catch(() => {
+                    fallbackCopy(url);
+                });
+            } else {
+                fallbackCopy(url);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showCopied();
+            } catch (e) {
+                alert('Не удалось скопировать. Ссылка: ' + text);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showCopied() {
+            const toast = document.createElement('div');
+            toast.textContent = 'Скопировано!';
+            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#238636;color:white;padding:12px 24px;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
         }
     </script>
 </body>

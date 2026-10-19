@@ -783,3 +783,9 @@ async def find_pending_web_link_for_tg(telegram_id: int):
             LIMIT 1
         """, (telegram_id,)) as cur:
             return await cur.fetchone()
+async def get_user_by_email(email: str):
+    """Получить пользователя по email в 3x-ui."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM users WHERE xui_email = ?", (email,)) as cur:
+            return await cur.fetchone()

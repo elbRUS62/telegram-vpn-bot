@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Version
-BOT_VERSION = os.getenv("BOT_VERSION", "3.1.0") 
+BOT_VERSION = os.getenv("BOT_VERSION", "3.2.0") 
 
 # Telegram
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -31,6 +31,7 @@ SUB_PATH = os.getenv("SUB_PATH")
 # Limits
 LIMIT_IP = int(os.getenv("LIMIT_IP", "3"))
 SUBSCRIPTION_DAYS = int(os.getenv("SUBSCRIPTION_DAYS", "30"))
+WEB_SUBSCRIPTION_DAYS = int(os.getenv("WEB_SUBSCRIPTION_DAYS", "3"))
 
 # Donate
 DONATE_URL = os.getenv("DONATE_URL")

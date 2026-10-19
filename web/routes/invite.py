@@ -8,7 +8,7 @@ import aiosqlite
 from flask import Blueprint, jsonify, render_template, request
 
 from config import ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS
-from database import get_invite_link, get_user, use_invite_link
+from database import get_invite_link, get_user, use_invite_link, get_invite_link_any
 from handlers.utils import sanitize_email
 from xui_client import XUIClient
 
@@ -40,7 +40,7 @@ async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, su
 
 @invite_bp.route('/invite/<token>')
 def invite_page(token):
-    invite = asyncio.run(get_invite_link(token))
+    invite = asyncio.run(get_invite_link_any(token))
     if not invite:
         return render_template('error.html',
             message="Ссылка недействительна или уже использована"), 404
@@ -60,6 +60,60 @@ def invite_page(token):
 
 
 @invite_bp.route('/api/activate/<token>', methods=['POST'])
+
+@invite_bp.route('/api/invite/<token>/status', methods=['GET'])
+def invite_status(token):
+    """Проверяет, использована ли ссылка. Если да — возвращает QR и ссылку."""
+    async def check():
+        invite = await get_invite_link_any(token)
+        if not invite:
+            return {'error': 'Ссылка недействительна'}
+        
+        if not invite["is_used"]:
+            return {'used': False}
+        
+        # Ссылка использована — получаем подписку
+        email = invite["xui_email"]
+        if not email:
+            return {'used': True, 'error': 'Подписка не найдена'}
+        
+        try:
+            from xui_client import XUIClient
+            async with XUIClient() as xui:
+                client = await xui.get_client(email)
+                if not client:
+                    return {'used': True, 'error': 'Клиент не найден'}
+                sub_id = client.get("subId")
+                if not sub_id:
+                    return {'used': True, 'error': 'Sub ID не найден'}
+                sub_url = xui.build_sub_url(sub_id)
+                
+                # Генерируем QR
+                import base64, io, qrcode
+                qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=2)
+                qr.add_data(sub_url)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                qr_base64 = base64.b64encode(buf.read()).decode('utf-8')
+                
+                return {
+                    'used': True,
+                    'sub_url': sub_url,
+                    'qr_base64': qr_base64,
+                    'email': email,
+                    'message': 'Вы уже получили подписку по этой ссылке'
+                }
+        except Exception as e:
+            return {'used': True, 'error': str(e)}
+    
+    result = asyncio.run(check())
+    if 'error' in result and not result.get('used'):
+        return jsonify(result), 404
+    return jsonify(result)
+
 def activate(token):
     data = request.json or {}
     if not data.get('accepted_terms'):
@@ -69,6 +123,46 @@ def activate(token):
         invite = await get_invite_link(token)
         if not invite:
             return {'error': 'Ссылка недействительна'}
+
+        # Если ссылка уже использована — возвращаем существующую подписку
+        if invite["used"]:
+            # Получаем подписку из 3x-ui по email
+            from xui_client import XUIClient
+            from database import get_user_by_email  # нужно будет добавить
+            email = invite["xui_email"]
+            if not email:
+                return {'error': 'Подписка не найдена', 'used': True}
+            
+            try:
+                async with XUIClient() as xui:
+                    client = await xui.get_client(email)
+                    if not client:
+                        return {'error': 'Клиент не найден в 3x-ui', 'used': True}
+                    sub_id = client.get("subId")
+                    if not sub_id:
+                        return {'error': 'Sub ID не найден', 'used': True}
+                    sub_url = xui.build_sub_url(sub_id)
+                    
+                    # Генерируем QR
+                    import base64, io, qrcode
+                    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=2)
+                    qr.add_data(sub_url)
+                    qr.make(fit=True)
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    buf.seek(0)
+                    qr_base64 = base64.b64encode(buf.read()).decode('utf-8')
+                    
+                    return {
+                        'used': True,
+                        'sub_url': sub_url,
+                        'qr_base64': qr_base64,
+                        'email': email,
+                        'message': 'Вы уже получили подписку по этой ссылке'
+                    }
+            except Exception as e:
+                return {'error': f'Ошибка: {e}', 'used': True}
 
         if invite["friend_username"]:
             name = invite["friend_username"]
@@ -91,7 +185,7 @@ def activate(token):
 
                 sub_id = await xui.add_client(
                     xui_email,
-                    days=SUBSCRIPTION_DAYS,
+                    days=WEB_SUBSCRIPTION_DAYS,
                     comment=auto_comment,
                     tg_id=invite["friend_user_id"] or 0,
                 )

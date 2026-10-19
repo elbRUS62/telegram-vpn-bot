@@ -311,12 +311,17 @@ def donate():
         donated = await get_donations_total(currency="RUB")
         percent = min(int(donated / SERVER_COST * 100), 100) if SERVER_COST > 0 else 0
 
+        months = ["январе", "феврале", "марте", "апреле", "мае", "июне", "июле", "августе", "сентябре", "октябре", "ноябре", "декабре"]
+        next_month_idx = datetime.now().month % 12
+        next_month_name = months[next_month_idx]
+
         return {
             'donate_text': DONATE_TEXT,
             'donate_url': DONATE_URL,
             'progress_percent': percent,
             'server_cost': SERVER_COST,
             'donated': int(donated),
+            'next_month': next_month_name,
         }
 
     result = run_async(get_data())
@@ -512,8 +517,8 @@ def create_invoice():
         try:
             # Создаём ссылку на инвойс (без отправки сообщения пользователю)
             invoice_link = await bot.create_invoice_link(
-                title=f"Поддержка {BOT_NAME}",
-                description=f"Донат {amount} ⭐ на оплату сервера",
+                title=f"Поддержка {BOT_NAME} · {amount} ⭐",
+                description=f"Донат {amount} ⭐ на оплату сервера и развитие проекта. Спасибо за поддержку!",
                 payload=f"donate_miniapp_{user.get('id')}_{amount}",
                 provider_token="",
                 currency="XTR",

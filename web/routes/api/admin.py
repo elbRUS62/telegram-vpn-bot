@@ -209,10 +209,63 @@ def user_card():
 
     async def get_data():
         from database import get_user
+        from xui_client import XUIClient
+        from datetime import datetime
+
         u = await get_user(tg_id)
         if not u:
             return {"error": "Пользователь не найден"}
-        return {"user": dict(u)}
+
+        result = dict(u)
+        # Обрезаем микросекунды у expires_at
+        if result.get("expires_at"):
+            try:
+                from datetime import datetime
+                dt = result["expires_at"]
+                if isinstance(dt, str):
+                    dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                result["expires_at"] = dt.strftime("%d.%m.%y %H:%M")
+            except Exception:
+                pass
+        result["is_blocked"] = False
+        result["comment"] = ""
+        result["traffic_up"] = None
+        result["traffic_down"] = None
+        result["is_online"] = False
+
+        # Берём данные из 3x-ui, если есть email
+        if u["xui_email"]:
+            try:
+                async with XUIClient() as xui:
+                    client = await xui.get_client(u["xui_email"])
+                    if client:
+                        result["is_blocked"] = not client.get("enable", True)
+                        result["comment"] = client.get("comment", "")
+
+                        # Трафик
+                        traffic = await xui.get_client_traffic(u["xui_email"])
+                        if traffic:
+                            up = traffic.get("up")
+                            down = traffic.get("down")
+                            if up is not None:
+                                result["traffic_up"] = f"{up / (1024**3):.2f} GB"
+                            if down is not None:
+                                result["traffic_down"] = f"{down / (1024**3):.2f} GB"
+
+                        # Онлайн
+                        result["is_online"] = await xui.is_client_online(u["xui_email"])
+            except Exception as e:
+                logger.warning(f"Ошибка получения данных 3x-ui для {u['xui_email']}: {e}")
+
+        # Дни до окончания
+        if u["expires_at"]:
+            try:
+                exp = datetime.strptime(str(u["expires_at"])[:10], "%Y-%m-%d")
+                result["days_left"] = (exp - datetime.now()).days
+            except Exception:
+                result["days_left"] = None
+
+        return {"user": result}
 
     r = run_async(get_data())
     if "error" in r:
@@ -378,4 +431,98 @@ def delete():
         return jsonify(run_async(do()))
     except Exception as e:
         logger.exception("admin/delete failed")
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- block / unblock ----------------
+
+@admin_api.route("/block", methods=["POST"])
+@admin_required
+def block():
+    tg_id = int((request.json or {}).get("tg_id", 0))
+
+    async def do():
+        from database import get_user
+        from xui_client import XUIClient
+
+        user = await get_user(tg_id)
+        if not user or not user["xui_email"]:
+            return {"error": "Пользователь не найден или нет email"}
+
+        async with XUIClient() as xui:
+            client = await xui.get_client(user["xui_email"])
+            if not client:
+                return {"error": "Клиент не найден в 3x-ui"}
+
+            result = await xui._post(f"/panel/api/clients/update/{user['xui_email']}", {
+                "email": user["xui_email"],
+                "enable": False,
+                "limitIp": client.get("limitIp", 3),
+                "totalGB": client.get("totalGB", 0),
+                "expiryTime": client.get("expiryTime", 0),
+            })
+            if result.get("success"):
+                # Меняем статус в БД на 'blocked'
+                import aiosqlite
+                from config import DB_PATH
+                async with aiosqlite.connect(DB_PATH) as db:
+                    await db.execute("UPDATE users SET status = 'blocked' WHERE telegram_id = ?", (tg_id,))
+                    await db.commit()
+                await _audit(request.json.get("init_data"), "block", tg_id)
+                return {"success": True}
+            return {"error": "Ошибка 3x-ui"}
+
+    try:
+        r = run_async(do())
+        if "error" in r:
+            return jsonify(r), 400
+        return jsonify(r)
+    except Exception as e:
+        logger.exception("admin/block failed")
+        return jsonify({"error": str(e)}), 500
+
+
+@admin_api.route("/unblock", methods=["POST"])
+@admin_required
+def unblock():
+    tg_id = int((request.json or {}).get("tg_id", 0))
+
+    async def do():
+        from database import get_user
+        from xui_client import XUIClient
+
+        user = await get_user(tg_id)
+        if not user or not user["xui_email"]:
+            return {"error": "Пользователь не найден или нет email"}
+
+        async with XUIClient() as xui:
+            client = await xui.get_client(user["xui_email"])
+            if not client:
+                return {"error": "Клиент не найден в 3x-ui"}
+
+            result = await xui._post(f"/panel/api/clients/update/{user['xui_email']}", {
+                "email": user["xui_email"],
+                "enable": True,
+                "limitIp": client.get("limitIp", 3),
+                "totalGB": client.get("totalGB", 0),
+                "expiryTime": client.get("expiryTime", 0),
+            })
+            if result.get("success"):
+                # Возвращаем статус 'active'
+                import aiosqlite
+                from config import DB_PATH
+                async with aiosqlite.connect(DB_PATH) as db:
+                    await db.execute("UPDATE users SET status = 'active' WHERE telegram_id = ?", (tg_id,))
+                    await db.commit()
+                await _audit(request.json.get("init_data"), "unblock", tg_id)
+                return {"success": True}
+            return {"error": "Ошибка 3x-ui"}
+
+    try:
+        r = run_async(do())
+        if "error" in r:
+            return jsonify(r), 400
+        return jsonify(r)
+    except Exception as e:
+        logger.exception("admin/unblock failed")
         return jsonify({"error": str(e)}), 500
