@@ -64,6 +64,78 @@
  }
  .screen { display: none; padding: 20px; max-width: 440px; margin: 0 auto; }
  .screen.active { display: block; }
+
+/* ===== Анимированный фон главного экрана ===== */
+@keyframes main-bg-shift {
+  0%   { background-position: 0% 0%, 100% 100%, 0 0; }
+  100% { background-position: 100% 100%, 0% 0%, 0 0; }
+}
+#screen-main {
+  position: relative;
+}
+/* ===== Анимированный фон (body) ===== */
+body {
+  background-color: var(--bg-color);
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(88, 166, 255, 0.14), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(139, 92, 246, 0.10), transparent 60%);
+  background-size: 200% 200%, 200% 200%;
+  animation: main-bg-shift 25s ease-in-out infinite alternate;
+}
+/* Плавающие точки — fixed, всегда на фоне */
+.main-bg-dot {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(40px);
+  will-change: transform;
+}
+.main-bg-dot--1 {
+  top: 12%;
+  left: 8%;
+  width: 90px;
+  height: 90px;
+  background: rgba(88, 166, 255, 0.18);
+  animation: main-dot-1 32s ease-in-out infinite alternate;
+}
+.main-bg-dot--2 {
+  top: 55%;
+  right: 6%;
+  width: 110px;
+  height: 110px;
+  background: rgba(139, 92, 246, 0.14);
+  animation: main-dot-2 38s ease-in-out infinite alternate;
+}
+.main-bg-dot--3 {
+  bottom: 12%;
+  left: 20%;
+  width: 80px;
+  height: 80px;
+  background: rgba(88, 166, 255, 0.14);
+  animation: main-dot-3 44s ease-in-out infinite alternate;
+}
+@keyframes main-dot-1 {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(40px, 30px); }
+}
+@keyframes main-dot-2 {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(-30px, -40px); }
+}
+@keyframes main-dot-3 {
+  0%   { transform: translate(0, 0); }
+  100% { transform: translate(20px, -30px); }
+}
+@media (prefers-color-scheme: light) {
+  .main-bg-dot--1 { background: rgba(88, 166, 255, 0.10); }
+  .main-bg-dot--2 { background: rgba(139, 92, 246, 0.08); }
+  .main-bg-dot--3 { background: rgba(88, 166, 255, 0.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body { animation: none; }
+  .main-bg-dot { animation: none; }
+}
  .card {
  background-color: var(--secondary-bg);
  border: 1px solid var(--border-color);
@@ -73,7 +145,20 @@
  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
  }
  .header { text-align: center; margin-bottom: 20px; }
- .header h1 { color: var(--text-color); font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+ .header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  background-image: linear-gradient(
+    90deg,
+    #3b82f6 0%,
+    #58a6ff 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
  .status-badge {
  display: inline-block;
  padding: 6px 14px;
@@ -84,6 +169,25 @@
  letter-spacing: 0.5px;
  }
  .status-badge.active { background-color: #238636; color: white; }
+
+/* Пульсирующий ареол вокруг активного бейджа */
+@keyframes badge-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.55),
+                0 0 10px 2px rgba(35, 134, 54, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(35, 134, 54, 0),
+                0 0 16px 4px rgba(35, 134, 54, 0.15);
+  }
+}
+.status-badge.active {
+  animation: badge-glow 2.6s ease-in-out infinite;
+  will-change: box-shadow;
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-badge.active { animation: none; }
+}
  .status-badge.expiring { background-color: #d29922; color: white; }
  .status-badge.expired { background-color: #f85149; color: white; }
  .status-badge.pending { background-color: #6e7681; color: white; }
@@ -107,6 +211,165 @@
  .btn-primary { background-color: var(--button-color); color: var(--button-text); box-shadow: 0 4px 12px rgba(35, 134, 54, 0.2); }
  .btn-secondary { background-color: var(--secondary-bg); color: var(--text-color); border: 1px solid var(--border-color); }
  .btn-link { background-color: var(--link-color); color: white; box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2); }
+/* Slide-to-submit: «Получить подписку» (data-action="get_sub") */
+@keyframes get-sub-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.5),
+                0 0 10px 2px rgba(88, 166, 255, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(88, 166, 255, 0),
+                0 0 14px 3px rgba(88, 166, 255, 0.12);
+  }
+}
+.slide-to-sub {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  padding: 4px;
+  margin-bottom: 0;
+  border-radius: 10px;
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  color: var(--button-text);
+  font-weight: 600;
+  font-size: 15px;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+  touch-action: none;
+  box-sizing: border-box;
+  animation: get-sub-glow 3.0s ease-in-out infinite;
+  will-change: box-shadow;
+}
+.slide-to-sub__label {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  color: var(--text-color);
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+.slide-to-sub.is-dragging .slide-to-sub__label,
+.slide-to-sub.is-done .slide-to-sub__label {
+  opacity: 0.4;
+}
+.slide-to-sub__thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 80px;
+  height: calc(100% - 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background-color: var(--link-color);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+  transition: transform 0.25s ease;
+  z-index: 2;
+}
+.slide-to-sub.is-dragging .slide-to-sub__thumb {
+  transition: none;
+  cursor: grabbing;
+}
+.slide-to-sub.is-done .slide-to-sub__thumb {
+  transition: transform 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-to-sub { animation: none; }
+  .slide-to-sub__thumb { transition: none; }
+}
+
+/* Shimmer-блик для кнопки «Поддержать проект» (data-action="donate") */
+.btn[data-action="donate"] {
+  position: relative;
+  overflow: hidden;
+}
+.btn[data-action="donate"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform: skewX(-20deg);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(88, 166, 255, 0.10) 50%,
+    transparent 100%
+  );
+  animation: donate-shimmer 6s ease-in-out infinite;
+}
+@keyframes donate-shimmer {
+  0%   { left: -150%; }
+  55%  { left: 150%; }
+  100% { left: 150%; }   /* пауза между проходами */
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn[data-action="donate"]::before { animation: none; }
+}
+
+/* Мягкая пульсация чекбокса «Я прочитал и принимаю все условия» */
+@keyframes terms-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.45),
+                0 0 5px 1px rgba(88, 166, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0),
+                0 0 8px 2px rgba(88, 166, 255, 0.12);
+  }
+}
+#terms-checkbox.terms-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 3px 0 0 0;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--secondary-bg);
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  animation: terms-glow 3.2s ease-in-out infinite;
+  will-change: box-shadow;
+}
+#terms-checkbox.terms-checkbox:checked {
+  background-color: var(--link-color);
+  border-color: var(--link-color);
+  animation: none;
+}
+#terms-checkbox.terms-checkbox:checked::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  #terms-checkbox.terms-checkbox { animation: none; }
+}
  .qr-wrap { text-align: center; margin: 16px 0; }
  .qr-wrap img { width: 100%; max-width: 260px; background: white; padding: 16px; border-radius: 16px; }
  .info-row {
@@ -327,6 +590,12 @@
   align-items: center;
   justify-content: center;
   background-color: var(--tg-theme-bg-color, var(--bg-color));
+  background-image: radial-gradient(
+    circle at 50% 45%,
+    rgba(88, 166, 255, 0.08) 0%,
+    rgba(88, 166, 255, 0.03) 35%,
+    transparent 70%
+  );
   color: var(--tg-theme-text-color, var(--text-color));
   opacity: 1;
   transition: opacity 0.6s ease, visibility 0.6s ease;
@@ -345,9 +614,9 @@
   background-image: linear-gradient(
     90deg,
     var(--tg-theme-text-color, #000) 0%,
-    var(--tg-theme-link-color, #2481cc) 30%,
-    var(--tg-theme-accent-text-color, var(--tg-theme-link-color, #2481cc)) 50%,
-    var(--tg-theme-link-color, #2481cc) 70%,
+    rgba(88, 166, 255, 0.85) 25%,
+    rgba(88, 166, 255, 0.85) 50%,
+    rgba(88, 166, 255, 0.85) 75%,
     var(--tg-theme-text-color, #000) 100%
   );
   background-size: 200% 100%;
@@ -357,6 +626,47 @@
   color: transparent;
   -webkit-text-fill-color: transparent;
   animation: splash-sweep 3.2s linear infinite;
+}
+
+.splash__subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  color: var(--tg-theme-hint-color, #8b949e);
+  opacity: 0.85;
+}
+.splash__line {
+  width: 120px;
+  height: 2px;
+  margin: 14px auto 0;
+  background: linear-gradient(90deg, transparent, var(--link-color, #58a6ff), transparent);
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: splash-line-in 2.6s ease-out forwards;
+}
+@keyframes splash-line-in {
+  to { transform: scaleX(1); }
+}
+.splash__dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 24px;
+  justify-content: center;
+}
+.splash__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tg-theme-hint-color, #8b949e);
+  opacity: 0.3;
+  animation: splash-dot 0.6s ease-in-out infinite;
+}
+.splash__dots span:nth-child(2) { animation-delay: 0.15s; }
+.splash__dots span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes splash-dot {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.3); }
 }
 .splash__version {
   position: absolute;
@@ -379,13 +689,21 @@
     animation: none;
     background-position: 0 0;
   }
+  .splash__line { animation: none; transform: scaleX(1); }
+  .splash__dots span { animation: none; opacity: 0.6; }
   .splash { transition: opacity 0.2s ease; }
 }
 </style>
 </head>
 <body>
+<div class="main-bg-dot main-bg-dot--1"></div>
+<div class="main-bg-dot main-bg-dot--2"></div>
+<div class="main-bg-dot main-bg-dot--3"></div>
 <div id="splash" class="splash" aria-hidden="true">
   <div class="splash__title">{{ bot_name }}</div>
+  <div class="splash__subtitle">Твой интернет</div>
+  <div class="splash__line"></div>
+  <div class="splash__dots"><span></span><span></span><span></span></div>
   <div class="splash__version">v{{ bot_version }}</div>
 </div>
 
@@ -491,7 +809,7 @@
  <div class="loading"> Загрузка документов...</div>
  </div>
  <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer; font-size:14px;">
- <input type="checkbox" id="terms-checkbox" style="margin-top:3px; width:18px; height:18px;">
+ <input type="checkbox" id="terms-checkbox" class="terms-checkbox">
  <span>Я прочитал и принимаю все условия</span>
  </label>
  <button class="btn btn-primary" id="terms-submit" disabled>Получить подписку</button>
@@ -637,7 +955,87 @@
  });
  }
 
- document.querySelectorAll('.tab').forEach((tab, index) => {
+ 
+// ==================== Slide-to-submit ====================
+function initSlideToSub() {
+  document.querySelectorAll('.slide-to-sub').forEach((slider) => {
+    if (slider.dataset.slideInit) return; // уже инициализирован
+    slider.dataset.slideInit = '1';
+
+    const thumb = slider.querySelector('.slide-to-sub__thumb');
+    if (!thumb) return;
+
+    let startX = 0;
+    let currentX = 0;
+    let maxX = 0;
+    let dragging = false;
+
+    const getMaxX = () => slider.clientWidth - thumb.offsetWidth - 8; // 4px слева + 4px справа
+
+    const onDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragging = true;
+      maxX = getMaxX();
+      startX = (e.touches ? e.touches[0].clientX : e.clientX) - currentX;
+      slider.classList.add('is-dragging');
+      slider.setPointerCapture?.(e.pointerId);
+    };
+
+    const onMove = (e) => {
+      if (!dragging) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      let x = clientX - startX;
+      if (x < 0) x = 0;
+      if (x > maxX) x = maxX;
+      currentX = x;
+      thumb.style.transform = `translateX(${x}px)`;
+      e.preventDefault();
+    };
+
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      slider.classList.remove('is-dragging');
+      const threshold = maxX * 0.85;
+      if (currentX >= threshold) {
+        // успех
+        slider.classList.add('is-done');
+        thumb.style.transform = `translateX(${maxX}px)`;
+        try { tg?.HapticFeedback?.impactOccurred?.('medium'); } catch (_) {}
+        setTimeout(() => {
+          openTermsModal();
+          // сброс через 400мс, чтобы не мигало при возврате
+          setTimeout(() => {
+            slider.classList.remove('is-done');
+            currentX = 0;
+            thumb.style.transform = 'translateX(0)';
+          }, 400);
+        }, 200);
+      } else {
+        // откат
+        currentX = 0;
+        thumb.style.transform = 'translateX(0)';
+      }
+    };
+
+    thumb.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  });
+}
+
+// Вызываем после каждого рендера главного экрана и при загрузке
+document.addEventListener('DOMContentLoaded', initSlideToSub);
+// Патч рендера: после loadMain(), но проще — MutationObserver на #main-content
+const _slideObserver = new MutationObserver(() => initSlideToSub());
+document.addEventListener('DOMContentLoaded', () => {
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) _slideObserver.observe(mainContent, { childList: true, subtree: true });
+});
+
+document.querySelectorAll('.tab').forEach((tab, index) => {
  tab.addEventListener('click', () => {
  const name = tab.dataset.tab;
  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -710,7 +1108,7 @@
  if (data.has_subscription) {
  buttonsHtml = `<button class="btn btn-primary" data-action="switch_sub"> Личный кабинет</button>`;
  } else {
- buttonsHtml = `<button class="btn btn-primary" data-action="get_sub"> Получить подписку</button>`;
+ buttonsHtml = `<div class="slide-to-sub" data-action="get_sub" role="button" aria-label="Получить подписку"><span class="slide-to-sub__label">Получить подписку</span><span class="slide-to-sub__thumb">→</span></div>`;
  }
 
  content.innerHTML = `
@@ -729,7 +1127,7 @@
  </div>
 
  <div class="card" style="padding:12px; display:flex; flex-direction:column; gap:10px;">
- ${data.has_subscription ? `<button class="btn btn-primary" data-action="switch_sub" style="margin-bottom:0;"> Моя подписка</button>` : `<button class="btn btn-primary" data-action="get_sub" style="margin-bottom:0;"> Получить подписку</button>`}
+ ${data.has_subscription ? `<button class="btn btn-primary" data-action="switch_sub" style="margin-bottom:0;"> Моя подписка</button>` : `<div class="slide-to-sub" data-action="get_sub" role="button" aria-label="Получить подписку"><span class="slide-to-sub__label">Получить подписку</span><span class="slide-to-sub__thumb">→</span></div>`}
  <button class="btn btn-secondary" data-action="donate" style="margin-bottom:0;">❤️ Поддержать проект</button>
  ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_friend" style="margin-bottom:0;"> Пригласить друга</button>` : ''}
  ${data.has_subscription ? `<button class="btn btn-secondary" data-action="invite_no_tg" style="margin-bottom:0;"> Добавить без TG</button>` : ''}
@@ -746,7 +1144,7 @@
  const action = btn.dataset.action;
  if (action === 'switch_sub') switchTab('sub');
  else if (action === 'donate') switchTab('donate');
- else if (action === 'get_sub') openTermsModal();
+ // get_sub обрабатывается через slide-to-sub (см. initSlideToSub)
  else if (action === 'invite_friend') {
  if (!data.has_subscription) { showToast('Сначала получите подписку'); return; }
  openRefModal();
@@ -1448,7 +1846,7 @@
     });
   }
 
-  var MIN_MS = 2200;
+  var MIN_MS = 2600;
   var start = Date.now();
 
   function scheduleHide() {
