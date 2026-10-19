@@ -56,9 +56,20 @@ source venv/bin/activate
 success "venv активирован"
 
 header "Параметры веб-сайта"
-read -p "  Домен (например gb-skrepnet.duckdns.org): " WEB_DOMAIN
-read -p "  Порт (по умолчанию 8443): " WEB_PORT_INPUT
-WEB_PORT=${WEB_PORT_INPUT:-8443}
+# Сохраняем текущие домен/порт из .env (если переустановка)
+OLD_WEB_DOMAIN=""
+OLD_WEB_PORT=""
+if [ -f .env ]; then
+    _old_url=$(grep '^MINIAPP_URL=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+    if [ -n "$_old_url" ]; then
+        OLD_WEB_DOMAIN=$(echo "$_old_url" | sed -E 's|^https?://||; s|:[0-9]+.*$||; s|/.*$||')
+        OLD_WEB_PORT=$(echo "$_old_url" | sed -nE 's|^https?://[^:]+:([0-9]+).*$|\1|p')
+    fi
+fi
+read -p "  Домен (по умолчанию ${OLD_WEB_DOMAIN:-gb-skrepnet.duckdns.org}): " WEB_DOMAIN_INPUT
+WEB_DOMAIN=${WEB_DOMAIN_INPUT:-${OLD_WEB_DOMAIN:-gb-skrepnet.duckdns.org}}
+read -p "  Порт (по умолчанию ${OLD_WEB_PORT:-8443}): " WEB_PORT_INPUT
+WEB_PORT=${WEB_PORT_INPUT:-${OLD_WEB_PORT:-8443}}
 
 # Добавляем MINIAPP_URL в .env (если нет)
 if ! grep -q "^MINIAPP_URL=" .env 2>/dev/null; then
@@ -129,10 +140,23 @@ sed -i "s|app.run(host='0.0.0.0', port=[0-9]*|app.run(host='0.0.0.0', port=${WEB
 success "web_app.py обновлён под $WEB_DOMAIN:$WEB_PORT"
 
 header "Устанавливаю зависимости (если нужно)"
-pip install flask qrcode[pil] aiosqlite aiohttp python-dotenv -q
+pip install -r requirements.txt -q
 success "Зависимости на месте"
 
 header "Настраиваю systemd (сайт)"
+EXISTING_UNIT="/etc/systemd/system/skrepnet-web.service"
+if [ -f "$EXISTING_UNIT" ]; then
+    EXISTING_WD=$(grep -E '^WorkingDirectory=' "$EXISTING_UNIT" | head -1 | cut -d= -f2-)
+    if [ -n "$EXISTING_WD" ] && [ "$EXISTING_WD" != "$(pwd)" ]; then
+        warning "Существующий unit указывает на: $EXISTING_WD"
+        warning "Текущая директория:              $(pwd)"
+        read -p "  Перезаписать unit? (y/N): " overwrite_unit
+        if [ "$overwrite_unit" != "y" ] && [ "$overwrite_unit" != "Y" ]; then
+            error "Отменено (unit не перезаписан)"
+            exit 1
+        fi
+    fi
+fi
 cat > /etc/systemd/system/skrepnet-web.service <<EOF
 [Unit]
 Description=SkrepNet Web (Flask)
@@ -142,6 +166,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$(pwd)
+EnvironmentFile=$(pwd)/.env
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=$(pwd)/venv/bin/python $(pwd)/web_app.py
 Restart=always
