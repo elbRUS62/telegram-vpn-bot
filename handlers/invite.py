@@ -114,9 +114,24 @@ async def invite_cancel_message(message: Message, state: FSMContext):
     await state.clear()
     is_admin = message.from_user.id in ADMIN_IDS
 
+    from keyboards import invite_contact_keyboard
     await message.answer(
-        "❌ Отменено.\n\n"
-        "📋 <b>Меню</b>\n\nВыбери действие:",
-        parse_mode="HTML",
-        reply_markup=main_inline_menu(is_admin)
+        "Выбор контакта отменён.\n\n"
+        "Если хочешь попробовать снова — нажми «👤 Выбрать из контактов» ниже.",
+        reply_markup=invite_contact_keyboard()
     )
+
+@router.message(F.users_shared)
+async def handle_users_shared_cancel(message: Message):
+    """Срабатывает, если пользователь закрыл окно выбора контактов (нажал 'Отмена' в системном окне Telegram)."""
+    shared = message.users_shared
+    if not shared or not shared.users:
+        # Пользователь ничего не выбрал (нажал отмену в окне Telegram)
+        # Возвращаем клавиатуру
+        from keyboards import invite_contact_keyboard
+        await message.answer(
+            "Выбор контакта отменён.\n\n"
+            "Если передумал — нажми «❌ Отмена» ниже.",
+            reply_markup=invite_contact_keyboard()
+        )
+        return

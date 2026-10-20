@@ -97,19 +97,12 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 return
             from keyboards import invite_contact_keyboard
             await message.answer(
-                "➕ <b>Добавить пользователя без Telegram</b>
-
-"
-                "Здесь ты можешь подарить VPN-подписку другу, у которого <b>нет</b> аккаунта в Telegram.
-
-"
-                "1️⃣ Нажми кнопку <b>«👤 Выбрать из контактов»</b> ниже.
-"
-                "2️⃣ Выбери друга из списка своих контактов в Telegram.
-"
-                "3️⃣ Полученную ссылку отправь другу в любом мессенджере (WhatsApp, VK, SMS).
-
-"
+                "➕ <b>Добавить пользователя без Telegram</b>\n\n"
+                "Если у друга нет доступа к Telegram. Ты можешь отправить ему ссылку через WhatsApp, VK или SMS.\n\n"
+                "<b>Как это работает:</b>\n"
+                "1️⃣ Нажми <b>«👤 Выбрать из контактов»</b> ниже.\n"
+                "2️⃣ Выбери друга из списка.\n"
+                "3️⃣ Отправь ему полученную ссылку любым удобным способом (WhatsApp, VK, SMS).\n\n"
                 "Если передумал — нажми <b>«❌ Отмена»</b>.",
                 parse_mode="HTML",
                 reply_markup=invite_contact_keyboard()
@@ -235,19 +228,12 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 return
             from keyboards import invite_contact_keyboard
             await message.answer(
-                "➕ <b>Добавить пользователя без Telegram</b>
-
-"
-                "Здесь ты можешь подарить VPN-подписку другу, у которого <b>нет</b> аккаунта в Telegram.
-
-"
-                "1️⃣ Нажми кнопку <b>«👤 Выбрать из контактов»</b> ниже.
-"
-                "2️⃣ Выбери друга из списка своих контактов в Telegram.
-"
-                "3️⃣ Полученную ссылку отправь другу в любом мессенджере (WhatsApp, VK, SMS).
-
-"
+                "➕ <b>Добавить пользователя без Telegram</b>\n\n"
+                "Если у друга нет доступа к Telegram. Ты можешь отправить ему ссылку через WhatsApp, VK или SMS.\n\n"
+                "<b>Как это работает:</b>\n"
+                "1️⃣ Нажми <b>«👤 Выбрать из контактов»</b> ниже.\n"
+                "2️⃣ Выбери друга из списка.\n"
+                "3️⃣ Отправь ему полученную ссылку любым удобным способом (WhatsApp, VK, SMS).\n\n"
                 "Если передумал — нажми <b>«❌ Отмена»</b>.",
                 parse_mode="HTML",
                 reply_markup=invite_contact_keyboard()
