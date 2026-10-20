@@ -395,7 +395,7 @@ def devices():
 
 PLATFORMS_INFO = {
     'android': {
-        'title': '📱 Android',
+        'title': 'Android',
         'app': 'Happ — Proxy Utility',
         'app_url': 'https://play.google.com/store/apps/details?id=com.happproxy',
         'steps': [
@@ -408,7 +408,7 @@ PLATFORMS_INFO = {
         'alternatives': 'Hysteria, v2rayNG',
     },
     'ios': {
-        'title': '🍎 iOS (iPhone / iPad)',
+        'title': 'iOS (iPhone / iPad)',
         'app': 'Happ — Proxy Utility',
         'app_url': 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215',
         'steps': [
@@ -422,7 +422,7 @@ PLATFORMS_INFO = {
         'note': 'Если нет в российском App Store — смени регион Apple ID на США',
     },
     'windows': {
-        'title': '💻 Windows',
+        'title': 'Windows',
         'app': 'Happ — Proxy Utility',
         'app_url': 'https://www.happ.su/main/',
         'steps': [
@@ -435,7 +435,7 @@ PLATFORMS_INFO = {
         'alternatives': 'Hysteria для Windows',
     },
     'macos': {
-        'title': '🖥 macOS',
+        'title': 'macOS',
         'app': 'Happ — Proxy Utility',
         'app_url': 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215',
         'steps': [
@@ -448,7 +448,7 @@ PLATFORMS_INFO = {
         'alternatives': 'Streisand, Clash Verge',
     },
     'androidtv': {
-        'title': '📺 Android TV',
+        'title': 'Android TV',
         'app': 'Happ / v2rayTun',
         'app_url': 'https://www.happ.su/main/',
         'steps': [
@@ -461,7 +461,7 @@ PLATFORMS_INFO = {
         'alternatives': 'v2rayTun',
     },
     'linux': {
-        'title': '🐧 Linux',
+        'title': 'Linux',
         'app': 'Happ — Proxy Utility',
         'app_url': 'https://www.happ.su/main/',
         'steps': [

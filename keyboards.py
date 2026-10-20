@@ -146,12 +146,12 @@ def share_keyboard(bot_username: str, telegram_id: int):
 
 def connect_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📱 Android", callback_data="connect_android")],
+        [InlineKeyboardButton(text="Android", callback_data="connect_android")],
         [InlineKeyboardButton(text="🍎 iOS", callback_data="connect_ios")],
-        [InlineKeyboardButton(text="💻 Windows", callback_data="connect_windows")],
-        [InlineKeyboardButton(text="🖥 macOS", callback_data="connect_macos")],
-        [InlineKeyboardButton(text="📺 Android TV", callback_data="connect_androidtv")],
-        [InlineKeyboardButton(text="🐧 Linux", callback_data="connect_linux")],
+        [InlineKeyboardButton(text="Windows", callback_data="connect_windows")],
+        [InlineKeyboardButton(text="macOS", callback_data="connect_macos")],
+        [InlineKeyboardButton(text="Android TV", callback_data="connect_androidtv")],
+        [InlineKeyboardButton(text="Linux", callback_data="connect_linux")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main")],
     ])
 
