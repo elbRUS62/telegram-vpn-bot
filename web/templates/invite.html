@@ -184,7 +184,7 @@
 <body>
     <div class="card">
         <h1>SkrepNet</h1>
-        <p class="subtitle">Бесплатный VPN на 3 дня, с возможностью продления.</p>
+        <p class="subtitle">Бесплатный VPN на 3 дня. По окончании — продлите бесплатно в боте <a href="https://t.me/skrepnet_bot" style="color:var(--link-color);">@skrepnet_bot</a>.</p>
 
         <div class="terms">
             <p>Для получения подписки ознакомься с документами:</p>
@@ -200,7 +200,7 @@
             <span>Я прочитал и принимаю все условия</span>
         </label>
 
-        <button class="btn btn-primary" id="activateBtn" onclick="activate()" disabled>Получить подписку</button>
+        <button class="btn btn-primary" id="activateBtn" onclick="activate()" disabled>Получить 3-дневную подписку бесплатно</button>
 
         <div class="result" id="result"></div>
     </div>
@@ -235,15 +235,18 @@
                         result.innerHTML = `
                             <div style="text-align:center;">
                                 <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка уже получена</div>
+                                <div style="background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;">
+                                    <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">⏰ Подписка действует 3 дня</div>
+                                    <div style="font-size:14px;color:#1a1a1a;margin-bottom:14px;line-height:1.5;">
+                                        Через 3 дня доступ к VPN закончится. Чтобы продлить <b>бесплатно</b> — откройте @skrepnet_bot и нажмите «Продлить».
+                                    </div>
+                                    <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:#1a1a1a;color:white;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть @skrepnet_bot</a>
+                                </div>
                                 <div class="qr-wrap">
                                     <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
-                                    <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
+                                    <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p><p style="color:#d29922;font-size:13px;font-weight:600;margin-top:4px;">⏳ Подписка на 3 дня</p>
                                 </div>
-                                <div class="link-box clickable" onclick="copyLink('${data.sub_url}')">${data.sub_url}</div>
-                                <div style="background:linear-gradient(135deg,#238636 0%,#2ea043 100%);border-radius:12px;padding:20px;margin-top:20px;">
-                                    <div style="font-size:17px;font-weight:700;color:white;margin-bottom:12px;">Продление подписки в боте</div>
-                                    <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:white;color:#238636;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть бота в Telegram</a>
-                                </div>
+                                <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
                             </div>
                         `;
                     }
@@ -290,15 +293,18 @@
                     result.innerHTML = `
                         <div style="text-align:center;">
                             <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка активирована!</div>
+                            <div style="background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;">
+                                <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">⏰ Подписка действует 3 дня</div>
+                                <div style="font-size:14px;color:#1a1a1a;margin-bottom:14px;line-height:1.5;">
+                                    Через 3 дня доступ к VPN закончится. Чтобы продлить <b>бесплатно</b> — откройте @skrepnet_bot и нажмите «Продлить».
+                                </div>
+                                <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:#1a1a1a;color:white;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть @skrepnet_bot</a>
+                            </div>
                             <div class="qr-wrap">
                                 <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
-                                <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
+                                <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p><p style="color:#d29922;font-size:13px;font-weight:600;margin-top:4px;">⏳ Подписка на 3 дня</p>
                             </div>
-                            <div class="link-box clickable" onclick="copyLink('${data.sub_url}')">${data.sub_url}</div>
-                            <div style="background:linear-gradient(135deg,#238636 0%,#2ea043 100%);border-radius:12px;padding:20px;margin-top:20px;">
-                                <div style="font-size:17px;font-weight:700;color:white;margin-bottom:12px;">Продление подписки в боте</div>
-                                <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:white;color:#238636;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть бота в Telegram</a>
-                            </div>
+                            <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
                         </div>
                     `;
                     btn.style.display = 'none';
@@ -427,13 +433,29 @@
         function copyLink(url) {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(url).then(() => {
-                    showCopied();
+                    showBanner();
                 }).catch(() => {
                     fallbackCopy(url);
+                    showBanner();
                 });
             } else {
                 fallbackCopy(url);
+                showBanner();
             }
+        }
+
+        function showBanner() {
+            let banner = document.getElementById('copy-banner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'copy-banner';
+                banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);color:#1a1a1a;padding:16px 20px;border-radius:12px;max-width:420px;width:calc(100% - 40px);box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:9999;opacity:0;transition:opacity 0.3s;text-align:center;';
+                banner.innerHTML = '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">⏰ Подписка действует 3 дня</div><div style="font-size:13px;margin-bottom:12px;line-height:1.4;">Ссылка скопирована. Через 3 дня доступ закончится. Продлить <b>бесплатно</b> — в @skrepnet_bot.</div><a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:#1a1a1a;color:white;text-decoration:none;padding:10px;border-radius:8px;text-align:center;font-weight:700;font-size:14px;">Открыть @skrepnet_bot</a>';
+                document.body.appendChild(banner);
+            }
+            banner.style.opacity = '1';
+            clearTimeout(window._bannerTimer);
+            window._bannerTimer = setTimeout(() => { banner.style.opacity = '0'; }, 5000);
         }
 
         function fallbackCopy(text) {
@@ -445,23 +467,10 @@
             textarea.select();
             try {
                 document.execCommand('copy');
-                showCopied();
             } catch (e) {
                 alert('Не удалось скопировать. Ссылка: ' + text);
             }
             document.body.removeChild(textarea);
-        }
-
-        function showCopied() {
-            const toast = document.createElement('div');
-            toast.textContent = 'Скопировано!';
-            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#238636;color:white;padding:12px 24px;border-radius:12px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transition = 'opacity 0.3s';
-                setTimeout(() => toast.remove(), 300);
-            }, 2000);
         }
     </script>
 </body>
