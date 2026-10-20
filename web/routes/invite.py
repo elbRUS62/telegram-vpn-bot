@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import aiosqlite
 from flask import Blueprint, jsonify, render_template, request
 
-from config import ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS, WEB_SUBSCRIPTION_DAYS
+from config import BOT_NAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS, WEB_SUBSCRIPTION_DAYS
 from database import get_invite_link, get_user, use_invite_link, get_invite_link_any
 from handlers.utils import sanitize_email
 from xui_client import XUIClient
@@ -190,13 +190,28 @@ def activate(token):
 
                 auto_comment = f"{user_part} | web → bot | от: {inviter_part}"
 
-                sub_id = await xui.add_client(
-                    xui_email,
-                    days=WEB_SUBSCRIPTION_DAYS,
-                    comment=auto_comment,
-                    tg_id=invite["friend_user_id"] or 0,
-                )
-                sub_url = xui.build_sub_url(sub_id)
+                # B уже в 3x-ui? → продлить (+3 дня), отдать ссылку; иначе создать
+                try:
+                    existing = await xui.get_client(xui_email)
+                    has_client = True
+                except Exception:
+                    has_client = False
+
+                if has_client:
+                    await xui.update_expiry(xui_email, days=WEB_SUBSCRIPTION_DAYS)
+                    sub_id = existing.get("subId")
+                    sub_url = xui.build_sub_url(sub_id)
+                    logger.info(f"Продлён существующий {xui_email} (+{WEB_SUBSCRIPTION_DAYS} дн.)")
+                else:
+                    sub_id = await xui.add_client(
+                        xui_email,
+                        days=WEB_SUBSCRIPTION_DAYS,
+                        comment=auto_comment,
+                        tg_id=invite["friend_user_id"] or 0,
+                        group=BOT_NAME,
+                    )
+                    sub_url = xui.build_sub_url(sub_id)
+                    logger.info(f"Создан новый {xui_email} ({WEB_SUBSCRIPTION_DAYS} дн.)")
         except Exception as e:
             logger.exception("Ошибка создания клиента (email=%s)", xui_email)
             return {'error': 'Внутренняя ошибка сервера'}

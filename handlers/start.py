@@ -8,6 +8,7 @@ from aiogram.filters import CommandStart, CommandObject
 from config import DB_PATH
 from database import (
     get_user,
+    find_pending_web_link_for_tg,
     increment_invites,
     add_invite,
 )
@@ -16,6 +17,22 @@ from .menu import show_main_menu
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+
+@router.message(CommandStart())
+async def cmd_start(message: Message):
+    """Обычный /start (без deep-link): привязка по tg_id + главное меню."""
+    from .web_link import bind_by_tg_id
+
+    tg_id = message.from_user.id
+    existing = await get_user(tg_id)
+    if not existing:
+        # B уже активировал веб-выдачу и зашёл в бота — привязываем
+        link = await find_pending_web_link_for_tg(tg_id)
+        if link:
+            await bind_by_tg_id(message, link)
+            return
+    await show_main_menu(message)
 
 
 @router.message(CommandStart(deep_link=True))

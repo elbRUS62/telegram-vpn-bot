@@ -31,7 +31,7 @@ button, input, select, textarea { font-family: inherit; }
 
  .tabs {
  display: flex;
- background-color: rgba(22, 27, 34, 0.25);
+ background-color: transparent;
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
  
@@ -1446,7 +1446,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  </div>
  <div style="border-left:1px solid var(--border-color); margin:0 10px;"></div>
  <div>
- <div style="font-size:24px; margin-bottom:4px;">${data.is_online ? '🟢' : '⚪'}</div>
+ <div style="margin-bottom:6px;"><span class="status-dot status-dot--${data.is_online ? 'active' : 'new'}" style="width:16px;height:16px;"></span></div>
  <div style="font-size:14px; font-weight:600;">${data.is_online ? 'Онлайн' : 'Оффлайн'}</div>
  <div style="font-size:11px; color:var(--hint-color);">Статус</div>
  </div>
