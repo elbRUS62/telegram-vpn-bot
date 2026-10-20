@@ -48,8 +48,7 @@ class XUIClient:
         email: str,
         days: int = None,
         comment: str = None,
-        tg_id: int = 0,
-    ) -> str:
+        tg_id: int = 0, group: str = "" ) -> str:
         """Создать клиента в 3x-ui и добавить в группу BOT_NAME.
 
         Args:
@@ -60,7 +59,7 @@ class XUIClient:
         """
         if days is None:
             days = SUBSCRIPTION_DAYS
-        expires_ms = int((datetime.now() + timedelta(days=days)).timestamp() * 1000)
+        expires_ms = 0 if days == 0 else int((datetime.now() + timedelta(days=days)).timestamp() * 1000)
 
         # Генерируем subId из email — гарантированно уникальный
         sub_id = hashlib.sha256(email.encode()).hexdigest()[:16]
@@ -74,7 +73,8 @@ class XUIClient:
                 "totalGB": 0,
                 "tgId": tg_id,
                 "subId": sub_id,
-                "comment": comment or ""
+                "comment": comment or "",
+                "group": group or BOT_NAME
             },
             "inboundIds": [INBOUND_GB]
         }
@@ -86,7 +86,7 @@ class XUIClient:
         try:
             await self._post("/panel/api/clients/groups/bulkAdd", {
                 "emails": [email],
-                "group": BOT_NAME
+                "group": group or BOT_NAME
             })
             logger.info(f"✅ {email} добавлен в группу {BOT_NAME}")
         except Exception as e:
