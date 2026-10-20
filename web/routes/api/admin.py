@@ -182,7 +182,9 @@ def users_list():
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
             where, args = [], []
-            if status != "all":
+            if status == "web":
+                where.append("source = 'web'")
+            elif status != "all":
                 where.append("status=?")
                 args.append(status)
             if q:
@@ -208,7 +210,7 @@ def users_list():
             order_sql = order_map.get(sort, "created_at DESC")
 
             async with db.execute(
-                f"""SELECT telegram_id, username, first_name, status, xui_email,
+                f"""SELECT telegram_id, username, first_name, status, xui_email, source,
                            expires_at, invites_count, renew_count, created_at
                     FROM users {where_sql}
                     ORDER BY {order_sql}

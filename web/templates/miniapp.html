@@ -595,6 +595,7 @@ body {
  .badge.warn { background: rgba(255, 149, 0, 0.15); color: #ff9500; }
  .badge.dead { background: rgba(255, 59, 48, 0.15); color: #ff3b30; }
  .badge.pending { background: var(--button-color); color: #fff; margin-left: 6px; }
+ .badge.web { background: rgba(0, 122, 255, 0.15); color: #007aff; margin-left: 4px; }
  
  .admin-search { display: flex; gap: 8px; margin-bottom: 12px; }
  .admin-search input, .admin-search select {
@@ -685,12 +686,18 @@ body {
 .admin-sync svg { display: block; }
 
  
- .admin-filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 4px; }
+ .admin-filter-row { 
+    display: flex; 
+    gap: 8px; 
+    margin-bottom: 12px; 
+    flex-wrap: nowrap; 
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+}
+.admin-filter-row::-webkit-scrollbar { display: none; }
+.admin-filter-row { -ms-overflow-style: none; scrollbar-width: none; }
+.admin-filter-row .filter-btn { white-space: nowrap; flex-shrink: 0; }
 .admin-filter-row::-webkit-scrollbar { display: none; }
 
  .filter-btn {
@@ -1452,10 +1459,6 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  </div>
  </div>
 
- <div class="card" style="padding:12px;">
- <button class="btn btn-secondary" data-action="renew_sub"> Продлить подписку</button>
- </div>
-
  <div style="text-align:center; margin-top:16px;">
  <a href="https://t.me/${data.support_username || 'SkrepNet_support'}" target="_blank" style="color:var(--link-color); font-size:13px; text-decoration:none;"> Проблема с подключением? Напиши в поддержку</a>
  </div>
@@ -1720,7 +1723,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  <div class="admin-user" data-tg="${u.telegram_id}">
  <div class="admin-user-status"><span class="status-dot status-dot--${statusClass}"></span></div>
  <div class="admin-user-info">
- <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}</div>
+ <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}${u.source === 'web' ? ' <span class="badge web">web</span>' : ''}</div>
  </div>
  <div class="admin-user-arrow">›</div>
  </div>`;
@@ -1917,6 +1920,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  <button class="filter-btn" data-filter="active">Активные</button>
  <button class="filter-btn" data-filter="pending" id="filter-pending-btn">Заявки <span class="badge pending" id="pending-count" style="display:none;">0</span></button>
  <button class="filter-btn" data-filter="rejected">Отклонённые</button>
+      <button class="filter-btn" data-filter="web">web</button>
  </div>
  <div class="card" style="padding:0;" id="admin-users"></div>
  <button class="btn btn-secondary" id="admin-more" style="width:100%;display:none;margin-top:8px;">Показать ещё</button>

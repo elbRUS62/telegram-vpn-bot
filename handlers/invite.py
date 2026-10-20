@@ -114,11 +114,13 @@ async def invite_cancel_message(message: Message, state: FSMContext):
     await state.clear()
     is_admin = message.from_user.id in ADMIN_IDS
 
-    from keyboards import invite_contact_keyboard
+    from keyboards import main_inline_menu
+    from aiogram.types import ReplyKeyboardRemove
     await message.answer(
-        "Выбор контакта отменён.\n\n"
-        "Если хочешь попробовать снова — нажми «👤 Выбрать из контактов» ниже.",
-        reply_markup=invite_contact_keyboard()
+        "❌ Отменено.\n\n"
+        "📋 <b>Меню</b>\n\nВыбери действие:",
+        parse_mode="HTML",
+        reply_markup=main_inline_menu(is_admin)
     )
 
 @router.message(F.users_shared)
