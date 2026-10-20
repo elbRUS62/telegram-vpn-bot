@@ -1,15 +1,20 @@
 """Обёртка для запуска async в sync-контексте Flask."""
-
 import asyncio
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
+_loop = asyncio.new_event_loop()
+_thread = threading.Thread(target=_loop.run_forever, daemon=True, name="async-helper")
+_thread.start()
+
 
 def run_async(coro):
-    """Выполнить async-функцию, вернуть результат или {'error': ...}."""
+    """Выполнить async-функцию в общем loop, вернуть результат."""
     try:
-        return asyncio.run(coro)
-    except Exception as e:
-        logger.error("Async error: ")
+        future = asyncio.run_coroutine_threadsafe(coro, _loop)
+        return future.result(timeout=60)
+    except Exception:
+        logger.exception("Async error")
         return {'error': 'Внутренняя ошибка сервера'}

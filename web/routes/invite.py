@@ -1,6 +1,5 @@
 """Роуты приглашений (веб-выдача)."""
 
-import asyncio
 import logging
 from datetime import datetime, timedelta
 
@@ -11,6 +10,7 @@ from config import ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS, WEB_SUBSCRI
 from database import get_invite_link, get_user, use_invite_link, get_invite_link_any
 from handlers.utils import sanitize_email
 from xui_client import XUIClient
+from web.utils.async_helper import run_async
 
 invite_bp = Blueprint('invite', __name__)
 logger = logging.getLogger(__name__)
@@ -40,12 +40,12 @@ async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, su
 
 @invite_bp.route('/invite/<token>')
 def invite_page(token):
-    invite = asyncio.run(get_invite_link_any(token))
+    invite = run_async(get_invite_link_any(token))
     if not invite:
         return render_template('error.html',
             message="Ссылка недействительна или уже использована"), 404
 
-    inviter = asyncio.run(get_user(invite["created_by"]))
+    inviter = run_async(get_user(invite["created_by"]))
     inviter_name = "друг"
     if inviter:
         if inviter["username"]:
@@ -76,7 +76,6 @@ def invite_status(token):
             return {'used': True, 'error': 'Подписка не найдена'}
         
         try:
-            from xui_client import XUIClient
             async with XUIClient() as xui:
                 client = await xui.get_client(email)
                 if not client:
@@ -107,7 +106,7 @@ def invite_status(token):
         except Exception as e:
             return {'used': True, 'error': 'Внутренняя ошибка сервера'}
     
-    result = asyncio.run(check())
+    result = run_async(check())
     if 'error' in result and not result.get('used'):
         return jsonify(result), 404
     return jsonify(result)
@@ -137,7 +136,6 @@ def activate(token):
         # Если ссылка уже использована — возвращаем существующую подписку
         if invite["is_used"]:
             # Получаем подписку из 3x-ui по email
-            from xui_client import XUIClient
             email = invite["xui_email"]
             if not email:
                 return {'error': 'Подписка не найдена', 'used': True}
@@ -256,7 +254,7 @@ def activate(token):
             'qr_base64': qr_base64
         }
 
-    result = asyncio.run(process())
+    result = run_async(process())
     if 'error' in result:
         return jsonify(result), 400
     return jsonify(result)
