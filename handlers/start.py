@@ -20,20 +20,21 @@ logger = logging.getLogger(__name__)
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message):
-    """Обычный /start (без deep-link): привязка по tg_id + главное меню."""
+async def cmd_start(message: Message, command: CommandObject):
+    """Обычный /start: если есть deep-link (webapp_*), передаём в deeplink-обработчик."""
     from .web_link import bind_by_tg_id
+
+    if command.args and command.args.startswith("webapp_"):
+        return await cmd_start_deeplink(message, command)
 
     tg_id = message.from_user.id
     existing = await get_user(tg_id)
     if not existing:
-        # B уже активировал веб-выдачу и зашёл в бота — привязываем
         link = await find_pending_web_link_for_tg(tg_id)
         if link:
             await bind_by_tg_id(message, link)
             return
     await show_main_menu(message)
-
 
 @router.message(CommandStart(deep_link=True))
 async def cmd_start_deeplink(message: Message, command: CommandObject):
@@ -96,10 +97,20 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 return
             from keyboards import invite_contact_keyboard
             await message.answer(
-                "➕ <b>Добавить пользователя без Telegram</b>\n\n"
-                "Нажми «👤 Выбрать из контактов» — выбери человека из списка Telegram.\n"
-                "Я получу его ID и username автоматически.\n\n"
-                "⏳ После выбора создам одноразовую ссылку на 7 дней.",
+                "➕ <b>Добавить пользователя без Telegram</b>
+
+"
+                "Здесь ты можешь подарить VPN-подписку другу, у которого <b>нет</b> аккаунта в Telegram.
+
+"
+                "1️⃣ Нажми кнопку <b>«👤 Выбрать из контактов»</b> ниже.
+"
+                "2️⃣ Выбери друга из списка своих контактов в Telegram.
+"
+                "3️⃣ Полученную ссылку отправь другу в любом мессенджере (WhatsApp, VK, SMS).
+
+"
+                "Если передумал — нажми <b>«❌ Отмена»</b>.",
                 parse_mode="HTML",
                 reply_markup=invite_contact_keyboard()
             )
@@ -224,9 +235,20 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 return
             from keyboards import invite_contact_keyboard
             await message.answer(
-                "➕ <b>Добавить пользователя без Telegram</b>\n\n"
-                "Нажми «👤 Выбрать из контактов» — выбери человека из списка Telegram.\n\n"
-                "⏳ После выбора создам одноразовую ссылку на 7 дней.",
+                "➕ <b>Добавить пользователя без Telegram</b>
+
+"
+                "Здесь ты можешь подарить VPN-подписку другу, у которого <b>нет</b> аккаунта в Telegram.
+
+"
+                "1️⃣ Нажми кнопку <b>«👤 Выбрать из контактов»</b> ниже.
+"
+                "2️⃣ Выбери друга из списка своих контактов в Telegram.
+"
+                "3️⃣ Полученную ссылку отправь другу в любом мессенджере (WhatsApp, VK, SMS).
+
+"
+                "Если передумал — нажми <b>«❌ Отмена»</b>.",
                 parse_mode="HTML",
                 reply_markup=invite_contact_keyboard()
             )
