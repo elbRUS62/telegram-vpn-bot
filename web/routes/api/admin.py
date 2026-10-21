@@ -98,7 +98,7 @@ def stats():
                 else:
                     traffic_gb = 0
             except Exception:
-                logger.exception("admin/stats: traffic failed")
+                logger.error("admin/stats: traffic failed")
                 traffic_gb = None
 
             # --- Онлайн-подсчёт (VPN) из 3x-ui ---
@@ -112,7 +112,7 @@ def stats():
                     if res.get("success"):
                         online_count = len(res.get("obj", []) or [])
             except Exception:
-                logger.exception("admin/stats: online_count failed")
+                logger.error("admin/stats: online_count failed")
                 online_count = 0
 
         return {
@@ -249,7 +249,7 @@ def users_list():
                 if res.get("success"):
                     online_emails = set(res.get("obj", []) or [])
         except Exception:
-            logger.exception("Не удалось получить онлайн-статус из 3x-ui")
+            logger.error("Не удалось получить онлайн-статус из 3x-ui")
 
         for u in rows:
             email = u.get("xui_email")
@@ -348,7 +348,7 @@ def user_card():
                     result["vpn_online"] = (u.get("xui_email") in online_emails)
                     result["is_online"] = result["vpn_online"]
         except Exception:
-            logger.exception("user_card: onlines failed")
+            logger.error("user_card: onlines failed")
 
         # Берём данные из 3x-ui, если есть email
         if u["xui_email"]:
@@ -695,10 +695,10 @@ def broadcast():
             meta = f"sent={result['sent']}, failed={result['failed']}, text={text[:80]}"
             run_async(_audit(request.admin_user["id"], "broadcast", None, meta))
         except Exception:
-            logger.exception("_audit broadcast failed")
+            logger.error("_audit broadcast failed")
         return jsonify({"success": True, "sent": result["sent"], "failed": result["failed"]})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 # ---------------- audit ----------------
 
