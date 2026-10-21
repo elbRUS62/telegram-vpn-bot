@@ -101,6 +101,20 @@ def stats():
                 logger.exception("admin/stats: traffic failed")
                 traffic_gb = None
 
+            # --- Онлайн-подсчёт (VPN) из 3x-ui ---
+            # Используем /panel/api/clients/onlines — именно этот список
+            # показывает панель 3x-ui как «В сети».
+            online_count = 0
+            try:
+                from xui_client import XUIClient
+                async with XUIClient() as xui:
+                    res = await xui._post("/panel/api/clients/onlines", {})
+                    if res.get("success"):
+                        online_count = len(res.get("obj", []) or [])
+            except Exception:
+                logger.exception("admin/stats: online_count failed")
+                online_count = 0
+
         return {
             "users_total": total,
             "active": active,
@@ -115,6 +129,7 @@ def stats():
             "active_slots": active,            # Занято
             "free_slots": max(MAX_USERS - active, 0),
             "bot_name": BOT_NAME,
+            "online_count": online_count,
         }
 
     try:
@@ -211,13 +226,46 @@ def users_list():
 
             async with db.execute(
                 f"""SELECT telegram_id, username, first_name, status, xui_email, source,
-                           expires_at, invites_count, renew_count, created_at
+                           expires_at, invites_count, renew_count, created_at,
+                           last_seen, invited_by
                     FROM users {where_sql}
                     ORDER BY {order_sql}
                     LIMIT ? OFFSET ?""",
                 (*args, limit, offset),
             ) as cur:
                 rows = [dict(r) for r in await cur.fetchall()]
+
+        from datetime import datetime
+        now_ms = int(datetime.now().timestamp() * 1000)
+        online_threshold_ms = 5 * 60 * 1000  # 5 минут
+
+        # --- Онлайн-статус из 3x-ui через /clients/onlines ---
+        # Это тот же список, что и в панели «В сети» — точное совпадение.
+        online_emails = set()
+        try:
+            from xui_client import XUIClient
+            async with XUIClient() as xui:
+                res = await xui._post("/panel/api/clients/onlines", {})
+                if res.get("success"):
+                    online_emails = set(res.get("obj", []) or [])
+        except Exception:
+            logger.exception("Не удалось получить онлайн-статус из 3x-ui")
+
+        for u in rows:
+            email = u.get("xui_email")
+            u["vpn_online"] = email in online_emails
+            u["is_web"] = (u.get("source") == "web")
+
+            # role: web / реферал / бот
+            if u.get("source") == "web":
+                u["role_label"] = "web"
+                u["role_color"] = "web"
+            elif u.get("invited_by"):
+                u["role_label"] = "реферал"
+                u["role_color"] = "referral"
+            else:
+                u["role_label"] = "бот"
+                u["role_color"] = "bot"
 
         return {
             "items": rows,

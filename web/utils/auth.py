@@ -6,7 +6,9 @@ import json
 import logging
 from urllib.parse import parse_qsl
 
-from config import BOT_TOKEN
+import aiosqlite
+
+from config import BOT_TOKEN, DB_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +35,33 @@ def validate_init_data(init_data: str) -> dict | None:
         ).hexdigest()
         if calculated_hash != hash_value:
             return None
-        return json.loads(parsed.get("user", "{}"))
-    except Exception as e:
-        logger.error("initData validation error: ")
+        user_data = json.loads(parsed.get("user", "{}"))
+
+        # Обновляем last_seen для «онлайн» в админке
+        tg_id = user_data.get("id")
+        if tg_id:
+            try:
+                _update_last_seen(tg_id)
+            except Exception:
+                logger.exception("Не удалось обновить last_seen для %s", tg_id)
+
+        return user_data
+    except Exception:
+        logger.exception("initData validation error")
         return None
+
+def _update_last_seen(tg_id: int):
+    """Обновить last_seen пользователя (для индикатора «онлайн»)."""
+    from web.utils.async_helper import run_async
+    from datetime import datetime
+
+    async def _upd():
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "UPDATE users SET last_seen = ? WHERE telegram_id = ?",
+                (datetime.now(), tg_id),
+            )
+            await db.commit()
+
+    run_async(_upd())
+

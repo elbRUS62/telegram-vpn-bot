@@ -528,7 +528,14 @@ body {
  .admin-user { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border-color); gap: 12px; transition: background-color 0.1s; cursor: pointer; }
  .admin-user:hover { background-color: rgba(88, 166, 255, 0.05); }
 .admin-user:active { background-color: rgba(255,255,255,0.05); }
- .admin-user-status { width: 20px; text-align: center; font-size: 12px; flex-shrink: 0; }
+ 
+ .status-dot--online-web { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #58a6ff !important; box-shadow: 0 0 6px rgba(88, 166, 255, 0.5); animation: online-pulse-blue 2.5s ease-in-out infinite; }
+.status-dot--online { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #3fb950 !important; box-shadow: 0 0 6px rgba(63, 185, 80, 0.5); animation: online-pulse-green 2.5s ease-in-out infinite; }
+ .status-dot--offline { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #8b949e !important; }
+ .badge.referral { background: rgba(63, 185, 80, 0.15); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+ .badge.bot { background: rgba(139, 148, 158, 0.15); color: #8b949e; border: 1px solid rgba(139, 148, 158, 0.3); }
+
+.admin-user-status { width: 20px; text-align: center; font-size: 12px; flex-shrink: 0; }
 
 /* Кружки статуса в списке пользователей */
 .status-dot {
@@ -946,6 +953,16 @@ body {
     color: var(--hint-color);
     font-size: 20px;
     cursor: pointer;
+}
+
+
+@keyframes online-pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(63, 185, 80, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(63, 185, 80, 0); }
+}
+@keyframes online-pulse-blue {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(88, 166, 255, 0); }
 }
 
 </style>
@@ -1796,18 +1813,28 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  }
 
  function adminUserRow(u) {
- const statusMap = { active: 'active', pending: 'pending', rejected: 'rejected', new: 'new', blocked: 'blocked' };
- const statusClass = (u.status in statusMap) ? statusMap[u.status] : 'new';
- 
- return `
- <div class="admin-user" data-tg="${u.telegram_id}">
- <div class="admin-user-status"><span class="status-dot status-dot--${statusClass}"></span></div>
- <div class="admin-user-info">
- <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}${u.source === 'web' ? ' <span class="badge web">web</span>' : ''}</div>
- </div>
- <div class="admin-user-arrow">›</div>
- </div>`;
- }
+    const isOnline = u.vpn_online === true;
+    const isWeb = u.is_web === true;
+    let dot;
+    if (!isOnline) {
+        dot = '<span class="status-dot status-dot--offline" title="Офлайн"></span>';
+    } else if (isWeb) {
+        dot = '<span class="status-dot status-dot--online-web" title="Онлайн (web)"></span>';
+    } else {
+        dot = '<span class="status-dot status-dot--online" title="Онлайн"></span>';
+    }
+    const roleBadge = u.role_label
+        ? `<span class="badge ${u.role_color}">${u.role_label}</span>`
+        : '';
+    return `
+    <div class="admin-user" data-tg="${u.telegram_id}">
+        <div class="admin-user-status">${dot}</div>
+        <div class="admin-user-info">
+            <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}${roleBadge}</div>
+        </div>
+        <div class="admin-user-arrow">›</div>
+    </div>`;
+}
 
  async function loadAdminStats() {
  const r = await adminCall('/stats');
@@ -1815,8 +1842,8 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const el = document.getElementById('admin-stats');
  if (!el) return;
  el.innerHTML = `
- <div class="stat-card"><div class="stat-num">${r.users_total}</div><div class="stat-lbl">Пользователи</div></div>
  <div class="stat-card"><div class="stat-num">${r.active}</div><div class="stat-lbl">Активных</div></div>
+ <div class="stat-card"><div class="stat-num" style="color:#3fb950;">${r.online_count ?? 0}</div><div class="stat-lbl">Онлайн VPN</div></div>
  <div class="stat-card"><div class="stat-num">${r.expiring_3d}</div><div class="stat-lbl">Истекают ≤3д</div></div>
  <div class="stat-card"><div class="stat-num">${r.active} / ${r.max_users}</div><div class="stat-lbl">Занято мест</div></div>
  <div class="stat-card"><div class="stat-num">${r.donated_rub} ₽</div><div class="stat-lbl">Донаты</div></div>
@@ -2068,6 +2095,16 @@ async function openAdminUserCard(tgId) {
  }
 
  async function loadAdmin() {
+ // Авто-обновление статистики каждые 30 секунд
+ if (!window._adminInterval) {
+   window._adminInterval = setInterval(() => {
+     if (document.getElementById('admin-stats')) {
+       loadAdminStats();
+     }
+   }, 5000);
+   console.log('[admin] auto-refresh stats: 5s');
+ }
+
  if (!IS_ADMIN) return;
  document.getElementById('admin-loading').style.display = 'none';
  document.getElementById('admin-content').style.display = 'block';
