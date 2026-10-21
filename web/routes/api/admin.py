@@ -548,7 +548,7 @@ def block():
                 async with aiosqlite.connect(DB_PATH) as db:
                     await db.execute("UPDATE users SET status = 'blocked' WHERE telegram_id = ?", (tg_id,))
                     await db.commit()
-                await _audit(request.json.get("init_data"), "block", tg_id)
+                await _audit(request.admin_user["id"], "block", tg_id)
                 return {"success": True}
             return {"error": "Ошибка 3x-ui"}
 
@@ -594,7 +594,7 @@ def unblock():
                 async with aiosqlite.connect(DB_PATH) as db:
                     await db.execute("UPDATE users SET status = 'active' WHERE telegram_id = ?", (tg_id,))
                     await db.commit()
-                await _audit(request.json.get("init_data"), "unblock", tg_id)
+                await _audit(request.admin_user["id"], "unblock", tg_id)
                 return {"success": True}
             return {"error": "Ошибка 3x-ui"}
 
@@ -652,6 +652,59 @@ def broadcast():
 
     try:
         result = asyncio.run(do_broadcast())
+        # Логируем действие
+        try:
+            meta = f"sent={result['sent']}, failed={result['failed']}, text={text[:80]}"
+            run_async(_audit(request.admin_user["id"], "broadcast", None, meta))
+        except Exception:
+            logger.exception("_audit broadcast failed")
         return jsonify({"success": True, "sent": result["sent"], "failed": result["failed"]})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# ---------------- audit ----------------
+
+@admin_api.route("/audit", methods=["POST"])
+@admin_required
+def audit_log():
+    """Возвращает журнал действий админов."""
+    data = request.json or {}
+    limit = min(200, max(1, int(data.get("limit", 50))))
+    offset = max(0, int(data.get("offset", 0)))
+    action_filter = data.get("action")
+
+    async def do():
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+
+            where = ""
+            args = []
+            if action_filter:
+                where = "WHERE a.action = ?"
+                args.append(action_filter)
+
+            async with db.execute(f"""
+                SELECT a.id, a.admin_id, a.action, a.target_id, a.meta, a.created_at,
+                       u_admin.username as admin_username, u_admin.first_name as admin_first_name,
+                       u_target.username as target_username, u_target.first_name as target_first_name
+                FROM admin_audit a
+                LEFT JOIN users u_admin ON u_admin.telegram_id = a.admin_id
+                LEFT JOIN users u_target ON u_target.telegram_id = a.target_id
+                {where}
+                ORDER BY a.id DESC
+                LIMIT ? OFFSET ?
+            """, (*args, limit, offset)) as cur:
+                rows = [dict(r) for r in await cur.fetchall()]
+
+            async with db.execute(f"SELECT COUNT(*) FROM admin_audit a {where}", args) as cur:
+                total = (await cur.fetchone())[0]
+
+        return {"items": rows, "total": total, "limit": limit, "offset": offset}
+
+    try:
+        return jsonify(run_async(do()))
+    except Exception as e:
+        logger.error("admin/audit failed")
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+
+

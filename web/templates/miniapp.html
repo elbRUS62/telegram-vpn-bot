@@ -2025,6 +2025,7 @@ async function openAdminUserCard(tgId) {
 </button>
  </div>
  <button class="btn btn-secondary" style="width:100%; margin-bottom:12px;" onclick="openBroadcast()">Массовая рассылка</button>
+ <button class="btn btn-secondary" style="width:100%; margin-bottom:12px;" onclick="openAudit()">История</button>
  <div class="tabs" id="admin-filter-scroll">
  <button class="tab active" data-filter="all" onclick="ADMIN.status=this.dataset.filter; document.querySelectorAll('#admin-filter-scroll .tab').forEach(b=>b.classList.remove('active')); this.classList.add('active'); loadAdminUsers();">Все</button>
  <button class="tab" data-filter="active" onclick="ADMIN.status=this.dataset.filter; document.querySelectorAll('#admin-filter-scroll .tab').forEach(b=>b.classList.remove('active')); this.classList.add('active'); loadAdminUsers();">Активные</button>
@@ -2237,6 +2238,75 @@ document.addEventListener('click', (e) => {
 
 let bcastSilent = false;
 
+
+// ===== Audit log =====
+function formatAuditAction(action) {
+    const map = {
+        'approve': '✅ Одобрил',
+        'reject': '❌ Отклонил',
+        'extend': '📅 Продлил',
+        'delete': '🗑 Удалил',
+        'block': '🚫 Заблокировал',
+        'unblock': '🔓 Разблокировал',
+        'broadcast': '📢 Рассылка',
+        'sync_xui': '🔄 Синхронизация',
+    };
+    return map[action] || action;
+}
+
+function formatAuditTime(ts) {
+    if (!ts) return '—';
+    try {
+        const d = new Date(ts.replace(' ', 'T'));
+        if (isNaN(d.getTime())) return ts;
+        return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return ts; }
+}
+
+function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadAdminAudit() {
+    const el = document.getElementById('audit-list');
+    if (!el) return;
+    el.innerHTML = 'Загрузка...';
+    const r = await adminCall('/audit', { limit: 100, offset: 0 });
+    if (r.error) { el.innerHTML = '<div style="color:#f85149;">' + r.error + '</div>'; return; }
+    const items = r.items || [];
+    if (!items.length) {
+        el.innerHTML = '<div style="color:var(--hint-color);text-align:center;padding:20px;">Пока пусто</div>';
+        return;
+    }
+    el.innerHTML = items.map(a => {
+        const adminName = a.admin_username ? '@' + a.admin_username : (a.admin_first_name || ('ID ' + a.admin_id));
+        const targetName = a.target_id
+            ? (a.target_username ? '@' + a.target_username : (a.target_first_name || ('ID ' + a.target_id)))
+            : '';
+        const meta = a.meta ? ' <span style="color:var(--hint-color);">(' + escapeHtml(a.meta) + ')</span>' : '';
+        return `
+            <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+                <div style="display:flex;justify-content:space-between;gap:8px;">
+                    <span style="color:var(--text-color);">${formatAuditAction(a.action)}</span>
+                    <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(a.created_at)}</span>
+                </div>
+                <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
+                    ${adminName}${targetName ? ' → ' + targetName : ''}${meta}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openAudit() {
+    document.getElementById('audit-modal').classList.add('show');
+    loadAdminAudit();
+}
+function closeAudit() {
+    document.getElementById('audit-modal').classList.remove('show');
+}
+
 function openBroadcast() {
     document.getElementById('bcast-modal').classList.add('show');
     document.getElementById('bcast-step1').style.display = 'block';
@@ -2277,7 +2347,7 @@ async function submitBcast() {
 
 
 <!-- Красивая модалка массовой рассылки -->
-<div id="bcast-modal" class="modal">
+<div id="bcast-modal" class="modal-backdrop">
   <div class="modal-content" style="max-width: 90%; width: 400px; margin: auto;">
     <div class="modal-header">
       <h3 style="margin:0; font-size:18px;">📢 Массовая рассылка</h3>
@@ -2296,6 +2366,18 @@ async function submitBcast() {
         <button class="btn btn-secondary" style="width:100%;" onclick="backToBcast()">Назад</button>
       </div>
     </div>
+  </div>
+</div>
+
+
+<!-- Модалка журнала действий -->
+<div id="audit-modal" class="modal-backdrop">
+  <div class="modal" style="max-width: min(500px, 92vw); width: 100%;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0; font-size:18px;">История действий</h3>
+      <button onclick="closeAudit()" style="background:none; border:none; color:var(--hint-color); font-size:20px; cursor:pointer;">✕</button>
+    </div>
+    <div id="audit-list" style="font-size: 13px; max-height: 70vh; overflow-y: auto; overflow-x: hidden; word-break: break-word; overflow-wrap: anywhere;">Загрузка...</div>
   </div>
 </div>
 
