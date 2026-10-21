@@ -171,8 +171,11 @@ def activate(token):
             except Exception as e:
                 return {'error': 'Внутренняя ошибка сервера', 'used': True}
 
+        # Приоритет: @username > ID > fallback (guest_...)
         if invite["friend_username"]:
             name = invite["friend_username"]
+        elif invite["friend_user_id"]:
+            name = str(invite["friend_user_id"])
         else:
             name = f"guest_{invite['created_by']}_{int(datetime.now().timestamp())}"
 
@@ -217,6 +220,25 @@ def activate(token):
             return {'error': 'Внутренняя ошибка сервера'}
 
         await use_invite_link(token, xui_email, sub_id)
+
+        # Создаём запись в users (чтобы гость появился в админке)
+        if invite["friend_user_id"]:
+            existing = await get_user(invite["friend_user_id"])
+            if not existing:
+                import aiosqlite
+                from config import DB_PATH
+                async with aiosqlite.connect(DB_PATH) as db:
+                    await db.execute("""
+                        INSERT OR REPLACE INTO users (telegram_id, username, first_name, xui_email, status, sub_id, source) VALUES (?, ?, ?, ?, 'active', ?, 'web')
+                    """, (
+                        invite["friend_user_id"],
+                        invite["friend_username"] or "",
+                        invite["friend_username"] or f"guest_{invite['friend_user_id']}",
+                        xui_email,
+                        sub_id
+                    ))
+                    await db.commit()
+                logger.info(f"✅ Создан пользователь в БД: {invite['friend_user_id']} ({xui_email})")
 
         try:
             from database import mark_invite_counted, increment_invites, add_invite

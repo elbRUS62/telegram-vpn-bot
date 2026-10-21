@@ -24,7 +24,7 @@ async def cmd_start(message: Message, command: CommandObject):
     """Обычный /start: если есть deep-link (webapp_*), передаём в deeplink-обработчик."""
     from .web_link import bind_by_tg_id
 
-    if command.args and command.args.startswith("webapp_"):
+    if command.args and (command.args.startswith("webapp_") or command.args == "admin_broadcast"):
         return await cmd_start_deeplink(message, command)
 
     tg_id = message.from_user.id
@@ -87,6 +87,23 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 f"📊 Ты уже пригласил: {invites} чел.\n\n"
                 f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
                 reply_markup=share_keyboard(BOT_USERNAME, message.from_user.id),
+                parse_mode="HTML"
+            )
+            return
+
+        if action == "admin_broadcast":
+            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔔 Обычное сообщение", callback_data="admin_broadcast_type_loud")],
+                [InlineKeyboardButton(text="🔕 Тихое сообщение", callback_data="admin_broadcast_type_silent")],
+                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_broadcast_cancel")]
+            ])
+            await message.answer(
+                "📢 <b>Массовая рассылка</b>\n\n"
+                "Выбери тип сообщения:\n"
+                "🔔 <b>Обычное</b> — со звуком уведомления.\n"
+                "🔕 <b>Тихое</b> — без звука.",
+                reply_markup=kb,
                 parse_mode="HTML"
             )
             return
@@ -218,6 +235,23 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 f"📊 Ты уже пригласил: {invites} чел.\n\n"
                 f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
                 reply_markup=share_keyboard(BOT_USERNAME, message.from_user.id),
+                parse_mode="HTML"
+            )
+            return
+
+        if action == "admin_broadcast":
+            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔔 Обычное сообщение", callback_data="admin_broadcast_type_loud")],
+                [InlineKeyboardButton(text="🔕 Тихое сообщение", callback_data="admin_broadcast_type_silent")],
+                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_broadcast_cancel")]
+            ])
+            await message.answer(
+                "📢 <b>Массовая рассылка</b>\n\n"
+                "Выбери тип сообщения:\n"
+                "🔔 <b>Обычное</b> — со звуком уведомления.\n"
+                "🔕 <b>Тихое</b> — без звука.",
+                reply_markup=kb,
                 parse_mode="HTML"
             )
             return

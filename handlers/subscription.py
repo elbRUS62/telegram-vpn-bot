@@ -662,16 +662,21 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
             parse_mode="HTML"
         )
 
-        await bot.send_message(
-            telegram_id,
-            f"🎉 <b>Твоя подписка готова!</b>\n\n"
-            f"🔗 Ссылка:\n<code>{sub_url}</code>\n\n"
-            f"📱 Лимит: 3 IP одновременно\n"
-            f"⏳ Срок: 30 дней. Продлить можно через «🔑 Моя подписка».\n\n"
-            f"{DONATE_TEXT}",
-            parse_mode="HTML",
-            reply_markup=subscription_keyboard()
-        )
+        # Отправляем сообщение пользователю (с логированием ошибки)
+        try:
+            await bot.send_message(
+                telegram_id,
+                f"🎉 <b>Твоя подписка готова!</b>\n\n"
+                f"🔗 Ссылка:\n<code>{sub_url}</code>\n\n"
+                f"📱 Лимит: 3 IP одновременно\n"
+                f"⏳ Срок: 30 дней. Продлить можно через «🔑 Моя подписка».\n\n"
+                f"{DONATE_TEXT}",
+                parse_mode="HTML",
+                reply_markup=subscription_keyboard()
+            )
+            logger.info(f"✅ Сообщение отправлено пользователю {telegram_id}")
+        except Exception as e:
+            logger.error(f"❌ Не удалось отправить сообщение {telegram_id}: {e}")
 
         logger.info(f"✅ Одобрен из уведомления {user['xui_email']} | comment={comment}")
 
