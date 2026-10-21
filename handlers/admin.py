@@ -192,11 +192,14 @@ async def admin_broadcast_process(message: Message, state: FSMContext):
         async with db.execute("SELECT telegram_id FROM users WHERE status = 'active'") as cur:
             users = await cur.fetchall()
 
+    data = await state.get_data()
+    silent = data.get("broadcast_silent", False)
+
     sent = 0
     failed = 0
     for u in users:
         try:
-            await message.bot.send_message(u["telegram_id"], text, disable_notification=True)
+            await message.bot.send_message(u["telegram_id"], text, disable_notification=silent)
             sent += 1
         except Exception:
             failed += 1

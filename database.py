@@ -277,12 +277,53 @@ async def get_all_admins() -> list:
 
 async def create_invite_link(telegram_id: int, friend_user_id: int = None,
                               friend_username: str = None) -> str:
-    """Создаёт одноразовую ссылку-приглашение.
-    Возвращает уникальный токен.
+    """Создаёт или переиспользует ссылку-приглашение.
 
-    При создании удаляет старые НЕактивированные ссылки того же A
-    на того же друга — чтобы не копить мусор.
+    Приоритет: если на того же друга уже есть ссылка — она переиспользуется
+    (is_used сбрасывается в 0, created_at обновляется), чтобы не копить мусор
+    в БД. Если ссылки нет — создаётся новая.
     """
+    # --- Попытка переиспользовать существующую ссылку ---
+    async with aiosqlite.connect(DB_PATH) as db:
+        existing_token = None
+        if friend_user_id is not None:
+            async with db.execute("""
+                SELECT token FROM invite_links
+                WHERE created_by = ? AND friend_user_id = ?
+                ORDER BY created_at DESC LIMIT 1
+            """, (telegram_id, friend_user_id)) as cur:
+                row = await cur.fetchone()
+                if row:
+                    existing_token = row[0]
+        elif friend_username:
+            async with db.execute("""
+                SELECT token FROM invite_links
+                WHERE created_by = ? AND friend_username = ?
+                ORDER BY created_at DESC LIMIT 1
+            """, (telegram_id, friend_username)) as cur:
+                row = await cur.fetchone()
+                if row:
+                    existing_token = row[0]
+
+        if existing_token:
+            await db.execute("""
+                UPDATE invite_links
+                SET is_used = 0,
+                    used_at = NULL,
+                    created_at = CURRENT_TIMESTAMP,
+                    counted = 0,
+                    xui_email = NULL,
+                    sub_id = NULL
+                WHERE token = ?
+            """, (existing_token,))
+            await db.commit()
+            logger.info(
+                "♻️ Переиспользована ссылка %s (created_by=%s, friend_id=%s, friend_username=%s)",
+                existing_token, telegram_id, friend_user_id, friend_username,
+            )
+            return existing_token
+    # --- Конец переиспользования, создаём новую ---
+
     token = secrets.token_urlsafe(24)
 
     async with aiosqlite.connect(DB_PATH) as db:

@@ -15,7 +15,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
 from config import ADMIN_IDS, BOT_NAME
-from database import get_user, create_invite_link
+from database import create_invite_link
 from keyboards import (
     invite_share_keyboard,
     main_inline_menu,
@@ -59,20 +59,9 @@ async def handle_shared_user(message: Message, state: FSMContext):
         )
         return
 
-    # Проверяем, что B ещё не активен
-    existing = await get_user(friend_id)
-    if existing and existing["status"] == "active":
-        display_name = f"@{friend_username}" if friend_username else friend_first_name or str(friend_id)
-        await message.answer(
-            f"⚠️ <b>{display_name} уже активен в {BOT_NAME}</b>"
-        )
-        is_admin = message.from_user.id in ADMIN_IDS
-        await message.answer(
-            "📋 <b>Меню</b>",
-            parse_mode="HTML",
-            reply_markup=main_inline_menu(is_admin)
-        )
-        return
+    # НЕ блокируем создание ссылки для «Добавить без TG»:
+    # даже если B уже есть в users, сайт сам продлит подписку (+3 дня)
+    # или вернёт существующий QR (если подписка ещё активна).
 
     # Создаём invite-ссылку
     token = await create_invite_link(

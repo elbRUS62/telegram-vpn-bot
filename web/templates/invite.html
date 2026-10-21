@@ -247,6 +247,7 @@
                                     <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p><p style="color:#d29922;font-size:13px;font-weight:600;margin-top:4px;">⏳ Подписка на 3 дня</p>
                                 </div>
                                 <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
+                                <button class="btn btn-secondary" onclick="renewSubscription()" style="width:100%;margin-top:10px;">🔄 Продлить на 3 дня</button>
                             </div>
                         `;
                     }
@@ -305,6 +306,7 @@
                                 <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p><p style="color:#d29922;font-size:13px;font-weight:600;margin-top:4px;">⏳ Подписка на 3 дня</p>
                             </div>
                             <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
+                            <button class="btn btn-secondary" onclick="renewSubscription()" style="width:100%;margin-top:10px;">🔄 Продлить на 3 дня</button>
                         </div>
                     `;
                     btn.style.display = 'none';
@@ -471,6 +473,45 @@
                 alert('Не удалось скопировать. Ссылка: ' + text);
             }
             document.body.removeChild(textarea);
+        }
+
+        async function renewSubscription() {
+            if (!confirm('Продлить подписку на 3 дня?')) return;
+
+            try {
+                const res = await fetch(`/api/activate/${token}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({accepted_terms: true})
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    alert('Ошибка продления: ' + data.error);
+                    return;
+                }
+
+                const result = document.getElementById('result');
+                result.innerHTML = `
+                    <div style="text-align:center;">
+                        <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка продлена!</div>
+                        <div style="background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;">
+                            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">⏰ Подписка действует ещё 3 дня</div>
+                            <div style="font-size:14px;color:#1a1a1a;line-height:1.5;">
+                                Продление выполнено. Можно пользоваться VPN ещё 3 дня.
+                            </div>
+                        </div>
+                        <div class="qr-wrap">
+                            <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
+                            <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
+                        <button class="btn btn-secondary" onclick="renewSubscription()" style="width:100%;margin-top:10px;">🔄 Продлить ещё на 3 дня</button>
+                    </div>
+                `;
+            } catch (e) {
+                alert('Ошибка соединения');
+            }
         }
     </script>
 </body>
