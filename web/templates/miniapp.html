@@ -1938,9 +1938,28 @@ async function openAdminUserCard(tgId) {
  </div>`;
  }
 
+ // Кружок VPN-статуса
+ const isOnline = u.vpn_online === true;
+ const isWeb = u.role_label === 'web';
+ let dot;
+ if (!isOnline) {
+   dot = '<span class="status-dot status-dot--offline" title="Офлайн"></span>';
+ } else if (isWeb) {
+   dot = '<span class="status-dot status-dot--online-web" title="Онлайн (web)"></span>';
+ } else {
+   dot = '<span class="status-dot status-dot--online" title="Онлайн"></span>';
+ }
+ const roleBadge = u.role_label
+   ? `<span class="badge ${u.role_color}">${u.role_label}</span>`
+   : '';
+
  container.innerHTML = `
  <div class="user-card-header">
- <div class="user-card-name">${u.first_name || 'Пользователь'}</div>
+ <div class="user-card-name" style="display:flex;align-items:center;gap:8px;">
+   ${dot}
+   <span>${u.first_name || 'Пользователь'}</span>
+   ${roleBadge}
+ </div>
  <div class="user-card-meta" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
  <span onclick="copyToClipboard('@${u.username || ''}')" style="cursor:pointer; text-decoration:underline; text-decoration-style:dotted;">
  @${u.username || '—'}
@@ -1955,10 +1974,15 @@ async function openAdminUserCard(tgId) {
  ${daysBar}
  </div>
  <div class="user-card-row"><span class="label">Email</span><span class="value">${u.xui_email || '—'}</span></div>
+ <div class="user-card-row"><span class="label">VPN</span><span class="value" style="display:flex;align-items:center;gap:6px;">${dot}<span>${isOnline ? 'Онлайн' : 'Офлайн'}</span></span></div>
  <div class="user-card-row"><span class="label">Приглашено</span><span class="value">${u.invites_count || 0}</span></div>
+ <div class="user-card-row"><span class="label">Продлений</span><span class="value">${u.renew_count || 0}</span></div>
+ <div class="user-card-row"><span class="label">Последний визит</span><span class="value">${u.last_seen || '—'}</span></div>
+ <div class="user-card-row"><span class="label">Регистрация</span><span class="value">${u.created_at || '—'}</span></div>
  ${trafficHtml}
  ${commentHtml}
  <div class="user-card-actions">${actionsHtml}</div>
+ <button class="btn btn-secondary" style="width:100%; margin-top:12px;" onclick="openAuditForUser(${tgId})">История действий</button>
  `;
 
  container.querySelectorAll('[data-act]').forEach(btn => {
@@ -2272,34 +2296,74 @@ async function loadAdminAudit() {
     const el = document.getElementById('audit-list');
     if (!el) return;
     el.innerHTML = 'Загрузка...';
-    const r = await adminCall('/audit', { limit: 100, offset: 0 });
+    const payload = { limit: 100, offset: 0 };
+    if (window._auditTargetId) payload.target_id = window._auditTargetId;
+    const r = await adminCall('/audit', payload);
     if (r.error) { el.innerHTML = '<div style="color:#f85149;">' + r.error + '</div>'; return; }
+
     const items = r.items || [];
-    if (!items.length) {
-        el.innerHTML = '<div style="color:var(--hint-color);text-align:center;padding:20px;">Пока пусто</div>';
-        return;
+    const invites = r.invites || [];
+    let html = '';
+
+    // Блок 1: Действия
+    if (items.length) {
+        html += '<div style="font-weight:600;margin-bottom:8px;color:var(--text-color);">Действия</div>';
+        html += items.map(a => {
+            const adminName = a.admin_username ? '@' + a.admin_username : (a.admin_first_name || ('ID ' + a.admin_id));
+            const targetName = a.target_id
+                ? (a.target_username ? '@' + a.target_username : (a.target_first_name || ('ID ' + a.target_id)))
+                : '';
+            const meta = a.meta ? ' <span style="color:var(--hint-color);">(' + escapeHtml(a.meta) + ')</span>' : '';
+            return `
+                <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+                    <div style="display:flex;justify-content:space-between;gap:8px;">
+                        <span style="color:var(--text-color);">${formatAuditAction(a.action)}</span>
+                        <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(a.created_at)}</span>
+                    </div>
+                    <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
+                        ${adminName}${targetName ? ' → ' + targetName : ''}${meta}
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
-    el.innerHTML = items.map(a => {
-        const adminName = a.admin_username ? '@' + a.admin_username : (a.admin_first_name || ('ID ' + a.admin_id));
-        const targetName = a.target_id
-            ? (a.target_username ? '@' + a.target_username : (a.target_first_name || ('ID ' + a.target_id)))
-            : '';
-        const meta = a.meta ? ' <span style="color:var(--hint-color);">(' + escapeHtml(a.meta) + ')</span>' : '';
-        return `
-            <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
-                <div style="display:flex;justify-content:space-between;gap:8px;">
-                    <span style="color:var(--text-color);">${formatAuditAction(a.action)}</span>
-                    <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(a.created_at)}</span>
+
+    // Блок 2: Приглашения
+    if (invites.length) {
+        html += '<div style="font-weight:600;margin:16px 0 8px 0;color:var(--text-color);">Приглашения</div>';
+        html += invites.map(i => {
+            const name = i.invited_username_full ? '@' + i.invited_username_full :
+                         (i.invited_username ? '@' + i.invited_username :
+                         (i.invited_first_name_full || i.invited_first_name || ('ID ' + i.invited_user_id)));
+            const typeLabel = i.type === 'ref' ? 'реферал' : (i.type === 'no_tg' ? 'web' : i.type);
+            const typeColor = i.type === 'ref' ? '#3fb950' : '#58a6ff';
+            return `
+                <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+                    <div style="display:flex;justify-content:space-between;gap:8px;">
+                        <span style="color:var(--text-color);">${name}</span>
+                        <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(i.created_at)}</span>
+                    </div>
+                    <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
+                        <span style="color:${typeColor};font-weight:500;">${typeLabel}</span>
+                    </div>
                 </div>
-                <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
-                    ${adminName}${targetName ? ' → ' + targetName : ''}${meta}
-                </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
+
+    if (!html) {
+        html = '<div style="color:var(--hint-color);text-align:center;padding:20px;">Пока пусто</div>';
+    }
+    el.innerHTML = html;
 }
 
 function openAudit() {
+    document.getElementById('audit-modal').classList.add('show');
+    window._auditTargetId = null;
+    loadAdminAudit();
+}
+function openAuditForUser(tgId) {
+    window._auditTargetId = tgId;
     document.getElementById('audit-modal').classList.add('show');
     loadAdminAudit();
 }

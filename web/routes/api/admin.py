@@ -296,6 +296,7 @@ def user_card():
         if not u:
             return {"error": "Пользователь не найден"}
 
+        u = dict(u)  # sqlite3.Row → dict (чтобы работал .get())
         result = dict(u)
         # Обрезаем микросекунды у expires_at
         if result.get("expires_at"):
@@ -307,11 +308,47 @@ def user_card():
                 result["expires_at"] = dt.strftime("%d.%m.%y %H:%M")
             except Exception:
                 pass
+        # Форматируем created_at и last_seen
+        for key in ("created_at", "last_seen"):
+            if result.get(key):
+                try:
+                    from datetime import datetime
+                    dt = result[key]
+                    if isinstance(dt, str):
+                        dt = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+                    result[key] = dt.strftime("%d.%m.%y %H:%M")
+                except Exception:
+                    pass
         result["is_blocked"] = False
         result["comment"] = ""
         result["traffic_up"] = None
         result["traffic_down"] = None
         result["is_online"] = False
+        result["vpn_online"] = False
+        result["role_label"] = ""
+        result["role_color"] = ""
+
+        # Роль (web / реферал / бот)
+        if u.get("source") == "web":
+            result["role_label"] = "web"
+            result["role_color"] = "web"
+        elif u.get("invited_by"):
+            result["role_label"] = "реферал"
+            result["role_color"] = "referral"
+        else:
+            result["role_label"] = "бот"
+            result["role_color"] = "bot"
+
+        # Берём онлайн-статус одним запросом (до получения клиента)
+        try:
+            async with XUIClient() as xui_onl:
+                res_onl = await xui_onl._post("/panel/api/clients/onlines", {})
+                if res_onl.get("success"):
+                    online_emails = set(res_onl.get("obj", []) or [])
+                    result["vpn_online"] = (u.get("xui_email") in online_emails)
+                    result["is_online"] = result["vpn_online"]
+        except Exception:
+            logger.exception("user_card: onlines failed")
 
         # Берём данные из 3x-ui, если есть email
         if u["xui_email"]:
@@ -332,8 +369,9 @@ def user_card():
                             if down is not None:
                                 result["traffic_down"] = f"{down / (1024**3):.2f} GB"
 
-                        # Онлайн
-                        result["is_online"] = await xui.is_client_online(u["xui_email"])
+                        # Онлайн: через /clients/onlines (как в списке)
+                        result["is_online"] = False
+                        result["vpn_online"] = False
             except Exception as e:
                 logger.warning(f"Ошибка получения данных 3x-ui для {u['xui_email']}")
 
@@ -672,16 +710,21 @@ def audit_log():
     limit = min(200, max(1, int(data.get("limit", 50))))
     offset = max(0, int(data.get("offset", 0)))
     action_filter = data.get("action")
+    target_filter = data.get("target_id")
 
     async def do():
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
 
-            where = ""
+            conditions = []
             args = []
             if action_filter:
-                where = "WHERE a.action = ?"
+                conditions.append("a.action = ?")
                 args.append(action_filter)
+            if target_filter:
+                conditions.append("a.target_id = ?")
+                args.append(int(target_filter))
+            where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
             async with db.execute(f"""
                 SELECT a.id, a.admin_id, a.action, a.target_id, a.meta, a.created_at,
@@ -699,7 +742,27 @@ def audit_log():
             async with db.execute(f"SELECT COUNT(*) FROM admin_audit a {where}", args) as cur:
                 total = (await cur.fetchone())[0]
 
-        return {"items": rows, "total": total, "limit": limit, "offset": offset}
+            # Если передан target_id — дополнительно тянем приглашения этого юзера
+            invites = []
+            if target_filter:
+                async with db.execute("""
+                    SELECT i.id, i.invited_user_id, i.invited_username, i.invited_first_name,
+                           i.type, i.created_at,
+                           u.first_name AS invited_first_name_full, u.username AS invited_username_full
+                    FROM invites i
+                    LEFT JOIN users u ON u.telegram_id = i.invited_user_id
+                    WHERE i.inviter_id = ?
+                    ORDER BY i.id DESC
+                """, (int(target_filter),)) as cur:
+                    invites = [dict(r) for r in await cur.fetchall()]
+
+        return {
+            "items": rows,
+            "invites": invites,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
 
     try:
         return jsonify(run_async(do()))
