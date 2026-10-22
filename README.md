@@ -9,7 +9,7 @@
 [![3x-ui](https://img.shields.io/badge/3x--ui-API-green)](https://github.com/MHSanaei/3x-ui)
 [![Stars](https://img.shields.io/badge/⭐_Telegram_Stars-поддержка-yellow)]()
 
-[![Version](https://img.shields.io/badge/version-v3.4.4-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.4.5-blue)](CHANGELOG.md)
 
 **Живой пример:** [@skrepnet_bot](https://t.me/skrepnet_bot) (BOT_NAME=`SkrepNet`, SUPPORT_USERNAME=`SkrepNet_support`).    
 Это **шаблон** — разверните **свой** бот с **другим** именем, просто изменив `.env`.
@@ -223,7 +223,7 @@
 ### Прочее
 
 - `DB_PATH` — путь к базе данных (по умолчанию `skrepnet.db`)
-- `BOT_VERSION` — версия бота (по умолчанию `3.4.4`)
+- `BOT_VERSION` — версия бота (по умолчанию `3.4.5`)
 
 ## 📁 Структура проекта
 
@@ -364,9 +364,9 @@
 
 ## 📌 Версия
 
-**Текущий релиз: v3.4.4**
+**Текущий релиз: v3.4.5**
 
-Мониторинг 3x-ui, тикеты поддержки и HTTP-уведомления входят в v3.4.4 — см. [CHANGELOG.md](CHANGELOG.md).
+Мониторинг 3x-ui, тикеты поддержки и HTTP-уведомления входят в v3.4.5 — см. [CHANGELOG.md](CHANGELOG.md).
 
 История версий — в [CHANGELOG.md](CHANGELOG.md).
 

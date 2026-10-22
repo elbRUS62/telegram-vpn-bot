@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.4.4] - 2026-10-22
+## [3.4.5] - 2026-10-22
 
 ### Добавлено
 - 🖥 **Мониторинг 3x-ui** — карточка в админке Mini App и проверка каждые 5 минут
@@ -18,8 +18,6 @@
 - 🔔 **HTTP-уведомления из веб-процесса** — `web/utils/telegram.py` отправляет сообщения через Telegram Bot API и `httpx` в фоновом потоке, без импорта `aiogram` во Flask
 - 🔐 **Кнопка «Панель 3x-ui» в админке Mini App** — admin-only переход в панель; URL собирается из `XUI_HOST` + `XUI_BASE_PATH`.
 - 🛡 **Ссылка на панель** выдаётся через `POST /api/miniapp/admin/xui` только после проверки `init_data` и `ADMIN_IDS`; в общем шаблоне Mini App её нет.
-- Клиенты из бота/сайта автоматически добавляются в группу `BOT_NAME` в 3x-ui
-- Используется `/panel/api/clients/groups/bulkAdd`
 
 ### Изменено
 - `xui_client.py`: таймаут 20 секунд, методы `get_server_status()`, `get_inbounds()` и `get_online_clients()`
@@ -27,6 +25,14 @@
 - `web/routes/api/admin.py`: `POST /monitor`, `POST /tickets`, `POST /ticket`, `POST /ticket/reply`, `POST /ticket/close`; в `/stats` добавлены `tickets_open` и `tickets_unread`
 - `web/routes/api/__init__.py`: в `/main` добавлен `support_unread`
 - `web/templates/miniapp.html`: карточка мониторинга, экраны тикетов и админская модалка
+- `web_app.py`: зарегистрирован blueprint `support_api`
+- `BOT_VERSION`: обновлён до `3.4.5`
+
+### Безопасность и инфраструктура
+- Веб-процесс больше не импортирует `aiogram`; уведомления отправляются через HTTP Bot API
+- Убран вывод сырого `initData` в логи
+- Исправления CodeQL в `web/routes/api/admin.py`
+- Запуск сайта и Mini App через gunicorn
 
 ### Миграции БД
 - `support_tickets` — обращения пользователей
@@ -39,6 +45,15 @@
 - `POST /api/miniapp/support/create`
 - `POST /api/miniapp/support/reply`
 - `POST /api/miniapp/support/close`
+
+---
+
+## [3.4.4] - 2026-10-21
+
+### Добавлено
+- 🗂 **Карточка пользователя в админке Mini App** — VPN-статус, роль, статистика, история приглашений
+- 👥 Клиенты из бота/сайта автоматически добавляются в группу `BOT_NAME` в 3x-ui
+- Используется `/panel/api/clients/groups/bulkAdd`
 
 ---
 
