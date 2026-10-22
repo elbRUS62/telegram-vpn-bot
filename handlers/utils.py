@@ -1,22 +1,9 @@
-import re
-
-
-def sanitize_email(username: str, telegram_id: int) -> str:
-    """Формирует email для 3x-ui.
-    Приоритет: username (если есть) → user{telegram_id}."""
-    if username:
-        # Telegram username всегда латиница, цифры и _
-        cleaned = re.sub(r'[^a-zA-Z0-9_\-]', '', username)
-        if cleaned:
-            return cleaned[:32]
-
-    # Нет username или после очистки пусто — используем ID
-    return f"user{telegram_id}"
-
-
 import io
+
 import qrcode
 from aiogram.types import BufferedInputFile
+
+from text_utils import sanitize_email  # noqa: F401  (реэкспорт для обратной совместимости)
 
 
 def make_qr_image(data: str) -> BufferedInputFile:

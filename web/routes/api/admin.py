@@ -1,4 +1,5 @@
 """API-роуты админки Mini App. Все методы POST, init_data в теле."""
+import asyncio
 import logging
 from functools import wraps
 
@@ -661,30 +662,27 @@ def broadcast():
         return jsonify({"error": "Нет текста"}), 400
 
     async def do_broadcast():
-        from aiogram import Bot
         from config import BOT_TOKEN
-        import aiosqlite
-        from config import DB_PATH
+        from telegram_api import Telegram
 
-        bot = Bot(token=BOT_TOKEN)
         sent = 0
         failed = 0
 
-        try:
+        async with Telegram(BOT_TOKEN) as tg:
             async with aiosqlite.connect(DB_PATH) as db:
                 db.row_factory = aiosqlite.Row
                 async with db.execute("SELECT telegram_id FROM users WHERE status = 'active'") as cur:
                     users = await cur.fetchall()
 
             for u in users:
-                try:
-                    await bot.send_message(u["telegram_id"], text, disable_notification=silent)
-                    sent += 1
-                except Exception:
+                result = await tg.send_message(
+                    u["telegram_id"], text, disable_notification=silent
+                )
+                if result is None:
                     failed += 1
+                else:
+                    sent += 1
                 await asyncio.sleep(0.05)
-        finally:
-            await bot.session.close()
 
         return {"sent": sent, "failed": failed}
 

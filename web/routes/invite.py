@@ -9,7 +9,7 @@ from flask import Blueprint, jsonify, render_template, request
 
 from config import BOT_NAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS, WEB_SUBSCRIPTION_DAYS
 from database import get_invite_link, get_user, use_invite_link, get_invite_link_any
-from handlers.utils import sanitize_email
+from text_utils import sanitize_email
 from xui_client import XUIClient
 from web.utils.async_helper import run_async
 
@@ -39,25 +39,26 @@ def _make_qr_base64(data: str) -> str:
 
 
 async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, sub_url):
-    from aiogram import Bot
-    from aiogram.client.default import DefaultBotProperties
+    from telegram_api import call as tg_call
 
-    bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
-    try:
-        text = (
-            f"🆕 <b>Новый пользователь (веб-выдача)</b>\n\n"
-            f"👤 @{friend_username or 'без username'}\n"
-            f"🆔 <code>{telegram_id}</code>\n"
-            f"👥 Пригласил: <code>{inviter_id}</code>\n\n"
-            f"🔗 {sub_url}"
+    text = (
+        f"🆕 <b>Новый пользователь (веб-выдача)</b>\n\n"
+        f"👤 @{friend_username or 'без username'}\n"
+        f"🆔 <code>{telegram_id}</code>\n"
+        f"👥 Пригласил: <code>{inviter_id}</code>\n\n"
+        f"🔗 {sub_url}"
+    )
+    for admin_id in ADMIN_IDS:
+        result = await tg_call(
+            BOT_TOKEN,
+            "sendMessage",
+            chat_id=admin_id,
+            text=text,
+            parse_mode="HTML",
+            disable_notification=True,
         )
-        for admin_id in ADMIN_IDS:
-            try:
-                await bot.send_message(admin_id, text, disable_notification=True)
-            except Exception as e:
-                logger.exception("Ошибка отправки админу %s", admin_id)
-    finally:
-        await bot.session.close()
+        if result is None:
+            logger.warning("Не удалось отправить уведомление админу %s", admin_id)
 
 
 @invite_bp.route('/invite/<token>')

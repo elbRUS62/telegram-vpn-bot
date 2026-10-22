@@ -500,9 +500,6 @@ def connect(platform):
 
 @api.route('/invoice', methods=['POST'])
 def create_invoice():
-    import asyncio
-    from aiogram import Bot
-    from aiogram.types import LabeledPrice
     from config import BOT_TOKEN, BOT_NAME
 
     data = request.json or {}
@@ -513,20 +510,19 @@ def create_invoice():
     amount = data.get('amount', 10)  # По умолчанию 10 звёзд
 
     async def send_invoice():
-        bot = Bot(token=BOT_TOKEN)
-        try:
-            # Создаём ссылку на инвойс (без отправки сообщения пользователю)
-            invoice_link = await bot.create_invoice_link(
-                title=f"Поддержка {BOT_NAME} · {amount} ⭐",
-                description=f"Донат {amount} ⭐ на оплату сервера и развитие проекта. Спасибо за поддержку!",
-                payload=f"donate_miniapp_{user.get('id')}_{amount}",
-                provider_token="",
-                currency="XTR",
-                prices=[LabeledPrice(label=f"Поддержка {BOT_NAME}", amount=amount)]
-            )
-            return invoice_link
-        finally:
-            await bot.session.close()
+        from telegram_api import call as tg_call
+
+        # Создаём ссылку на инвойс (без отправки сообщения пользователю)
+        return await tg_call(
+            BOT_TOKEN,
+            "createInvoiceLink",
+            title=f"Поддержка {BOT_NAME} · {amount} ⭐",
+            description=f"Донат {amount} ⭐ на оплату сервера и развитие проекта. Спасибо за поддержку!",
+            payload=f"donate_miniapp_{user.get('id')}_{amount}",
+            provider_token="",
+            currency="XTR",
+            prices=[{"label": f"Поддержка {BOT_NAME}", "amount": amount}],
+        )
 
     try:
         link = run_async(send_invoice())
@@ -610,7 +606,7 @@ def accept_terms():
     async def process():
         from database import get_user, create_user_request, approve_user, is_limit_reached, is_in_waitlist
         from config import MAX_USERS
-        from handlers.utils import sanitize_email
+        from text_utils import sanitize_email
         from xui_client import XUIClient
         from config import ADMIN_IDS, DONATE_TEXT, BOT_TOKEN
         
@@ -651,33 +647,35 @@ def accept_terms():
             except Exception as e:
                 return {'error': 'Ошибка создания подписки'}
         else:
-            # Отправляем уведомление админам
-            from aiogram import Bot
-            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-            from aiogram.client.default import DefaultBotProperties
-            
+            # Отправляем уведомление админам (без aiogram — через Bot API по HTTP)
+            from telegram_api import call as tg_call
+
             logger.info(f"Отправка заявки админам {ADMIN_IDS} для {telegram_id}")
-            bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
-            try:
-                for admin_id in ADMIN_IDS:
-                    try:
-                        await bot.send_message(
-                            admin_id,
-                            f"🆕 <b>Новая заявка (Mini App)</b>\n\n"
-                            f"👤 {user.get('first_name')} @{user.get('username')}\n"
-                            f"🆔 <code>{telegram_id}</code>\n"
-                            f"📧 {xui_email}",
-                            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                [InlineKeyboardButton(text="✅ Одобрить", callback_data=f"approve:{telegram_id}"),
-                                 InlineKeyboardButton(text="❌ Отклонить", callback_data=f"reject:{telegram_id}")]
-                            ])
-                        )
-                        logger.info(f"✅ Уведомление отправлено админу {admin_id}")
-                    except Exception as e:
-                        logger.error(f"Ошибка отправки админу {admin_id}")
-            finally:
-                await bot.session.close()
-            
+            reply_markup = {
+                "inline_keyboard": [[
+                    {"text": "✅ Одобрить", "callback_data": f"approve:{telegram_id}"},
+                    {"text": "❌ Отклонить", "callback_data": f"reject:{telegram_id}"},
+                ]]
+            }
+            for admin_id in ADMIN_IDS:
+                result = await tg_call(
+                    BOT_TOKEN,
+                    "sendMessage",
+                    chat_id=admin_id,
+                    text=(
+                        f"🆕 <b>Новая заявка (Mini App)</b>\n\n"
+                        f"👤 {user.get('first_name')} @{user.get('username')}\n"
+                        f"🆔 <code>{telegram_id}</code>\n"
+                        f"📧 {xui_email}"
+                    ),
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                )
+                if result is None:
+                    logger.error(f"Ошибка отправки админу {admin_id}")
+                else:
+                    logger.info(f"✅ Уведомление отправлено админу {admin_id}")
+
             return {'success': True, 'type': 'pending'}
 
     result = run_async(process())
