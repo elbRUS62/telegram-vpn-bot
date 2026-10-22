@@ -1,8 +1,10 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Bot
+from datetime import datetime, timedelta
 import logging
 import aiosqlite
 
+from monitoring import check_xui_health
 from database import (
     get_expiring_users, get_expired_today, mark_notified,
     get_inactive_users, delete_user,
@@ -57,6 +59,18 @@ def setup_scheduler(bot: Bot):
         minute=0,
         args=[bot],
         id="cleanup_abandoned_web_invites"
+    )
+
+    # Мониторинг 3x-ui — каждые 5 минут, первый запуск через 30 секунд
+    scheduler.add_job(
+        check_xui_health,
+        "interval",
+        minutes=5,
+        args=[bot],
+        id="check_xui_health",
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now() + timedelta(seconds=30),
     )
 
     scheduler.start()

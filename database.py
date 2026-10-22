@@ -69,6 +69,51 @@ async def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS support_tickets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_id INTEGER NOT NULL,
+                username TEXT,
+                first_name TEXT,
+                subject TEXT NOT NULL,
+                category TEXT DEFAULT 'other',
+                status TEXT DEFAULT 'open',
+                unread_admin INTEGER DEFAULT 1,
+                unread_user INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                closed_at TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_support_tickets_user
+            ON support_tickets(telegram_id, updated_at DESC)
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_support_tickets_status
+            ON support_tickets(status, updated_at DESC)
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ticket_id INTEGER NOT NULL,
+                sender TEXT NOT NULL,
+                admin_id INTEGER,
+                text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_support_messages_ticket
+            ON support_messages(ticket_id, id)
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS monitor_state (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         # Миграция: добавляем поле renew_count, если его нет
         async with db.execute("PRAGMA table_info(users)") as cur:
             columns = [row[1] for row in await cur.fetchall()]
@@ -93,6 +138,18 @@ async def init_db():
             logger.info("🔧 Добавлено поле bound_at в invite_links")
             
         await db.commit()
+
+
+async def get_support_unread_count(telegram_id: int) -> int:
+    """Количество тикетов с непрочитанным ответом для пользователя."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT COUNT(*) FROM support_tickets "
+            "WHERE telegram_id = ? AND unread_user = 1",
+            (telegram_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            return int(row[0] or 0) if row else 0
 
 
 # ============================================================

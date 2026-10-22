@@ -34,11 +34,12 @@ def main():
 
     async def get_data():
         from config import ADMIN_IDS, BOT_NAME, SERVER_COST
-        from database import get_user, get_donations_total
+        from database import get_user, get_donations_total, get_support_unread_count
         from datetime import datetime
 
         db_user = await get_user(telegram_id)
         is_admin = telegram_id in ADMIN_IDS
+        support_unread = await get_support_unread_count(telegram_id)
 
         if not db_user:
             status, status_text, has_sub = 'new', 'Нет подписки', False
@@ -67,7 +68,8 @@ def main():
             'is_admin': is_admin,
             'progress_percent': percent,
             'bot_name': BOT_NAME,
-            'next_month': next_month_name
+            'next_month': next_month_name,
+            'support_unread': support_unread,
         }
 
     result = run_async(get_data())

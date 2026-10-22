@@ -22,7 +22,10 @@ class XUIClient:
         }
 
     async def __aenter__(self):
-        self.session = aiohttp.ClientSession(headers=self.headers)
+        self.session = aiohttp.ClientSession(
+            headers=self.headers,
+            timeout=aiohttp.ClientTimeout(total=20),
+        )
         return self
 
     async def __aexit__(self, *args):
@@ -195,3 +198,24 @@ class XUIClient:
         except Exception:
             logger.exception("get_client_traffic error для %s", email)
         return {}
+
+    async def get_server_status(self) -> dict:
+        """CPU/RAM/диск/Xray/версия панели из /panel/api/server/status."""
+        result = await self._get("/panel/api/server/status")
+        if not result.get("success"):
+            raise Exception(f"Server status failed: {result.get('msg') or result}")
+        return result.get("obj", {}) or {}
+
+    async def get_inbounds(self) -> list:
+        """Список инбаундов (для счётчика и суммарного трафика)."""
+        result = await self._get("/panel/api/inbounds/list")
+        if not result.get("success"):
+            raise Exception(f"Inbounds list failed: {result.get('msg') or result}")
+        return result.get("obj", []) or []
+
+    async def get_online_clients(self) -> list:
+        """Список email клиентов, которые сейчас онлайн."""
+        result = await self._post("/panel/api/clients/onlines", {})
+        if not result.get("success"):
+            raise Exception(f"Online clients failed: {result.get('msg') or result}")
+        return result.get("obj", []) or []

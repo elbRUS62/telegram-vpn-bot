@@ -1,12 +1,44 @@
 # Changelog
 
-## [Unreleased]
+## [3.4.4] - 2026-10-22
 
 ### Добавлено
+- 🖥 **Мониторинг 3x-ui** — карточка в админке Mini App и проверка каждые 5 минут
+  - CPU, RAM, диск, load average, uptime, версии панели и Xray
+  - Онлайн-клиенты, количество инбаундов и накопительный трафик
+  - Задержка API и срок действия TLS-сертификата панели
+  - Алерты админам: CPU/RAM ≥ 90%, диск ≥ 85%, сертификат ≤ 14 дней, Xray не запущен, API недоступен после 2 проверок
+  - Кулдауны алертов и состояние в таблице `monitor_state`
+- 🎫 **Тикеты поддержки в Mini App**
+  - Создание обращений с темой и категорией, лимит 3 активных тикета на пользователя
+  - Переписка пользователя с админом, статусы `open` / `answered` / `closed`
+  - Бейдж непрочитанных ответов в пользовательской вкладке
+  - Админский список активных/закрытых тикетов, ответ и закрытие
+  - Уведомления админам о новых тикетах и пользователям об ответах/закрытии
+- 🔔 **HTTP-уведомления из веб-процесса** — `web/utils/telegram.py` отправляет сообщения через Telegram Bot API и `httpx` в фоновом потоке, без импорта `aiogram` во Flask
 - 🔐 **Кнопка «Панель 3x-ui» в админке Mini App** — admin-only переход в панель; URL собирается из `XUI_HOST` + `XUI_BASE_PATH`.
 - 🛡 **Ссылка на панель** выдаётся через `POST /api/miniapp/admin/xui` только после проверки `init_data` и `ADMIN_IDS`; в общем шаблоне Mini App её нет.
 - Клиенты из бота/сайта автоматически добавляются в группу `BOT_NAME` в 3x-ui
 - Используется `/panel/api/clients/groups/bulkAdd`
+
+### Изменено
+- `xui_client.py`: таймаут 20 секунд, методы `get_server_status()`, `get_inbounds()` и `get_online_clients()`
+- `scheduler.py`: job `check_xui_health` с интервалом 5 минут и `max_instances=1`
+- `web/routes/api/admin.py`: `POST /monitor`, `POST /tickets`, `POST /ticket`, `POST /ticket/reply`, `POST /ticket/close`; в `/stats` добавлены `tickets_open` и `tickets_unread`
+- `web/routes/api/__init__.py`: в `/main` добавлен `support_unread`
+- `web/templates/miniapp.html`: карточка мониторинга, экраны тикетов и админская модалка
+
+### Миграции БД
+- `support_tickets` — обращения пользователей
+- `support_messages` — сообщения переписки
+- `monitor_state` — состояние мониторинга и кулдауны алертов
+
+### Новые API
+- `POST /api/miniapp/support/list`
+- `POST /api/miniapp/support/ticket`
+- `POST /api/miniapp/support/create`
+- `POST /api/miniapp/support/reply`
+- `POST /api/miniapp/support/close`
 
 ---
 

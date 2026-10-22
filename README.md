@@ -9,7 +9,7 @@
 [![3x-ui](https://img.shields.io/badge/3x--ui-API-green)](https://github.com/MHSanaei/3x-ui)
 [![Stars](https://img.shields.io/badge/⭐_Telegram_Stars-поддержка-yellow)]()
 
-[![Version](https://img.shields.io/badge/version-v3.2.10-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v3.4.4-blue)](CHANGELOG.md)
 
 **Живой пример:** [@skrepnet_bot](https://t.me/skrepnet_bot) (BOT_NAME=`SkrepNet`, SUPPORT_USERNAME=`SkrepNet_support`).    
 Это **шаблон** — разверните **свой** бот с **другим** именем, просто изменив `.env`.
@@ -34,6 +34,7 @@
 - 💰 Донат: Telegram Stars + DonationAlerts
 - 📖 Инструкции для 6 платформ (Android, iOS, Windows, macOS, Android TV, Linux)
 - 🍎 Happ — рекомендуемое приложение
+- 🎫 **Обращения в поддержку** прямо в Mini App: история переписки, ответы админа, уведомления в Telegram
 
 ### Для админов
 
@@ -72,7 +73,7 @@
 - 🔤 **Единый шрифт** — `button, input, select, textarea { font-family: inherit; }`
 - 🪟 **Модалки в едином стиле** — `rgba+blur`, `overflow-y: auto`, `backdrop: rgba(0,0,0,0.4)`
 - ✨ **Splash screen** — подзаголовок «Твой интернет», линия, точки, радиальный градиент
-- 🆘 **Техподдержка**: прямая ссылка на @SkrepNet_support
+- 🆘 **Техподдержка**: тикеты внутри Mini App (создание, переписка, закрытие) + прямая ссылка на @SkrepNet_support
 - 📜 **Документы**: правила, политика, соглашение (в модальных окнах)
 - 👥 **Реферальная система**: ссылка для приглашения, счётчик друзей
 
@@ -86,6 +87,8 @@
 - ⛔ **Блокировка / разблокировка** (enable: false в 3x-ui)
 - 🔘 **Точки-индикатор** вкладок (плавный скролл)
 - 🔐 **Кнопка «Панель 3x-ui»** — admin-only переход в панель в браузере; ссылка выдаётся API только после проверки `init_data` и `ADMIN_IDS` и не хранится в общем шаблоне
+- 🖥 **Карточка мониторинга 3x-ui** — CPU, RAM, диск, Xray, uptime, срок сертификата, задержка API, онлайн-клиенты и трафик
+- 🎫 **Тикеты поддержки** — список активных/закрытых обращений, переписка с пользователем, ответ и закрытие
 
 ### Веб-выдача без Telegram (v3.2+)
 
@@ -110,6 +113,8 @@
 - 🗑 Автоудаление неактивных (30+ дней) — ежедневно в 4:00
 - 📋 Автоочистка листа ожидания (30+ дней) — 1-го числа каждого месяца
 - 🧹 **Автоочистка «брошенных» веб-выдач** (30+ дней) — ежедневно в 5:00
+- 🖥 **Мониторинг 3x-ui** — каждые 5 минут: CPU/RAM/диск, Xray, сертификат, доступность API
+- 🚨 **Алерты админам** — при недоступности панели, перегрузке CPU/RAM/диска, остановке Xray и скором истечении сертификата
 - 💾 Бэкапы базы данных — ежедневно в 3:00, хранение 30 дней
 - 🔧 Systemd-автозапуск (Restart=always)
 - 🔌 DonationAlerts WebSocket через Centrifugo (экспоненциальный ретрай + уведомления админам)
@@ -134,6 +139,9 @@
 - **Веб-сайт** (`web_app.py`, `gunicorn.conf.py`) — Flask под gunicorn на HTTPS, отдельный порт
 - **Mini App** — Flask на HTTPS, валидация `initData` (HMAC-SHA256, WebAppData, BOT_TOKEN, `auth_date` TTL 1 час)
 - **Донаты** — Telegram Stars + DonationAlerts через Centrifugo WebSocket
+- **Мониторинг** — `monitoring.py` опрашивает `/panel/api/server/status`, `/panel/api/inbounds/list` и `/panel/api/clients/onlines`, кэширует результат на 15 секунд
+- **Тикеты** — `support_tickets` + `support_messages` в SQLite, админские и пользовательские API в Mini App
+- **Уведомления из Flask** — `httpx` напрямую в Telegram Bot API в фоновом потоке, без импорта `aiogram` в веб-процессе
 
 ## 📋 Требования
 
@@ -215,16 +223,17 @@
 ### Прочее
 
 - `DB_PATH` — путь к базе данных (по умолчанию `skrepnet.db`)
-- `BOT_VERSION` — версия бота (по умолчанию `3.0.0`)
+- `BOT_VERSION` — версия бота (по умолчанию `3.4.4`)
 
 ## 📁 Структура проекта
 
     bot.py                  # точка входа
     config.py               # чтение .env, валидация
-    database.py             # SQLite (users, admins, invite_links, invites, donations, waitlist)
-    xui_client.py           # API 3x-ui (add/get/update/delete client, comment, online)
+    database.py             # SQLite (users, tickets, monitoring, invite_links, invites, donations, waitlist)
+    xui_client.py           # API 3x-ui (clients, comment, online, server status, inbounds)
+    monitoring.py           # Мониторинг 3x-ui: метрики, сертификат, алерты и кулдауны
     keyboards.py            # кнопки и меню
-    scheduler.py            # напоминания + автоочистка + лист ожидания + брошенные веб-выдачи
+    scheduler.py            # напоминания + автоочистка + мониторинг 3x-ui
     docs_config.py          # ссылки на документы в telegra.ph
     donation_socket.py      # DonationAlerts через Centrifugo WebSocket
     web_app.py              # Flask-приложение (тонкий вход)
@@ -243,11 +252,12 @@
     ├── states.py           # FSM-состояния
     └── utils.py            # sanitize_email, QR-генератор
     scripts/                # install-bot.sh, install-web.sh
-    web/                    # NEW: Flask-роуты и Mini App
+    web/                    # Flask-роуты и Mini App
     ├── routes/             # api, docs, invite, miniapp
-    ├── utils/              # auth.py (валидация initData), async_helper.py
+    │   └── api/            # main, admin.py, support.py (тикеты)
+    ├── utils/              # auth.py (initData), async_helper.py, telegram.py (HTTP-уведомления)
     └── templates/
-        ├── miniapp.html    # Mini App (фронтенд)
+        ├── miniapp.html    # Mini App: подписка, донаты, тикеты, админка, мониторинг
         ├── docs.html
         └── docs/
             ├── rules.html
@@ -327,7 +337,8 @@
 - [x] **Фоновое обновление в Mini App** — каждые 3 секунды (только при изменениях)
 - [x] **Защита от накрутки продления** — не дальше 30 дней от сегодня
 - [x] Онлайн-клиенты (статус онлайн/оффлайн)
-- [ ] Мониторинг панели 3x-ui
+- [x] **Мониторинг панели 3x-ui** — метрики, алерты и карточка в админке Mini App
+- [x] **Тикеты поддержки** в Mini App — переписка, ответы админа, уведомления
 - [ ] Статистика донатов через API
 - [ ] Инструкции для Apple TV, Samsung TV, LG TV
 - [ ] UTC вместо MSK для `used_at`
@@ -353,7 +364,9 @@
 
 ## 📌 Версия
 
-**Текущая версия: v3.2.10**
+**Текущий релиз: v3.4.4**
+
+Мониторинг 3x-ui, тикеты поддержки и HTTP-уведомления входят в v3.4.4 — см. [CHANGELOG.md](CHANGELOG.md).
 
 История версий — в [CHANGELOG.md](CHANGELOG.md).
 

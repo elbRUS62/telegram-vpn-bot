@@ -15,6 +15,7 @@ from web.routes.invite import invite_bp
 from web.routes.miniapp import miniapp_bp
 from web.routes.api import api
 from web.routes.api.admin import admin_api
+from web.routes.api.support import support_api
 
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 
@@ -24,6 +25,7 @@ app.register_blueprint(docs_bp)
 app.register_blueprint(miniapp_bp)
 app.register_blueprint(api)
 app.register_blueprint(admin_api)
+app.register_blueprint(support_api)
 
 
 if __name__ == '__main__':
