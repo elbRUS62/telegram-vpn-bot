@@ -13,6 +13,7 @@
 - CSS и JavaScript Mini App вынесены в `web/static/miniapp.css` и `web/static/miniapp.js`
 - Добавлены smoke-тесты маршрутов админки, Mini App API, роутеров и статических файлов
 - Исправлена проверка администратора для `/api/miniapp/admin/broadcast`
+- Исправлена диагностика в админке после разбиения API
 
 ## [3.5.0] - 2026-10-22
 

@@ -12,7 +12,7 @@ def user_diagnostics():
     if not tg_id:
         return jsonify({"error": "Не указан пользователь"}), 400
 
-    from web.routes.api import _collect_diagnostics
+    from web.routes.api.diagnostics import _collect_diagnostics
 
     result = run_async(_collect_diagnostics(tg_id))
     if "error" in result:
