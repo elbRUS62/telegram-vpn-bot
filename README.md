@@ -198,7 +198,8 @@ ls -la backups/
 ```text
 bot.py                  точка входа
 config.py               чтение .env
-database.py             SQLite: пользователи, тикеты, мониторинг, приглашения, донаты
+database.py             совместимый фасад базы данных
+db/                     модули SQLite: schema, users, invites, queries, donations, waitlist
 xui_client.py           клиент 3x-ui
 monitoring.py           метрики, история и алерты 3x-ui
 scheduler.py            напоминания, очистка и мониторинг
@@ -210,9 +211,9 @@ backup.sh               бэкап базы
 handlers/               обработчики бота
   menu.py               главное меню
   start.py              /start и deep-link
-  subscription.py       заявки, продление, QR
+  subscription/         заявки, продление, QR, email-конфликты и лист ожидания
   invite.py             приглашения без Telegram
-  admin.py              админ-меню и статистика
+  admin/                админские обработчики: меню, статистика, заявки, пользователи, рассылка, панель
   donate.py             донаты
   connect.py            инструкции по платформам
   waitlist.py           лист ожидания
@@ -222,8 +223,13 @@ handlers/               обработчики бота
 scripts/                установка бота и сайта
 web/
   routes/               API, документы, приглашения, Mini App
+  routes/api/           main, subscription, diagnostics, donate и другие API Mini App
+  routes/api/admin/     админский API по модулям
   utils/                auth, async helper, HTTP-уведомления
   templates/            miniapp.html, invite.html, docs
+  static/               miniapp.css, miniapp.js и общие стили
+
+tests/                  smoke-тесты API, роутеров и статических файлов
 ```
 
 ## Как работает выдача подписки
