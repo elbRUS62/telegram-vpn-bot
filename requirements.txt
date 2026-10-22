@@ -7,3 +7,4 @@ qrcode[pil]
 websockets
 httpx
 flask
+gunicorn>=22.0

@@ -165,7 +165,7 @@ if [ -f "$EXISTING_UNIT" ]; then
 fi
 cat > /etc/systemd/system/skrepnet-web.service <<EOF
 [Unit]
-Description=SkrepNet Web (Flask)
+Description=SkrepNet Bot Web (gunicorn)
 After=network.target
 
 [Service]
@@ -174,11 +174,14 @@ User=root
 WorkingDirectory=$(pwd)
 EnvironmentFile=$(pwd)/.env
 Environment="PYTHONUNBUFFERED=1"
-ExecStart=$(pwd)/venv/bin/python $(pwd)/web_app.py
+ExecStart=$(pwd)/venv/bin/gunicorn --config $(pwd)/gunicorn.conf.py web_app:app
+ExecReload=/bin/kill -s HUP $MAINPID
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
+KillMode=mixed
+TimeoutStopSec=40
 
 [Install]
 WantedBy=multi-user.target

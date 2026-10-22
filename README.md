@@ -96,7 +96,7 @@
 
 ### Веб-сайт (для выдачи подписки без Telegram)
 
-- 🌐 Flask-приложение на HTTPS (порт 8443)
+- 🌐 Flask-приложение на HTTPS (порт 8443), запуск через gunicorn
 - 🔗 Одноразовые ссылки-приглашения (7 дней, срабатывают 1 раз)
 - ✅ Согласие с документами → мгновенная выдача подписки
 - 📷 QR-код прямо на странице
@@ -130,7 +130,7 @@
 - **Бот** работает на зарубежном VPS (прямой доступ к Telegram API)
 - **Панель 3x-ui** — на российском VPS
 - Связь между ними — через **API-токен (Bearer)** по HTTPS
-- **Веб-сайт** (`web_app.py`) — Flask на HTTPS, отдельный порт
+- **Веб-сайт** (`web_app.py`, `gunicorn.conf.py`) — Flask под gunicorn на HTTPS, отдельный порт
 - **Mini App** — Flask на HTTPS, валидация `initData` (HMAC-SHA256, WebAppData, BOT_TOKEN, `auth_date` TTL 1 час)
 - **Донаты** — Telegram Stars + DonationAlerts через Centrifugo WebSocket
 
@@ -157,7 +157,7 @@
 
 Скрипт задаст все вопросы (BOT_TOKEN, ADMIN_ID, BOT_USERNAME, BOT_NAME, SUPPORT_USERNAME, XUI_HOST, XUI_API_TOKEN, инбаунд, SUB_BASE_URL, лимиты, донат) и настроит бота автоматически: создаст `.env` с правами 600, поставит зависимости в venv, настроит cron для бэкапов и systemd-сервис.
 
-Для веб-сайта: `scripts/install-web.sh` настроит Flask-сервис, проверит SSL, при необходимости получит сертификат через certbot и создаст отдельный `skrepnet-web.service`.
+Для веб-сайта: `scripts/install-web.sh` настроит gunicorn-сервис, проверит SSL, при необходимости получит сертификат через certbot и создаст отдельный `skrepnet-web.service`.
 
 ### Полезные команды
 
@@ -207,7 +207,7 @@
 
 - `WEB_SUBSCRIPTION_DAYS` — срок веб-подписки (по умолчанию 3 дня)
 - `MINIAPP_URL` — URL Mini App (для кнопки в боте)
-- `WEB_PORT` — порт Flask (по умолчанию 8443)
+- `WEB_PORT` — порт веб-сервера (по умолчанию 8443)
 - `SSL_CERT` — путь к fullchain.pem
 - `SSL_KEY` — путь к privkey.pem
 
