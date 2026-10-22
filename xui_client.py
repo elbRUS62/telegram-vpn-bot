@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 
 from config import (
-    XUI_HOST, XUI_BASE_PATH, XUI_API_TOKEN,
+    XUI_PANELS,
     INBOUND_GB, LIMIT_IP, SUBSCRIPTION_DAYS,
     SUB_BASE_URL, SUB_PATH, BOT_NAME
 )
@@ -13,18 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class XUIClient:
-    def __init__(self):
-        self.base_url = f"{XUI_HOST}{XUI_BASE_PATH}"
+    def __init__(self, panel=None):
+        self.panel = panel or XUI_PANELS[0]
+        self.base_url = f"{self.panel['host']}{self.panel['base_path']}"
+        self.verify_tls = self.panel.get("verify_tls", True)
         self.session = None
         self.headers = {
-            "Authorization": f"Bearer {XUI_API_TOKEN}",
+            "Authorization": f"Bearer {self.panel['api_token']}",
             "Content-Type": "application/json"
         }
 
     async def __aenter__(self):
+        connector = aiohttp.TCPConnector(ssl=self.verify_tls)
         self.session = aiohttp.ClientSession(
             headers=self.headers,
             timeout=aiohttp.ClientTimeout(total=20),
+            connector=connector,
         )
         return self
 

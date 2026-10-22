@@ -114,6 +114,22 @@ async def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS monitor_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                panel_id TEXT NOT NULL,
+                ts INTEGER NOT NULL,
+                cpu_percent REAL,
+                mem_percent REAL,
+                disk_percent REAL,
+                online_count INTEGER,
+                traffic_total INTEGER
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_monitor_metrics_panel_ts
+            ON monitor_metrics(panel_id, ts)
+        """)
         # Миграция: добавляем поле renew_count, если его нет
         async with db.execute("PRAGMA table_info(users)") as cur:
             columns = [row[1] for row in await cur.fetchall()]
@@ -281,7 +297,7 @@ async def get_inactive_users(days: int = 30) -> list:
 
 
 # ============================================================
-# ОДНОРАЗОВЫЕ ССЫЛКИ-ПРИГЛАШЕНИЯ (для друзей без Telegram)
+# ССЫЛКИ-ПРИГЛАШЕНИЯ (для друзей без Telegram)
 # ============================================================
 
 async def create_invite_link(telegram_id: int, friend_user_id: int = None,
@@ -647,7 +663,7 @@ async def increment_renew_count(telegram_id: int) -> int:
 # ============================================================
 
 async def get_invite_link_any(token: str):
-    """Найти invite_link по токену БЕЗ фильтра is_used/7 дней.
+    """Найти invite_link по токену БЕЗ фильтра is_used/срока действия.
     Используется для привязки веб-юзера к Telegram.
     """
     async with aiosqlite.connect(DB_PATH) as db:
@@ -741,6 +757,36 @@ async def bind_web_user_to_telegram(
         logger.warning(f"Ошибка update_tg_id для {link['xui_email']}")
 
     return telegram_id
+
+
+async def get_expired_web_guests() -> list:
+    """Гостевые веб-подписки, срок которых истёк."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT telegram_id, xui_email, sub_id, expires_at, created_at
+            FROM users
+            WHERE source = 'web'
+              AND (telegram_id IS NULL OR telegram_id = 0)
+              AND xui_email IS NOT NULL
+              AND xui_email != ''
+              AND (
+                  (expires_at IS NOT NULL AND julianday('now', '+3 hours') >= julianday(expires_at))
+                  OR (expires_at IS NULL AND julianday('now') >= julianday(created_at, '+3 days'))
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM invite_links il
+                  WHERE il.xui_email = users.xui_email
+                    AND il.bound_to_tg_id IS NOT NULL
+              )
+              AND NOT EXISTS (
+                  SELECT 1 FROM users u2
+                  WHERE u2.xui_email = users.xui_email
+                    AND u2.telegram_id IS NOT NULL
+                    AND u2.telegram_id != 0
+              )
+        """) as cur:
+            return [dict(row) for row in await cur.fetchall()]
 
 
 async def get_abandoned_web_invites(days: int = 30) -> list:

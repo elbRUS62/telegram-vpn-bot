@@ -72,3 +72,73 @@ REQUIRED = [
 for var in REQUIRED:
     if not os.getenv(var):
         raise ValueError(f"Missing required env variable: {var}")
+
+# 3x-ui panels. Первая панель задаётся старыми XUI_* переменными,
+# вторая — необязательными XUI2_*. XUIClient() по умолчанию работает
+# с первой панелью, а мониторинг обходит весь список.
+def _env_bool(name, default=True):
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _normalize_base_path(value):
+    value = (value or "").strip()
+    return f"/{value.strip('/')}" if value.strip("/") else ""
+
+
+def _make_panel(panel_id, name, host, base_path, api_token, verify_tls=True):
+    host = (host or "").strip().rstrip("/")
+    base_path = _normalize_base_path(base_path)
+    if not (host and base_path and api_token):
+        return None
+    return {
+        "id": panel_id or "panel",
+        "name": name or panel_id or "3x-ui",
+        "host": host,
+        "base_path": base_path,
+        "api_token": api_token,
+        "verify_tls": bool(verify_tls),
+    }
+
+
+XUI_PANELS = []
+
+_first_panel = _make_panel(
+    os.getenv("XUI_PANEL_ID", "ru"),
+    os.getenv("XUI_PANEL_NAME", "RU"),
+    XUI_HOST,
+    XUI_BASE_PATH,
+    XUI_API_TOKEN,
+    _env_bool("XUI_VERIFY_TLS", True),
+)
+if _first_panel:
+    XUI_PANELS.append(_first_panel)
+
+_second_values = {
+    "XUI2_HOST": os.getenv("XUI2_HOST"),
+    "XUI2_BASE_PATH": os.getenv("XUI2_BASE_PATH"),
+    "XUI2_API_TOKEN": os.getenv("XUI2_API_TOKEN"),
+}
+if any(_second_values.values()):
+    missing = [key for key, value in _second_values.items() if not value]
+    if missing:
+        raise ValueError(f"Missing required env variable(s): {', '.join(missing)}")
+    _second_panel = _make_panel(
+        os.getenv("XUI2_ID", "gb"),
+        os.getenv("XUI2_NAME", "GB"),
+        _second_values["XUI2_HOST"],
+        _second_values["XUI2_BASE_PATH"],
+        _second_values["XUI2_API_TOKEN"],
+        _env_bool("XUI2_VERIFY_TLS", True),
+    )
+    if _second_panel:
+        XUI_PANELS.append(_second_panel)
+
+if not XUI_PANELS:
+    raise ValueError("No 3x-ui panels configured")
+
+_panel_ids = [panel["id"] for panel in XUI_PANELS]
+if len(_panel_ids) != len(set(_panel_ids)):
+    raise ValueError("Duplicate XUI panel id in XUI_PANELS")

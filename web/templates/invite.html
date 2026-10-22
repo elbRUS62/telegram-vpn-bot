@@ -4,187 +4,315 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SkrepNet — Подписка</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-color: #0d1117;
-            --secondary-bg: #161b22;
-            --text-color: #c9d1d9;
-            --hint-color: #8b949e;
-            --link-color: #58a6ff;
-            --button-color: #238636;
-            --button-text: #ffffff;
-            --border-color: rgba(255, 255, 255, 0.1);
+            --bg-color: var(--tg-theme-bg-color, #17212b);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #232e3c);
+            --text-color: var(--tg-theme-text-color, #ffffff);
+            --hint-color: var(--tg-theme-hint-color, #708499);
+            --link-color: var(--tg-theme-link-color, #6ab3f3);
+            --button-color: var(--tg-theme-button-color, #3390ec);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --success-color: #31c46b;
+            --warning-color: #e0a33a;
+            --danger-color: #e5534b;
+        }
+        @media (prefers-color-scheme: light) {
+            :root { --border-color: rgba(0, 0, 0, 0.08); }
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
-            background-color: var(--bg-color);
+            background: var(--bg-color);
             color: var(--text-color);
             padding: 20px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
         }
         .card {
-            background-color: var(--secondary-bg);
+            background: var(--secondary-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 14px;
+            padding: 20px;
             max-width: 440px;
             width: 100%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin: 24px auto;
+        }
+        .brand {
+            color: var(--hint-color);
+            font-size: 13px;
+            margin-bottom: 4px;
         }
         h1 {
             color: var(--text-color);
-            font-size: 22px;
-            font-weight: 600;
+            font-size: 24px;
+            font-weight: 650;
+            line-height: 1.2;
+            letter-spacing: -0.2px;
             margin-bottom: 8px;
-            text-align: center;
+            text-align: left;
         }
         .subtitle {
             color: var(--hint-color);
-            font-size: 14px;
-            margin-bottom: 20px;
-            text-align: center;
-            line-height: 1.5;
+            font-size: 15px;
+            line-height: 1.45;
+            margin-bottom: 18px;
+            text-align: left;
         }
+        .subtitle a { color: var(--link-color); text-decoration: none; }
         .terms {
-            background-color: var(--bg-color);
+            background: var(--bg-color);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 20px;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
         }
         .terms p {
             color: var(--text-color);
             font-size: 14px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         .terms ul {
             list-style: none;
             padding: 0;
         }
-        .terms li {
-            margin-bottom: 8px;
-        }
+        .terms li { margin-bottom: 8px; }
+        .terms li:last-child { margin-bottom: 0; }
         .terms a {
             color: var(--link-color);
             text-decoration: none;
             font-size: 14px;
             cursor: pointer;
         }
-        .terms a:hover {
-            text-decoration: underline;
-        }
+        .terms a:hover { text-decoration: underline; }
         .checkbox-wrap {
             display: flex;
             align-items: flex-start;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             cursor: pointer;
             font-size: 14px;
             color: var(--text-color);
         }
         .checkbox-wrap input {
-            margin-top: 3px;
+            -webkit-appearance: none;
+            appearance: none;
+            position: relative;
+            flex-shrink: 0;
             width: 18px;
             height: 18px;
+            margin-top: 2px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-color);
             cursor: pointer;
+        }
+        .checkbox-wrap input:checked {
+            border-color: var(--button-color);
+            background: var(--button-color);
+        }
+        .checkbox-wrap input:checked::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--button-text);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
         }
         .btn {
             width: 100%;
-            padding: 16px;
+            min-height: 48px;
+            padding: 12px 16px;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             transition: opacity 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            text-decoration: none;
+            font-family: inherit;
         }
-        .btn:active { opacity: 0.7; }
-        .btn-primary { background-color: var(--button-color); color: var(--button-text); box-shadow: 0 4px 12px rgba(35, 134, 54, 0.2); }
-        .btn-secondary { background-color: var(--secondary-bg); color: var(--text-color); border: 1px solid var(--border-color); }
-        .btn:disabled { background-color: var(--hint-color); opacity: 0.5; cursor: not-allowed; }
-        .result { margin-top: 20px; font-size: 14px; line-height: 1.6; }
-        .result.error { color: #f85149; }
-        .result.success { color: #3fb950; }
-        .qr-wrap { text-align: center; margin: 16px 0; }
-        .qr-wrap img { width: 100%; max-width: 260px; background: white; padding: 16px; border-radius: 16px; }
-        .link-box { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin: 12px 0; word-break: break-all; font-family: monospace; font-size: 13px; color: var(--link-color); }
-        
-        /* Модалка */
+        .btn:active { opacity: 0.85; }
+        .btn-primary {
+            background: var(--button-color);
+            color: var(--button-text);
+        }
+        .btn-secondary {
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .btn:disabled {
+            border: 1px solid var(--border-color);
+            background: var(--secondary-bg);
+            color: var(--hint-color);
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .result.error { color: var(--danger-color); }
+        .result.success { color: var(--success-color); }
+        .result-title {
+            margin-bottom: 16px;
+            color: var(--text-color);
+            font-size: 22px;
+            font-weight: 650;
+            line-height: 1.2;
+        }
+        .result-title--success { color: var(--success-color); }
+        .notice-card {
+            margin-bottom: 16px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-color);
+        }
+        .notice-title {
+            margin-bottom: 6px;
+            color: var(--text-color);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .notice-text {
+            margin-bottom: 12px;
+            color: var(--hint-color);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .notice-card .btn { margin-bottom: 0; }
+        .notice-card--warning {
+            background: rgba(224, 163, 58, 0.12);
+            border-color: rgba(224, 163, 58, 0.35);
+        }
+        .notice-card--warning .notice-title { color: var(--warning-color); }
+        .notice-card--warning .notice-text { color: var(--text-color); opacity: 0.8; }
+        .caption {
+            margin-top: 8px;
+            color: var(--hint-color);
+            font-size: 13px;
+            text-align: center;
+        }
+        .caption--accent {
+            margin-top: 4px;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        .qr-wrap { text-align: center; margin: 12px 0; }
+        .qr-wrap img {
+            width: 100%;
+            max-width: 220px;
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .link-box {
+            margin: 12px 0;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            word-break: break-all;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+        }
         .modal-backdrop {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.7);
+            inset: 0;
+            z-index: 9999;
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
             padding: 20px;
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.55);
         }
         .modal-backdrop.show { display: flex; }
         .modal {
-            background-color: var(--secondary-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 24px;
-            max-width: 400px;
             width: 100%;
+            max-width: 400px;
             max-height: 85vh;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--bg-color);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
             display: flex;
             flex-direction: column;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
-        .modal h2 { color: var(--text-color); margin-bottom: 16px; font-size: 20px; font-weight: 600; text-align: center; }
-        #docs-content { line-height: 1.6; font-size: 15px; color: var(--hint-color); overflow-y: auto; max-height: 60vh; padding-right: 8px; }
-        #docs-content h2 { color: var(--text-color); font-size: 16px; margin-top: 16px; margin-bottom: 8px; text-align: left; }
+        .modal h2 {
+            margin-bottom: 16px;
+            color: var(--text-color);
+            font-size: 20px;
+            font-weight: 650;
+            text-align: left;
+        }
+        #docs-content {
+            max-height: 60vh;
+            padding-right: 8px;
+            overflow-y: auto;
+            color: var(--hint-color);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        #docs-content h2 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-size: 16px;
+            text-align: left;
+        }
         #docs-content p, #docs-content ul { margin-bottom: 12px; }
         #docs-content ul { padding-left: 20px; }
-
         .link-box.clickable {
             cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s;
+            transition: border-color 0.2s, background-color 0.2s;
             position: relative;
         }
-        .link-box.clickable:hover {
-            border-color: var(--link-color);
-        }
-        .link-box.clickable:active {
-            background-color: var(--secondary-bg);
-        }
-
+        .link-box.clickable:hover { border-color: var(--link-color); }
+        .link-box.clickable:active { background: var(--secondary-bg); }
         .link-box .copied-toast {
             position: absolute;
             bottom: -30px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--button-color);
-            color: white;
             padding: 4px 12px;
             border-radius: 6px;
+            background: var(--button-color);
+            color: var(--button-text);
             font-size: 12px;
             white-space: nowrap;
             opacity: 0;
             transition: opacity 0.3s;
         }
-        .link-box .copied-toast.show {
-            opacity: 1;
-        }
+        .link-box .copied-toast.show { opacity: 1; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>SkrepNet</h1>
-        <p class="subtitle">Бесплатный VPN на 3 дня. По окончании — продлите бесплатно в боте <a href="https://t.me/skrepnet_bot" style="color:var(--link-color);">@skrepnet_bot</a>.</p>
+        <div class="brand">SkrepNet</div>
+        <h1>Бесплатный VPN на 3 дня</h1>
+        <p class="subtitle">Гостевая подписка на 3 дня. Продление недоступно.</p>
+
+        <div class="notice-card notice-card--warning">
+            <div class="notice-title">Подписка всего на 3 дня</div>
+            <div class="notice-text">Через 3 дня доступ будет удалён. Продлить или сохранить подписку нельзя.</div>
+        </div>
 
         <div class="terms">
             <p>Для получения подписки ознакомься с документами:</p>
@@ -215,7 +343,36 @@
     </div>
 
     <script>
+        const tg = window.Telegram && window.Telegram.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            try { tg.setHeaderColor('secondary_bg_color'); } catch (e) {}
+            try { tg.setBackgroundColor('bg_color'); } catch (e) {}
+            try { tg.setBottomBarColor && tg.setBottomBarColor('bg_color'); } catch (e) {}
+        }
+
         const token = "{{ token }}";
+
+        function subscriptionResultHtml(data, title) {
+            const qr = data.qr_base64
+                ? `<div class="qr-wrap">
+                       <img src="data:image/png;base64,${data.qr_base64}" alt="QR-код подписки">
+                       <p class="caption">Отсканируй в Happ</p>
+                       <p class="caption caption--accent">Подписка на 3 дня</p>
+                   </div>`
+                : '';
+            const subUrl = data.sub_url || '';
+            return `
+                <div class="result-title result-title--success">${title}</div>
+                <div class="notice-card notice-card--warning">
+                    <div class="notice-title">Подписка всего на 3 дня</div>
+                    <div class="notice-text">Продление недоступно. Через 3 дня доступ будет удалён.</div>
+                </div>
+                ${qr}
+                <button class="btn btn-primary" onclick="copyLink('${subUrl}')">Скопировать ссылку</button>
+            `;
+        }
 
         // Проверяем при загрузке, использована ли ссылка
         (async function checkStatus() {
@@ -232,24 +389,7 @@
                         result.className = 'result error';
                         result.textContent = data.error;
                     } else {
-                        result.innerHTML = `
-                            <div style="text-align:center;">
-                                <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка уже получена</div>
-                                <div style="background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;">
-                                    <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">⏰ Подписка действует 3 дня</div>
-                                    <div style="font-size:14px;color:#1a1a1a;margin-bottom:14px;line-height:1.5;">
-                                        Через 3 дня доступ к VPN закончится. Чтобы продлить <b>бесплатно</b> — откройте @skrepnet_bot и нажмите «Продлить».
-                                    </div>
-                                    <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:#1a1a1a;color:white;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть @skrepnet_bot</a>
-                                </div>
-                                <div class="qr-wrap">
-                                    <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
-                                    <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p><p style="color:#d29922;font-size:13px;font-weight:600;margin-top:4px;">⏳ Подписка на 3 дня</p>
-                                </div>
-                                <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
-                                <button class="btn btn-secondary" onclick="renewSubscription()" style="width:100%;margin-top:10px;">🔄 Продлить на 3 дня</button>
-                            </div>
-                        `;
+                        result.innerHTML = subscriptionResultHtml(data, 'Подписка уже получена');
                     }
                     btn.style.display = 'none';
                     checkbox.style.display = 'none';
@@ -291,24 +431,7 @@
                     btn.disabled = false;
                     btn.textContent = 'Попробовать снова';
                 } else {
-                    result.innerHTML = `
-                        <div style="text-align:center;">
-                            <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка активирована!</div>
-                            <div style="background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;">
-                                <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">⏰ Подписка действует 3 дня</div>
-                                <div style="font-size:14px;color:#1a1a1a;margin-bottom:14px;line-height:1.5;">
-                                    Через 3 дня доступ к VPN закончится. Чтобы продлить <b>бесплатно</b> — откройте @skrepnet_bot и нажмите «Продлить».
-                                </div>
-                                <a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:#1a1a1a;color:white;text-decoration:none;padding:14px;border-radius:8px;text-align:center;font-weight:700;font-size:16px;">Открыть @skrepnet_bot</a>
-                            </div>
-                            <div class="qr-wrap">
-                                <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
-                                <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p><p style="color:#d29922;font-size:13px;font-weight:600;margin-top:4px;">⏳ Подписка на 3 дня</p>
-                            </div>
-                            <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
-                            <button class="btn btn-secondary" onclick="renewSubscription()" style="width:100%;margin-top:10px;">🔄 Продлить на 3 дня</button>
-                        </div>
-                    `;
+                    result.innerHTML = subscriptionResultHtml(data, 'Подписка активирована');
                     btn.style.display = 'none';
                     document.querySelector('.checkbox-wrap').style.display = 'none';
                 }
@@ -341,7 +464,7 @@
                     <ul>
                         <li>Один пользователь — одна подписка.</li>
                         <li>Лимит: <strong>3 IP одновременно</strong>.</li>
-                        <li>Срок подписки: <strong>3 дня</strong> с возможностью продления.</li>
+                        <li>Срок подписки: <strong>3 дня</strong>. Продление недоступно.</li>
                     </ul>
                     <h2>4. Ответственность</h2>
                     <ul>
@@ -359,7 +482,7 @@
                     <h2>1. Какие данные мы собираем</h2>
                     <ul>
                         <li><strong>Telegram ID, username, имя</strong> — для идентификации пользователя.</li>
-                        <li><strong>Дата регистрации и продлений</strong> — для учёта подписки.</li>
+                        <li><strong>Дата регистрации</strong> — для учёта подписки.</li>
                         <li><strong>Технический лог</strong> — для диагностики и защиты от злоупотреблений.</li>
                     </ul>
                     <h2>2. Что мы НЕ собираем</h2>
@@ -370,7 +493,7 @@
                     </ul>
                     <h2>3. Как используем данные</h2>
                     <ul>
-                        <li>Для работы Сервиса (выдача и продление подписки).</li>
+                        <li>Для работы Сервиса (выдача подписки).</li>
                         <li>Для связи с вами (уведомления, техподдержка).</li>
                         <li>Для статистики в обезличенном виде.</li>
                     </ul>
@@ -403,7 +526,7 @@
                     <h2>3. Стоимость</h2>
                     <p>Сервис предоставляется <strong>бесплатно</strong>. Добровольные донаты приветствуются и не влияют на доступ.</p>
                     <h2>4. Срок действия</h2>
-                    <p>Подписка действует <strong>3 дня</strong>. Продление — по желанию, через бот.</p>
+                    <p>Подписка действует <strong>3 дня</strong>. Продление недоступно.</p>
                     <h2>5. Прекращение доступа</h2>
                     <ul>
                         <li>По истечении срока подписки.</li>
@@ -451,8 +574,8 @@
             if (!banner) {
                 banner = document.createElement('div');
                 banner.id = 'copy-banner';
-                banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);color:#1a1a1a;padding:16px 20px;border-radius:12px;max-width:420px;width:calc(100% - 40px);box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:9999;opacity:0;transition:opacity 0.3s;text-align:center;';
-                banner.innerHTML = '<div style="font-size:16px;font-weight:700;margin-bottom:8px;">⏰ Подписка действует 3 дня</div><div style="font-size:13px;margin-bottom:12px;line-height:1.4;">Ссылка скопирована. Через 3 дня доступ закончится. Продлить <b>бесплатно</b> — в @skrepnet_bot.</div><a href="https://t.me/skrepnet_bot" target="_blank" style="display:block;background:#1a1a1a;color:white;text-decoration:none;padding:10px;border-radius:8px;text-align:center;font-weight:700;font-size:14px;">Открыть @skrepnet_bot</a>';
+                banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--button-color);color:var(--button-text);padding:12px 18px;border-radius:10px;max-width:420px;width:calc(100% - 40px);z-index:9999;opacity:0;transition:opacity 0.3s;text-align:center;font-size:14px;';
+                banner.innerHTML = '<div style="font-weight:600;margin-bottom:4px;">Ссылка скопирована</div><div style="font-size:13px;opacity:0.85;">Подписка действует 3 дня. Продление недоступно.</div>';
                 document.body.appendChild(banner);
             }
             banner.style.opacity = '1';
@@ -475,44 +598,6 @@
             document.body.removeChild(textarea);
         }
 
-        async function renewSubscription() {
-            if (!confirm('Продлить подписку на 3 дня?')) return;
-
-            try {
-                const res = await fetch(`/api/activate/${token}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({accepted_terms: true})
-                });
-                const data = await res.json();
-
-                if (data.error) {
-                    alert('Ошибка продления: ' + data.error);
-                    return;
-                }
-
-                const result = document.getElementById('result');
-                result.innerHTML = `
-                    <div style="text-align:center;">
-                        <div style="font-size:22px;font-weight:700;color:#3fb950;margin-bottom:20px;">Подписка продлена!</div>
-                        <div style="background:linear-gradient(135deg,#d29922 0%,#f0b429 100%);border-radius:12px;padding:20px;margin-bottom:20px;text-align:left;">
-                            <div style="font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">⏰ Подписка действует ещё 3 дня</div>
-                            <div style="font-size:14px;color:#1a1a1a;line-height:1.5;">
-                                Продление выполнено. Можно пользоваться VPN ещё 3 дня.
-                            </div>
-                        </div>
-                        <div class="qr-wrap">
-                            <img src="data:image/png;base64,${data.qr_base64}" alt="QR">
-                            <p style="color:var(--hint-color);font-size:13px;margin-top:8px;">Отсканируй в Happ</p>
-                        </div>
-                        <button class="btn btn-primary" onclick="copyLink('${data.sub_url}')" style="width:100%;margin-top:12px;">Скопировать ссылку</button>
-                        <button class="btn btn-secondary" onclick="renewSubscription()" style="width:100%;margin-top:10px;">🔄 Продлить ещё на 3 дня</button>
-                    </div>
-                `;
-            } catch (e) {
-                alert('Ошибка соединения');
-            }
-        }
     </script>
 </body>
 </html>

@@ -80,7 +80,7 @@ async def handle_shared_user(message: Message, state: FSMContext):
         f"🔗 <b>Ссылка:</b>\n"
         f"<code>{invite_url}</code>\n\n"
         f"📌 Отправь её пользователю.\n"
-        f"⏳ Действует 7 дней, срабатывает 1 раз.",
+        f"Срок действия ссылки: 3 дня.",
         parse_mode="HTML",
         reply_markup=invite_share_keyboard(invite_url)
     )

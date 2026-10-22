@@ -6,7 +6,7 @@ from functools import wraps
 import aiosqlite
 from flask import Blueprint, jsonify, request
 
-from config import ADMIN_IDS, DB_PATH, MAX_USERS, BOT_NAME, XUI_HOST, XUI_BASE_PATH
+from config import ADMIN_IDS, DB_PATH, MAX_USERS, BOT_NAME, XUI_PANELS
 from web.utils.auth import validate_init_data
 from web.utils.async_helper import run_async
 
@@ -51,12 +51,25 @@ async def _audit(admin_id, action, target_id=None, meta=""):
 @admin_required
 def xui_panel_url():
     """Ссылка на панель 3x-ui. Только для админов: base path — секрет."""
-    host = (XUI_HOST or "").rstrip("/")
-    base = (XUI_BASE_PATH or "").strip("/")
+    data = request.json or {}
+    panel_id = (data.get("panel_id") or "").strip()
+    panel = None
+    if panel_id:
+        panel = next((p for p in XUI_PANELS if p["id"] == panel_id), None)
+    else:
+        panel = XUI_PANELS[0] if XUI_PANELS else None
+    if not panel:
+        return jsonify({"error": "Панель 3x-ui не найдена"}), 404
+    host = (panel.get("host") or "").rstrip("/")
+    base = (panel.get("base_path") or "").strip("/")
     if not host:
         return jsonify({"error": "Панель 3x-ui не настроена"}), 503
     url = f"{host}/{base}/panel" if base else f"{host}/panel"
-    return jsonify({"url": url})
+    return jsonify({
+        "url": url,
+        "panel_id": panel["id"],
+        "name": panel.get("name") or panel["id"],
+    })
 
 
 # ---------------- 3x-ui monitoring ----------------
@@ -64,14 +77,17 @@ def xui_panel_url():
 @admin_api.route("/monitor", methods=["POST"])
 @admin_required
 def monitor_status():
-    """Текущее состояние 3x-ui для карточки мониторинга."""
-    from monitoring import collect_status
+    """Текущее состояние всех панелей 3x-ui для карточки мониторинга."""
+    from monitoring import collect_all_status_with_history
 
     try:
-        return jsonify(run_async(collect_status()))
+        return jsonify({"panels": run_async(collect_all_status_with_history())})
     except Exception:
         logger.exception("admin/monitor failed")
-        return jsonify({"ok": False, "error": "Не удалось получить статус 3x-ui"}), 500
+        return jsonify({
+            "panels": [],
+            "error": "Не удалось получить статус 3x-ui",
+        }), 500
 
 
 # ---------------- stats ----------------
@@ -92,6 +108,7 @@ def stats():
             active   = await one("SELECT COUNT(*) FROM users WHERE status='active'")
             pending  = await one("SELECT COUNT(*) FROM users WHERE status='pending'")
             rejected = await one("SELECT COUNT(*) FROM users WHERE status='rejected'")
+            blocked  = await one("SELECT COUNT(*) FROM users WHERE status='blocked'")
             expiring = await one(
                 "SELECT COUNT(*) FROM users WHERE status='active' "
                 "AND DATE(expires_at) BETWEEN DATE('now') AND DATE('now','+3 days')"
@@ -139,25 +156,29 @@ def stats():
                 logger.error("admin/stats: traffic failed")
                 traffic_gb = None
 
-            # --- Онлайн-подсчёт (VPN) из 3x-ui ---
+            # --- Онлайн-подсчёт (VPN) по всем панелям 3x-ui ---
             # Используем /panel/api/clients/onlines — именно этот список
             # показывает панель 3x-ui как «В сети».
             online_count = 0
-            try:
-                from xui_client import XUIClient
-                async with XUIClient() as xui:
-                    res = await xui._post("/panel/api/clients/onlines", {})
-                    if res.get("success"):
-                        online_count = len(res.get("obj", []) or [])
-            except Exception:
-                logger.error("admin/stats: online_count failed")
-                online_count = 0
+            from xui_client import XUIClient
+            for panel in XUI_PANELS:
+                try:
+                    async with XUIClient(panel) as xui:
+                        res = await xui._post("/panel/api/clients/onlines", {})
+                        if res.get("success"):
+                            online_count += len(res.get("obj", []) or [])
+                except Exception:
+                    logger.error(
+                        "admin/stats: online_count failed for panel %s",
+                        panel.get("id"),
+                    )
 
         return {
             "users_total": total,
             "active": active,
             "pending": pending,
             "rejected": rejected,
+            "blocked": blocked,
             "expiring_3d": expiring,
             "waitlist": waitlist,
             "donated_rub": int(round(donated or 0)),
@@ -239,6 +260,11 @@ def users_list():
             where, args = [], []
             if status == "web":
                 where.append("source = 'web'")
+            elif status == "expiring":
+                where.append(
+                    "status='active' AND DATE(expires_at) "
+                    "BETWEEN DATE('now') AND DATE('now','+3 days')"
+                )
             elif status != "all":
                 where.append("status=?")
                 args.append(status)
@@ -429,6 +455,24 @@ def user_card():
     if "error" in r:
         return jsonify(r), 404
     return jsonify(r)
+
+
+# ---------------- diagnostics ----------------
+
+@admin_api.route("/diagnostics", methods=["POST"])
+@admin_required
+def user_diagnostics():
+    data = request.json or {}
+    tg_id = int(data.get("tg_id", 0))
+    if not tg_id:
+        return jsonify({"error": "Не указан пользователь"}), 400
+
+    from web.routes.api import _collect_diagnostics
+
+    result = run_async(_collect_diagnostics(tg_id))
+    if "error" in result:
+        return jsonify(result), 400
+    return jsonify(result)
 
 
 # ---------------- requests (pending) ----------------

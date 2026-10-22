@@ -268,11 +268,11 @@ async def _handle_invite_no_tg(callback: CallbackQuery):
 
     await callback.message.delete()
     await callback.message.answer(
-        "➕ <b>Добавить друга без Telegram</b>\n\n"
+        "<b>Добавить друга без Telegram</b>\n\n"
         "Выбери способ:\n"
         "• Выбрать из контактов Telegram\n"
         "• Или ввести @username / ID вручную\n\n"
-        "После этого я создам одноразовую ссылку, "
+        "После этого я создам ссылку на сайт, "
         "которую ты передашь любым способом.",
         reply_markup=invite_contact_keyboard(),
         parse_mode="HTML"

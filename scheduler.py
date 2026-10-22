@@ -8,7 +8,7 @@ from monitoring import check_xui_health
 from database import (
     get_expiring_users, get_expired_today, mark_notified,
     get_inactive_users, delete_user,
-    get_abandoned_web_invites,
+    get_abandoned_web_invites, get_expired_web_guests,
 )
 from keyboards import renew_keyboard
 from xui_client import XUIClient
@@ -59,6 +59,18 @@ def setup_scheduler(bot: Bot):
         minute=0,
         args=[bot],
         id="cleanup_abandoned_web_invites"
+    )
+
+    # Удаление гостевых веб-подписок после 3 дней — каждый час
+    scheduler.add_job(
+        cleanup_expired_web_guests,
+        "interval",
+        hours=1,
+        args=[bot],
+        id="cleanup_expired_web_guests",
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now() + timedelta(minutes=2),
     )
 
     # Мониторинг 3x-ui — каждые 5 минут, первый запуск через 30 секунд
@@ -201,6 +213,53 @@ async def cleanup_abandoned_web_invites(bot: Bot):
                 f"(активированы 30+ дней назад, но не привязаны к боту)",
                 parse_mode="HTML",
                 disable_notification=True
+            )
+        except Exception:
+            pass
+
+
+async def cleanup_expired_web_guests(bot: Bot):
+    """Удаляет гостевые веб-подписки после истечения 3 дней."""
+    guests = await get_expired_web_guests()
+    if not guests:
+        return
+
+    deleted = 0
+    for guest in guests:
+        email = guest.get("xui_email")
+        if not email:
+            continue
+        try:
+            async with XUIClient() as xui:
+                try:
+                    await xui.delete_client(email)
+                except Exception:
+                    logger.warning("Не удалось удалить гостевого клиента %s", email)
+
+            async with aiosqlite.connect(DB_PATH) as db:
+                await db.execute(
+                    "DELETE FROM users WHERE xui_email = ? AND source = 'web' "
+                    "AND (telegram_id IS NULL OR telegram_id = 0)",
+                    (email,),
+                )
+                await db.execute(
+                    "DELETE FROM invite_links WHERE xui_email = ? "
+                    "AND bound_to_tg_id IS NULL",
+                    (email,),
+                )
+                await db.commit()
+
+            deleted += 1
+            logger.info("Удалена гостевая веб-подписка: %s", email)
+        except Exception:
+            logger.exception("Ошибка удаления гостевой веб-подписки %s", email)
+
+    if deleted:
+        try:
+            await bot.send_message(
+                ADMIN_ID,
+                f"Автоочистка гостевых подписок: удалено {deleted}.",
+                disable_notification=True,
             )
         except Exception:
             pass

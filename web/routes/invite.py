@@ -136,15 +136,14 @@ def activate(token):
         if not invite:
             return {'error': 'Ссылка недействительна'}
 
-        # Защита от активации просроченных (старше 7 дней) неиспользованных ссылок.
-        # Использованные ссылки не проверяем — по ним отдаём QR (повторный клик).
+        # Защита от активации просроченных неиспользованных ссылок.
         if not invite["is_used"]:
             created = invite["created_at"]
             try:
                 created_dt = datetime.strptime(str(created), "%Y-%m-%d %H:%M:%S")
             except (TypeError, ValueError):
                 return {'error': 'Ссылка недействительна'}
-            if datetime.now() - created_dt > timedelta(days=7):
+            if datetime.now() - created_dt > timedelta(days=WEB_SUBSCRIPTION_DAYS):
                 return {'error': 'Срок действия ссылки истёк', 'expired': True}
 
         # Если ссылка уже использована — не выходим, идём в общий путь:
@@ -162,6 +161,29 @@ def activate(token):
 
         telegram_id = invite["friend_user_id"] or 0
         xui_email = sanitize_email(name, telegram_id)
+
+        # Гостевая ссылка не продлевает подписку повторно:
+        # если она уже активирована — просто отдаём существующий доступ.
+        if invite["is_used"]:
+            try:
+                async with XUIClient() as xui:
+                    existing = await xui.get_client(xui_email)
+                    sub_id = existing.get("subId")
+                    if not sub_id:
+                        return {'error': 'Подписка не найдена'}
+                    sub_url = xui.build_sub_url(sub_id)
+            except Exception:
+                logger.exception("Ошибка получения существующей веб-подписки")
+                return {'error': 'Подписка не найдена'}
+
+            return {
+                'sub_url': sub_url,
+                'sub_id': sub_id,
+                'email': xui_email,
+                'qr_base64': _make_qr_base64(sub_url),
+            }
+
+        expires_at_db = datetime.now() + timedelta(days=WEB_SUBSCRIPTION_DAYS)
 
         try:
             async with XUIClient() as xui:
@@ -186,6 +208,7 @@ def activate(token):
                     current_expiry = existing.get("expiryTime", 0)
                     now_ms = int(datetime.now().timestamp() * 1000)
                     target_expiry = now_ms + (WEB_SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000)
+                    expires_at_db = datetime.fromtimestamp(target_expiry / 1000)
 
                     # Если разница с целевым больше 1 минуты — обновляем (урезаем или продлеваем)
                     if abs(current_expiry - target_expiry) > 60_000:
@@ -243,7 +266,15 @@ def activate(token):
                     if row:
                         existing = {"telegram_id": row[0]}
 
-        if not existing:
+        if existing:
+            async with aiosqlite.connect(DB_PATH) as db:
+                await db.execute(
+                    "UPDATE users SET expires_at = ?, status = 'active' "
+                    "WHERE xui_email = ?",
+                    (expires_at_db.strftime("%Y-%m-%d %H:%M:%S"), xui_email),
+                )
+                await db.commit()
+        else:
             tg_id_for_db = invite["friend_user_id"]  # может быть None
             username_for_db = invite["friend_username"] or ""
             if invite["friend_username"]:
@@ -256,9 +287,17 @@ def activate(token):
             async with aiosqlite.connect(DB_PATH) as db:
                 await db.execute("""
                     INSERT INTO users
-                        (telegram_id, username, first_name, xui_email, status, sub_id, source)
-                    VALUES (?, ?, ?, ?, 'active', ?, 'web')
-                """, (tg_id_for_db, username_for_db, first_name_for_db, xui_email, sub_id))
+                        (telegram_id, username, first_name, xui_email,
+                         status, sub_id, source, expires_at)
+                    VALUES (?, ?, ?, ?, 'active', ?, 'web', ?)
+                """, (
+                    tg_id_for_db,
+                    username_for_db,
+                    first_name_for_db,
+                    xui_email,
+                    sub_id,
+                    expires_at_db.strftime("%Y-%m-%d %H:%M:%S"),
+                ))
                 await db.commit()
             logger.info(
                 f"✅ Создан пользователь в БД: tg_id={tg_id_for_db}, "
@@ -279,16 +318,6 @@ def activate(token):
                 )
         except Exception as e:
             logger.exception("Ошибка засчёта приглашения (token=%s)", token)
-
-        try:
-            await notify_admin_new_web_user(
-                friend_username=invite["friend_username"],
-                telegram_id=invite["friend_user_id"] or 0,
-                inviter_id=invite["created_by"],
-                sub_url=sub_url
-            )
-        except Exception as e:
-            logger.exception("Ошибка уведомления админов о новом веб-пользователе")
 
         qr_base64 = _make_qr_base64(sub_url)
 

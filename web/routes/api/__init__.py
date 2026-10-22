@@ -33,7 +33,7 @@ def main():
         return jsonify({'error': 'Нет ID'}), 400
 
     async def get_data():
-        from config import ADMIN_IDS, BOT_NAME, SERVER_COST
+        from config import ADMIN_IDS, BOT_NAME, SERVER_COST, SUB_BASE_URL, SUB_PATH
         from database import get_user, get_donations_total, get_support_unread_count
         from datetime import datetime
 
@@ -70,6 +70,7 @@ def main():
             'bot_name': BOT_NAME,
             'next_month': next_month_name,
             'support_unread': support_unread,
+            'sub_url': f"{SUB_BASE_URL}{SUB_PATH}{db_user['sub_id']}" if has_sub and db_user['sub_id'] else '',
         }
 
     result = run_async(get_data())
@@ -169,6 +170,76 @@ def subscription():
             return {'error': 'Внутренняя ошибка сервера'}
 
     result = run_async(get_data())
+    if 'error' in result:
+        return jsonify(result), 400
+    return jsonify(result)
+
+
+# ============================================================
+# Диагностика подключения
+# ============================================================
+
+async def _collect_diagnostics(telegram_id):
+    import aiohttp
+
+    from config import SUB_BASE_URL, SUB_PATH
+    from database import get_user
+    from xui_client import XUIClient
+
+    db_user = await get_user(telegram_id)
+    if not db_user or db_user["status"] != "active":
+        return {'error': 'Нет активной подписки'}
+
+    result = {
+        'panel_name': None,
+        'panel_ok': False,
+        'client_found': False,
+        'enabled': False,
+        'is_online': False,
+        'sub_link_ok': False,
+        'sub_http_status': None,
+        'checked_at': datetime.now().strftime('%H:%M'),
+    }
+    sub_url = f"{SUB_BASE_URL}{SUB_PATH}{db_user['sub_id']}"
+
+    try:
+        async with XUIClient() as xui:
+            result['panel_name'] = xui.panel.get('name') or 'RU'
+            result['panel_ok'] = True
+            sub_url = xui.build_sub_url(db_user['sub_id'])
+            try:
+                client = await xui.get_client(db_user['xui_email'])
+                result['client_found'] = bool(client)
+                result['enabled'] = bool(client.get('enable', False))
+            except Exception:
+                logger.warning("diagnostics: client not found for %s", telegram_id, exc_info=True)
+            result['is_online'] = await xui.is_client_online(db_user['xui_email'])
+    except Exception:
+        logger.warning("diagnostics: panel unavailable for %s", telegram_id, exc_info=True)
+
+    try:
+        connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=6),
+            connector=connector,
+        ) as session:
+            async with session.get(sub_url, allow_redirects=True) as resp:
+                result['sub_http_status'] = resp.status
+                result['sub_link_ok'] = 200 <= resp.status < 300
+    except Exception:
+        logger.warning("diagnostics: subscription link check failed for %s", telegram_id, exc_info=True)
+
+    return result
+
+
+@api.route('/diagnostics', methods=['POST'])
+def diagnostics():
+    data = request.json or {}
+    user = validate_init_data(data.get('init_data', ''))
+    if not user:
+        return jsonify({'error': 'Неверная авторизация'}), 401
+
+    result = run_async(_collect_diagnostics(user.get('id')))
     if 'error' in result:
         return jsonify(result), 400
     return jsonify(result)
@@ -564,9 +635,23 @@ def create_link_for_friend():
         base_url = f"{WEB_BASE_URL.rstrip('/')}/invite/"
         invite_url = f"{base_url}{token}"
 
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=2,
+        )
+        qr.add_data(invite_url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        qr_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
         return {
             'success': True,
             'invite_url': invite_url,
+            'qr_base64': qr_base64,
             'friend_name': friend_input if friend_input else "гостевой доступ"
         }
 
