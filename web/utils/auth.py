@@ -18,7 +18,7 @@ def validate_init_data(init_data: str) -> dict | None:
     if not init_data:
         logger.warning("init_data пустой!")
         return None
-    logger.info(f"RAW init_data: {init_data[:100]}...")
+
     try:
         parsed = dict(parse_qsl(init_data, keep_blank_values=True))
         hash_value = parsed.pop("hash", "")
