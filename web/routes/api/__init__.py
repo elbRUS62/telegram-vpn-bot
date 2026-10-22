@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request
 
 from web.utils.auth import validate_init_data
 from web.utils.async_helper import run_async
+from config import WEB_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,6 @@ def subscription():
                 
                 # Проверяем онлайн внутри сессии
                 is_online = await xui.is_client_online(db_user["xui_email"])
-                logger.info(f"subscription: is_online={is_online}")
 
             qr = qrcode.QRCode(
                 version=None,
@@ -146,8 +146,6 @@ def subscription():
 
             # Проверяем, онлайн ли клиент
             # Проверяем, что в списке онлайн
-
-            logger.info(f"RESULT: is_online={is_online}, email={db_user['xui_email']}")
 
             logger.info(f"subscription: is_online для {db_user['xui_email']} = {is_online}")
 
@@ -360,20 +358,6 @@ def profile():
         ],
     })
 
-    from config import BOT_NAME, BOT_VERSION, SUPPORT_USERNAME
-    from docs_config import DOCS
-
-    return jsonify({
-        'bot_name': BOT_NAME,
-        'bot_version': BOT_VERSION,
-        'support_username': SUPPORT_USERNAME,
-        'documents': [
-            {'title': DOCS['rules']['title'], 'url': DOCS['rules']['url']},
-            {'title': DOCS['privacy']['title'], 'url': DOCS['privacy']['url']},
-            {'title': DOCS['terms']['title'], 'url': DOCS['terms']['url']},
-        ],
-    })
-
 
 # ============================================================
 # Устройства (заглушка)
@@ -575,7 +559,7 @@ def create_link_for_friend():
         )
 
         # Формируем ссылку на наш сайт
-        base_url = "https://gb-skrepnet.duckdns.org:8443/invite/"
+        base_url = f"{WEB_BASE_URL.rstrip('/')}/invite/"
         invite_url = f"{base_url}{token}"
 
         return {
@@ -604,7 +588,7 @@ def accept_terms():
     telegram_id = user.get('id')
     
     async def process():
-        from database import get_user, create_user_request, approve_user, is_limit_reached, is_in_waitlist
+        from database import get_user, create_user_request, approve_user, is_limit_reached
         from config import MAX_USERS
         from text_utils import sanitize_email
         from xui_client import XUIClient

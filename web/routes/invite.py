@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 import aiosqlite
 from flask import Blueprint, jsonify, render_template, request
 
-from config import BOT_NAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, SUBSCRIPTION_DAYS, WEB_SUBSCRIPTION_DAYS
-from database import get_invite_link, get_user, use_invite_link, get_invite_link_any
+from config import BOT_NAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, WEB_SUBSCRIPTION_DAYS
+from database import get_user, use_invite_link, get_invite_link_any
 from text_utils import sanitize_email
 from xui_client import XUIClient
 from web.utils.async_helper import run_async

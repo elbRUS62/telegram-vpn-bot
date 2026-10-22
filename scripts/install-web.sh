@@ -4,7 +4,7 @@ set -e
 # ============================================================
 #  SkrepNet Bot — Web Installer
 #  Author: @elbRUS62
-#  Repo:   https://github.com/elbRUS62/skrepnet-bot
+#  Repo:   https://github.com/elbRUS62/telegram-vpn-bot
 # ============================================================
 
 RED='\033[0;31m'
@@ -21,11 +21,20 @@ error()   { echo -e "${RED}  ❌ $1${NC}"; }
 warning() { echo -e "${YELLOW}  ⚠️  $1${NC}"; }
 info()    { echo -e "${CYAN}  ➜  $1${NC}"; }
 
+set_env() {
+    local key="$1" val="$2"
+    if grep -q "^${key}=" .env 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${val}|" .env
+    else
+        echo "${key}=${val}" >> .env
+    fi
+}
+
 echo ""
 echo -e "${BOLD}${BLUE}"
 echo "        🛡️  SkrepNet Bot — Web Installer"
 echo "        Автор: @elbRUS62"
-echo "        GitHub: github.com/elbRUS62/skrepnet-bot"
+echo "        GitHub: github.com/elbRUS62/telegram-vpn-bot"
 echo -e "${NC}"
 echo ""
 
@@ -48,6 +57,11 @@ if [ ! -f ".env" ]; then
 fi
 
 header "Проверка Python и venv"
+if ! python3 -m venv --help &> /dev/null; then
+    warning "Устанавливаю python3-venv..."
+    apt update -qq
+    apt install -y python3-venv python3-pip
+fi
 if [ ! -d "venv" ]; then
     warning "venv не найден — создаю"
     python3 -m venv venv
@@ -71,13 +85,22 @@ WEB_DOMAIN=${WEB_DOMAIN_INPUT:-${OLD_WEB_DOMAIN:-gb-skrepnet.duckdns.org}}
 read -p "  Порт (по умолчанию ${OLD_WEB_PORT:-8443}): " WEB_PORT_INPUT
 WEB_PORT=${WEB_PORT_INPUT:-${OLD_WEB_PORT:-8443}}
 
-# Добавляем MINIAPP_URL в .env (если нет)
-if ! grep -q "^MINIAPP_URL=" .env 2>/dev/null; then
-    echo "" >> .env
-    echo "# Mini App" >> .env
-    echo "MINIAPP_URL=https://${WEB_DOMAIN}:${WEB_PORT}/v3" >> .env
+# MINIAPP_URL: обновляем только если изменился домен/порт (сохраняем ?v=... кэш-бастер)
+NEW_ORIGIN="https://${WEB_DOMAIN}:${WEB_PORT}"
+if grep -q "^MINIAPP_URL=" .env 2>/dev/null; then
+    _cur_url=$(grep '^MINIAPP_URL=' .env | head -1 | cut -d= -f2-)
+    _cur_origin=$(echo "$_cur_url" | sed -E 's|(https?://[^/]+).*|\1|')
+    if [ "$_cur_origin" != "$NEW_ORIGIN" ]; then
+        set_env MINIAPP_URL "${NEW_ORIGIN}/v3"
+        success "MINIAPP_URL обновлён на ${NEW_ORIGIN}/v3"
+    fi
+else
+    set_env MINIAPP_URL "${NEW_ORIGIN}/v3"
     success "MINIAPP_URL добавлен в .env"
 fi
+
+# Базовый адрес сайта для ссылок-приглашений
+set_env WEB_BASE_URL "$NEW_ORIGIN"
 
 # Добавляем WEB_SUBSCRIPTION_DAYS в .env (если нет)
 if ! grep -q "^WEB_SUBSCRIPTION_DAYS=" .env 2>/dev/null; then
@@ -133,17 +156,10 @@ else
 fi
 
 header "Прописываю SSL/port в .env"
-# SSL_CERT / SSL_KEY / WEB_PORT — идемпотентно (как MINIAPP_URL выше)
-for _var in SSL_CERT SSL_KEY WEB_PORT; do
-    if ! grep -q "^${_var}=" .env 2>/dev/null; then
-        case $_var in
-            SSL_CERT) echo "SSL_CERT=${SSL_CERT}" >> .env ;;
-            SSL_KEY)  echo "SSL_KEY=${SSL_KEY}"   >> .env ;;
-            WEB_PORT) echo "WEB_PORT=${WEB_PORT}" >> .env ;;
-        esac
-    fi
-done
-success "SSL/port прописаны в .env (web_app.py не трогаем)"
+set_env SSL_CERT "$SSL_CERT"
+set_env SSL_KEY "$SSL_KEY"
+set_env WEB_PORT "$WEB_PORT"
+success "SSL/port прописаны в .env"
 
 header "Устанавливаю зависимости (если нужно)"
 pip install -r requirements.txt -q
@@ -175,7 +191,7 @@ WorkingDirectory=$(pwd)
 EnvironmentFile=$(pwd)/.env
 Environment="PYTHONUNBUFFERED=1"
 ExecStart=$(pwd)/venv/bin/gunicorn --config $(pwd)/gunicorn.conf.py web_app:app
-ExecReload=/bin/kill -s HUP $MAINPID
+ExecReload=/bin/kill -s HUP \$MAINPID
 Restart=always
 RestartSec=10
 StandardOutput=journal

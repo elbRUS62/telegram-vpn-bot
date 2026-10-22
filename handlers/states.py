@@ -1,10 +1,6 @@
 from aiogram.fsm.state import State, StatesGroup
 
 
-class RegStates(StatesGroup):
-    waiting_name = State()
-
-
 class AdminStates(StatesGroup):
     waiting_extend_username = State()
     waiting_extend_days = State()

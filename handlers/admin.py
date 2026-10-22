@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from datetime import datetime, timedelta
 
 import aiosqlite
 from aiogram import Router, F
@@ -10,8 +9,7 @@ from aiogram.filters import Command
 
 from config import ADMIN_IDS, DB_PATH, DONATE_TEXT, MAX_USERS, BOT_NAME
 from database import (
-    get_user, get_user_by_username, is_admin, add_admin, remove_admin,
-    get_all_admins, delete_user, renew_user, approve_user,
+    get_user, get_user_by_username, delete_user, renew_user, approve_user,
     get_global_invites_stats, get_top_inviters,
     get_pending_requests,
     get_users_paginated, count_users_by_statuses,

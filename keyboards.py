@@ -5,37 +5,30 @@ from aiogram.types import (
     KeyboardButtonRequestUsers,
     WebAppInfo
 )
-from config import DONATE_URL, BOT_NAME, SUPPORT_USERNAME, MINIAPP_URL
+from config import (
+    DONATE_URL, BOT_NAME, SUPPORT_USERNAME, MINIAPP_URL,
+    XUI_HOST, XUI_BASE_PATH,
+)
 
 
 # ============================================================
-# ГЛАВНОЕ МЕНЮ (ReplyKeyboard — только «Поддержать проект»)
+# ГЛАВНОЕ МЕНЮ
 # ============================================================
-
-def main_menu():
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="❤️ Поддержать проект")]
-        ],
-        resize_keyboard=True,
-        is_persistent=True
-    )
-
-
-def admin_menu():
-    return main_menu()
-
 
 def main_inline_menu(is_admin: bool = False):
     """Главное inline-меню: WebApp для всех, админские кнопки — только админу."""
-    rows = [
-        [
+    rows = []
+    if MINIAPP_URL:
+        rows.append([
             InlineKeyboardButton(
                 text="🚀 Открыть приложение",
-                web_app=WebAppInfo(url="https://gb-skrepnet.duckdns.org:8443/miniapp")
+                web_app=WebAppInfo(url=MINIAPP_URL)
             )
-        ],
-    ]
+        ])
+    else:
+        rows.append([
+            InlineKeyboardButton(text="🔑 Получить подписку", callback_data="menu_get_sub")
+        ])
 
     if is_admin:
         rows.append([
@@ -88,11 +81,13 @@ def admin_approve_keyboard(telegram_id: int):
 
 
 def donate_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
+    rows = [
         [InlineKeyboardButton(text="⭐ Поддержать звёздами", callback_data="donate_stars")],
-        [InlineKeyboardButton(text="💸 DonationAlerts", url=DONATE_URL)],
-        [InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_to_main")],
-    ])
+    ]
+    if DONATE_URL:
+        rows.append([InlineKeyboardButton(text="💸 DonationAlerts", url=DONATE_URL)])
+    rows.append([InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_to_main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def donate_stars_keyboard():
@@ -106,31 +101,30 @@ def donate_stars_keyboard():
 
 
 def renew_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔄 Продлить подписку", callback_data="renew")],
-        [InlineKeyboardButton(text="❤️ Поддержать проект", url=DONATE_URL)],
-        [InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_to_main")],
-    ])
+    rows = [[InlineKeyboardButton(text="🔄 Продлить подписку", callback_data="renew")]]
+    if DONATE_URL:
+        rows.append([InlineKeyboardButton(text="❤️ Поддержать проект", url=DONATE_URL)])
+    rows.append([InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_to_main")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def subscription_keyboard():
-    from config import MINIAPP_URL
-
     rows = []
 
     if MINIAPP_URL:
         rows.append([InlineKeyboardButton(
             text="📱 Открыть приложение",
-            web_app=WebAppInfo(url="https://gb-skrepnet.duckdns.org:8443/miniapp")
+            web_app=WebAppInfo(url=MINIAPP_URL)
         )])
 
     rows += [
         [InlineKeyboardButton(text="📖 Как подключиться", callback_data="connect_help")],
         [InlineKeyboardButton(text="📷 QR-код", callback_data="show_qr")],
         [InlineKeyboardButton(text="🔄 Продлить", callback_data="renew")],
-        [InlineKeyboardButton(text="❤️ Поддержать", url=DONATE_URL)],
-        [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")],
     ]
+    if DONATE_URL:
+        rows.append([InlineKeyboardButton(text="❤️ Поддержать", url=DONATE_URL)])
+    rows.append([InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -173,7 +167,7 @@ def terms_keyboard():
 
 
 def admin_panel_keyboard():
-    panel_url = "https://ru-skrepnet.duckdns.org:3775/MASbquuCRx18QVK8l6/panel"
+    panel_url = f"{XUI_HOST}{XUI_BASE_PATH}/panel"
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔐 Войти в 3x-ui", url=panel_url)],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_manage")],
@@ -184,35 +178,6 @@ def support_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🆘 Техподдержка", url=f"https://t.me/{SUPPORT_USERNAME}")],
         [InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_to_main")],
-    ])
-
-
-def documents_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=DOCS["rules"]["title"], url=DOCS["rules"]["url"])],
-        [InlineKeyboardButton(text=DOCS["privacy"]["title"], url=DOCS["privacy"]["url"])],
-        [InlineKeyboardButton(text=DOCS["terms"]["title"], url=DOCS["terms"]["url"])],
-        [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")]
-    ])
-
-
-def back_to_documents_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")]
-    ])
-
-
-def invite_no_tg_inline_keyboard():
-    """Inline-версия меню «Добавить без Telegram»."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="✍️ Ввести @username или ID",
-            callback_data="invite_manual_start"
-        )],
-        [InlineKeyboardButton(
-            text="⬅️ В главное меню",
-            callback_data="back_to_main"
-        )],
     ])
 
 

@@ -3,7 +3,7 @@ import aiosqlite
 import secrets
 from datetime import datetime, timedelta
 
-from config import DB_PATH, SUBSCRIPTION_DAYS, ADMIN_IDS
+from config import DB_PATH, SUBSCRIPTION_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +24,6 @@ async def init_db():
                 notified_0d INTEGER DEFAULT 0,
                 invited_by INTEGER,
                 invites_count INTEGER DEFAULT 0
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS admins (
-                telegram_id INTEGER PRIMARY KEY,
-                username TEXT,
-                added_by INTEGER,
-                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         await db.execute("""
@@ -212,11 +204,6 @@ async def increment_invites(inviter_id: int):
         await db.commit()
 
 
-async def get_invites_count(telegram_id: int) -> int:
-    user = await get_user(telegram_id)
-    return user["invites_count"] if user else 0
-
-
 async def delete_user(telegram_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM users WHERE telegram_id = ?", (telegram_id,))
@@ -233,41 +220,6 @@ async def get_inactive_users(days: int = 30) -> list:
             WHERE status = 'active'
             AND expires_at < ?
         """, (cutoff,)) as cur:
-            return await cur.fetchall()
-
-
-# ============================================================
-# АДМИНЫ
-# ============================================================
-
-async def is_admin(telegram_id: int) -> bool:
-    if telegram_id in ADMIN_IDS:
-        return True
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("SELECT 1 FROM admins WHERE telegram_id = ?", (telegram_id,)) as cur:
-            return await cur.fetchone() is not None
-
-
-async def add_admin(telegram_id: int, username: str, added_by: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            INSERT OR REPLACE INTO admins (telegram_id, username, added_by)
-            VALUES (?, ?, ?)
-        """, (telegram_id, username, added_by))
-        await db.commit()
-
-
-async def remove_admin(username: str) -> bool:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("DELETE FROM admins WHERE username = ?", (username,))
-        await db.commit()
-        return cursor.rowcount > 0
-
-
-async def get_all_admins() -> list:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT telegram_id, username FROM admins") as cur:
             return await cur.fetchall()
 
 
@@ -356,18 +308,6 @@ async def create_invite_link(telegram_id: int, friend_user_id: int = None,
         await db.commit()
 
     return token
-
-
-async def get_invite_link(token: str):
-    """Получает приглашение по токену (только активное, до 7 дней)."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("""
-            SELECT * FROM invite_links
-            WHERE token = ? AND is_used = 0
-            AND created_at > datetime('now', '-7 days')
-        """, (token,)) as cur:
-            return await cur.fetchone()
 
 
 async def use_invite_link(token: str, xui_email: str, sub_id: str) -> bool:
@@ -528,27 +468,6 @@ async def get_donations_total(currency: str = "RUB") -> float:
         """, (currency,)) as cur:
             row = await cur.fetchone()
             return float(row[0]) if row else 0.0
-
-
-async def get_donations_count() -> int:
-    """Сколько донатов за текущий месяц."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("""
-            SELECT COUNT(*) FROM donations
-            WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
-        """) as cur:
-            row = await cur.fetchone()
-            return int(row[0]) if row else 0
-
-
-async def clear_old_donations():
-    """Удалить донаты старше 2 месяцев."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            DELETE FROM donations
-            WHERE created_at < datetime('now', '-2 months')
-        """)
-        await db.commit()
 
 
 # ============================================================
@@ -785,18 +704,6 @@ async def get_abandoned_web_invites(days: int = 30) -> list:
             return await cur.fetchall()
 
 
-async def mark_abandoned_invite_deleted(token: str):
-    """Пометить, что «брошенный» клиент удалён из 3x-ui.
-    Можно либо удалить запись, либо просто отметить — на выбор.
-    Здесь: помечаем counted = -1 (маркер «уже обработано»).
-    """
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE invite_links SET counted = -1 WHERE token = ?",
-            (token,)
-        )
-        await db.commit()
-        
 # ============================================================
 # АВТОПРИВЯЗКА ПО TG ID (без токена)
 # ============================================================
@@ -823,10 +730,4 @@ async def find_pending_web_link_for_tg(telegram_id: int):
             ORDER BY used_at DESC
             LIMIT 1
         """, (telegram_id,)) as cur:
-            return await cur.fetchone()
-async def get_user_by_email(email: str):
-    """Получить пользователя по email в 3x-ui."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM users WHERE xui_email = ?", (email,)) as cur:
             return await cur.fetchone()

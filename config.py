@@ -44,6 +44,14 @@ MAX_USERS = int(os.getenv("MAX_USERS", "100"))
 # Mini App
 MINIAPP_URL = os.getenv("MINIAPP_URL", "")
 
+# Базовый адрес сайта (для ссылок-приглашений). Если не задан — берём из MINIAPP_URL.
+WEB_BASE_URL = os.getenv("WEB_BASE_URL", "")
+if not WEB_BASE_URL and MINIAPP_URL:
+    from urllib.parse import urlsplit
+    _parsed = urlsplit(MINIAPP_URL)
+    if _parsed.scheme and _parsed.netloc:
+        WEB_BASE_URL = f"{_parsed.scheme}://{_parsed.netloc}"
+
 # Web (SSL/port)
 SSL_CERT = os.getenv("SSL_CERT", "/root/cert/gb-skrepnet.duckdns.org/fullchain.pem")
 SSL_KEY  = os.getenv("SSL_KEY",  "/root/cert/gb-skrepnet.duckdns.org/privkey.pem")

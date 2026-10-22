@@ -18,12 +18,12 @@ async def notify_next_in_queue(bot: Bot) -> bool:
     Возвращает True, если кого-то уведомили.
     """
     if await is_limit_reached(MAX_USERS):
-        logger.info("?? Места нет, лист ожидания не трогаем")
+        logger.info("⚠️ Места нет, лист ожидания не трогаем")
         return False
 
     count = await get_waitlist_count()
     if count == 0:
-        logger.info("?? Лист ожидания пуст")
+        logger.info("📭 Лист ожидания пуст")
         return False
 
     user_data = await pop_from_waitlist()
@@ -36,14 +36,14 @@ async def notify_next_in_queue(bot: Bot) -> bool:
     try:
         await bot.send_message(
             telegram_id,
-            f"?? <b>Освободилось место!</b>\n\n"
+            f"🎉 <b>Освободилось место!</b>\n\n"
             f"Привет, {first_name}!\n\n"
             f"Ты был в листе ожидания — и вот твоя очередь подошла.\n\n"
-            f"Нажми «?? Получить подписку» в главном меню, "
+            f"Нажми «🔑 Получить подписку» в главном меню, "
             f"чтобы получить VPN.",
             parse_mode="HTML"
         )
-        logger.info(f"? Уведомлён {telegram_id} ({first_name}) из листа ожидания")
+        logger.info(f"✅ Уведомлён {telegram_id} ({first_name}) из листа ожидания")
         return True
     except Exception:
         logger.exception("Не удалось уведомить %s из листа ожидания", telegram_id)
@@ -53,4 +53,4 @@ async def notify_next_in_queue(bot: Bot) -> bool:
 async def cleanup_waitlist():
     """Удалить из листа ожидания тех, кто ждёт больше 30 дней."""
     await clear_old_waitlist(days=30)
-    logger.info("?? Лист ожидания очищен от старых записей")
+    logger.info("🧹 Лист ожидания очищен от старых записей")

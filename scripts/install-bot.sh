@@ -4,7 +4,7 @@ set -e
 # ============================================================
 #  SkrepNet Bot — Bot Installer
 #  Author: @elbRUS62
-#  Repo:   https://github.com/elbRUS62/skrepnet-bot
+#  Repo:   https://github.com/elbRUS62/telegram-vpn-bot
 # ============================================================
 
 RED='\033[0;31m'
@@ -25,7 +25,7 @@ echo ""
 echo -e "${BOLD}${BLUE}"
 echo "        🛡️  SkrepNet Bot — Bot Installer"
 echo "        Автор: @elbRUS62"
-echo "        GitHub: github.com/elbRUS62/skrepnet-bot"
+echo "        GitHub: github.com/elbRUS62/telegram-vpn-bot"
 echo -e "${NC}"
 echo ""
 
@@ -76,7 +76,7 @@ read -p "  SUPPORT_USERNAME (без @, например SkrepNet_support): " SUP
 
 header "3x-ui Панель"
 read -p "  XUI_HOST (например https://ru-skrepnet.duckdns.org:3775): " XUI_HOST
-read -p "  XUI_BASE_PATH (например /MASbquuCRx18QVK8l6): " XUI_BASE_PATH
+read -p "  XUI_BASE_PATH (например /my_secret_path): " XUI_BASE_PATH
 read -p "  XUI_API_TOKEN (из Settings → Security): " XUI_API_TOKEN
 
 header "Проверка 3x-ui"
@@ -121,10 +121,16 @@ MAX_USERS=${MAX_USERS_INPUT:-100}
 OLD_MINIAPP_URL=""
 OLD_WEB_SUBSCRIPTION_DAYS=""
 OLD_DONATION_ALERTS_TOKEN=""
+OLD_DONATE_URL=""
+OLD_DONATE_TEXT=""
+OLD_BOT_VERSION=""
 if [ -f .env ]; then
     OLD_MINIAPP_URL=$(grep '^MINIAPP_URL=' .env 2>/dev/null | head -1 | cut -d= -f2-)
     OLD_WEB_SUBSCRIPTION_DAYS=$(grep '^WEB_SUBSCRIPTION_DAYS=' .env 2>/dev/null | head -1 | cut -d= -f2-)
     OLD_DONATION_ALERTS_TOKEN=$(grep '^DONATION_ALERTS_TOKEN=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+    OLD_DONATE_URL=$(grep '^DONATE_URL=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+    OLD_DONATE_TEXT=$(grep '^DONATE_TEXT=' .env 2>/dev/null | head -1 | cut -d= -f2-)
+    OLD_BOT_VERSION=$(grep '^BOT_VERSION=' .env 2>/dev/null | head -1 | cut -d= -f2-)
 fi
 
 header "Mini App (WebApp)"
@@ -135,6 +141,12 @@ WEB_SUBSCRIPTION_DAYS=${WEB_DAYS_INPUT:-${OLD_WEB_SUBSCRIPTION_DAYS:-3}}
 read -p "  DONATION_ALERTS_TOKEN (Enter — оставить текущий): " DONATION_TOKEN_INPUT
 DONATION_ALERTS_TOKEN=${DONATION_TOKEN_INPUT:-$OLD_DONATION_ALERTS_TOKEN}
 
+header "Донаты"
+read -p "  DONATE_URL (Enter — оставить текущий): " DONATE_URL_INPUT
+DONATE_URL=${DONATE_URL_INPUT:-$OLD_DONATE_URL}
+read -p "  DONATE_TEXT (Enter — оставить текущий): " DONATE_TEXT_INPUT
+DONATE_TEXT=${DONATE_TEXT_INPUT:-$OLD_DONATE_TEXT}
+BOT_VERSION=${OLD_BOT_VERSION:-3.4.4}
 
 read -p "  SERVER_COST (стоимость сервера в ₽/мес, например 150): " SERVER_COST
 
@@ -181,7 +193,7 @@ DONATION_ALERTS_TOKEN=$DONATION_ALERTS_TOKEN
 DB_PATH=skrepnet.db
 
 # Version
-BOT_VERSION=3.2.10
+BOT_VERSION=$BOT_VERSION
 EOF
 
 chmod 600 .env
@@ -224,6 +236,7 @@ success "Все зависимости установлены"
 
 header "Настраиваю бэкапы"
 mkdir -p backups
+chmod +x backup.sh
 success "Папка backups создана"
 
 BACKUP_CRON="0 3 * * * $(pwd)/backup.sh >> $(pwd)/backups/backup.log 2>&1"
@@ -239,15 +252,16 @@ header "Настраиваю systemd (бот)"
 cat > /etc/systemd/system/skrepnet-bot.service <<EOF
 [Unit]
 Description=SkrepNet Telegram Bot
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=root
 WorkingDirectory=$(pwd)
-Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=$(pwd)/.env
 ExecStart=$(pwd)/venv/bin/python $(pwd)/bot.py
-Restart=always
+Restart=on-failure
 RestartSec=10
 StandardOutput=journal
 StandardError=journal

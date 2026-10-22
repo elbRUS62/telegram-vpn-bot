@@ -6,7 +6,6 @@
 """
 
 import logging
-from aiogram import Router, F
 from aiogram.types import Message
 
 from config import ADMIN_IDS, BOT_NAME
@@ -17,7 +16,6 @@ from database import (
 )
 from handlers.menu import show_main_menu
 
-router = Router()
 logger = logging.getLogger(__name__)
 
 
@@ -124,8 +122,8 @@ async def handle_web_link(message: Message, token: str):
             parse_mode="HTML",
             disable_notification=True,
         )
-    except Exception as e:
-        logger.warning("Не удалось уведомить пригласившего {inviter_id}: ")
+    except Exception:
+        logger.warning("Не удалось уведомить пригласившего %s", inviter_id, exc_info=True)
 
     # 7. Уведомить админов
     admin_text = (
@@ -198,8 +196,8 @@ async def bind_by_tg_id(message: Message, link):
             parse_mode="HTML",
             disable_notification=True,
         )
-    except Exception as e:
-        logger.warning("Не удалось уведомить пригласившего {inviter_id}: ")
+    except Exception:
+        logger.warning("Не удалось уведомить пригласившего %s", inviter_id, exc_info=True)
 
     # Уведомить админов
     admin_text = (

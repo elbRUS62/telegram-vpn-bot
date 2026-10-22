@@ -10,7 +10,7 @@ from database import (
 )
 from keyboards import renew_keyboard
 from xui_client import XUIClient
-from config import DONATE_TEXT, ADMIN_ID, DB_PATH
+from config import ADMIN_ID, DB_PATH
 from handlers.progress import render_progress
 from handlers.waitlist import notify_next_in_queue, cleanup_waitlist
 

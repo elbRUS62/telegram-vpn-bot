@@ -89,8 +89,8 @@ class XUIClient:
                 "group": group or BOT_NAME
             })
             logger.info(f"✅ {email} добавлен в группу {BOT_NAME}")
-        except Exception as e:
-            logger.warning("⚠️ Не удалось добавить {email} в группу {BOT_NAME}: ")
+        except Exception:
+            logger.warning("⚠️ Не удалось добавить %s в группу %s", email, BOT_NAME, exc_info=True)
 
         return sub_id
 
@@ -182,8 +182,8 @@ class XUIClient:
             obj = result.get("obj", [])
             if result.get("success") and isinstance(obj, list):
                 return email in obj
-        except Exception as e:
-            logger.error("is_client_online error: ")
+        except Exception:
+            logger.exception("is_client_online error")
         return False
     async def get_client_traffic(self, email: str) -> dict:
         """Получить трафик клиента (up/down в байтах) через /panel/api/clients/traffic/{email}."""

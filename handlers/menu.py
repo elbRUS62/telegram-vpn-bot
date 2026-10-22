@@ -3,11 +3,11 @@
 import logging
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import Command
 
-from config import ADMIN_IDS, BOT_NAME, DONATE_TEXT, DONATE_URL
+from config import ADMIN_IDS, BOT_NAME, DONATE_TEXT
 from database import get_user, is_in_waitlist, get_waitlist_position
-from keyboards import main_inline_menu, main_menu, admin_menu, admin_manage_keyboard, support_keyboard
+from keyboards import main_inline_menu, admin_manage_keyboard, support_keyboard
 from handlers.progress import render_progress
 
 router = Router()
@@ -39,12 +39,6 @@ async def show_main_menu(message: Message):
         parse_mode="HTML",
         reply_markup=main_inline_menu(is_admin)
     )
-
-
-@router.message(CommandStart(deep_link=False))
-async def cmd_start(message: Message):
-    """Обычный /start — показываем меню."""
-    await show_main_menu(message)
 
 
 @router.message(Command("admin"))

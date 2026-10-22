@@ -19,13 +19,10 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-@router.message(CommandStart())
-async def cmd_start(message: Message, command: CommandObject):
-    """Обычный /start: если есть deep-link (webapp_*), передаём в deeplink-обработчик."""
+@router.message(CommandStart(deep_link=False))
+async def cmd_start(message: Message):
+    """Обычный /start без deep-link."""
     from .web_link import bind_by_tg_id
-
-    if command.args and (command.args.startswith("webapp_") or command.args == "admin_broadcast"):
-        return await cmd_start_deeplink(message, command)
 
     tg_id = message.from_user.id
     existing = await get_user(tg_id)
@@ -91,23 +88,6 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
             )
             return
 
-        if action == "admin_broadcast":
-            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-            kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔔 Обычное сообщение", callback_data="admin_broadcast_type_loud")],
-                [InlineKeyboardButton(text="🔕 Тихое сообщение", callback_data="admin_broadcast_type_silent")],
-                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_broadcast_cancel")]
-            ])
-            await message.answer(
-                "📢 <b>Массовая рассылка</b>\n\n"
-                "Выбери тип сообщения:\n"
-                "🔔 <b>Обычное</b> — со звуком уведомления.\n"
-                "🔕 <b>Тихое</b> — без звука.",
-                reply_markup=kb,
-                parse_mode="HTML"
-            )
-            return
-
         if action == "invite_no_tg":
             if not user or user["status"] != "active":
                 await message.answer("Сначала получи подписку.")
@@ -129,15 +109,13 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
         if action == "donate":
             from keyboards import donate_keyboard
             from config import DONATE_TEXT, DONATE_URL
-            await message.answer(
-                f"{DONATE_TEXT}\n\n"
-                f"Ссылка для доната: {DONATE_URL}",
-                reply_markup=donate_keyboard()
-            )
+            text = DONATE_TEXT or "❤️ Поддержать проект"
+            if DONATE_URL:
+                text += f"\n\nСсылка для доната: {DONATE_URL}"
+            await message.answer(text, reply_markup=donate_keyboard())
             return
 
         # Неизвестное действие — главное меню
-        from .menu import show_main_menu
         await show_main_menu(message)
         return
 
@@ -191,99 +169,8 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 f"{message.from_user.full_name}!\n\n"
                 f"Спасибо, что помогаешь проекту расти ❤️"
             )
-        except Exception as e:
-            logger.warning("Не удалось уведомить пригласившего {invited_by}: ")
+        except Exception:
+            logger.warning("Не удалось уведомить пригласившего %s", invited_by, exc_info=True)
 
     # Ветка 3: обычный deep-link (не ref, не link) — просто показать меню
     await show_main_menu(message)
-    
-    # ============================================================
-    # Обработка действий из Mini App
-    # ============================================================
-    if args.startswith("webapp_"):
-        action = args[7:]  # убираем "webapp_"
-        user = await get_user(message.from_user.id)
-
-        if action == "get_sub":
-            if user and user["status"] == "active":
-                await message.answer("У тебя уже есть активная подписка.")
-                return
-            from keyboards import terms_keyboard
-            await message.answer(
-                "📜 <b>Для получения подписки ознакомься с документами:</b>\n\n"
-                "1. 📜 Правила использования\n"
-                "2. 🔒 Политика конфиденциальности\n"
-                "3. 📋 Пользовательское соглашение\n\n"
-                "Нажимая «✅ Я согласен со всеми условиями», ты подтверждаешь, "
-                "что ознакомился со всеми документами.",
-                reply_markup=terms_keyboard(),
-                parse_mode="HTML"
-            )
-            return
-
-        if action == "invite_friend":
-            if not user:
-                await message.answer("Сначала получи подписку.")
-                return
-            from keyboards import share_keyboard
-            from config import BOT_USERNAME
-            invites = user["invites_count"] or 0
-            ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{message.from_user.id}"
-            await message.answer(
-                f"👥 <b>Пригласи друга</b>\n\n"
-                f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
-                f"📊 Ты уже пригласил: {invites} чел.\n\n"
-                f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
-                reply_markup=share_keyboard(BOT_USERNAME, message.from_user.id),
-                parse_mode="HTML"
-            )
-            return
-
-        if action == "admin_broadcast":
-            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-            kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔔 Обычное сообщение", callback_data="admin_broadcast_type_loud")],
-                [InlineKeyboardButton(text="🔕 Тихое сообщение", callback_data="admin_broadcast_type_silent")],
-                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_broadcast_cancel")]
-            ])
-            await message.answer(
-                "📢 <b>Массовая рассылка</b>\n\n"
-                "Выбери тип сообщения:\n"
-                "🔔 <b>Обычное</b> — со звуком уведомления.\n"
-                "🔕 <b>Тихое</b> — без звука.",
-                reply_markup=kb,
-                parse_mode="HTML"
-            )
-            return
-
-        if action == "invite_no_tg":
-            if not user or user["status"] != "active":
-                await message.answer("Сначала получи подписку.")
-                return
-            from keyboards import invite_contact_keyboard
-            await message.answer(
-                "➕ <b>Добавить пользователя без Telegram</b>\n\n"
-                "Если у друга нет доступа к Telegram. Ты можешь отправить ему ссылку через WhatsApp, VK или SMS.\n\n"
-                "<b>Как это работает:</b>\n"
-                "1️⃣ Нажми <b>«👤 Выбрать из контактов»</b> ниже.\n"
-                "2️⃣ Выбери друга из списка.\n"
-                "3️⃣ Отправь ему полученную ссылку любым удобным способом (WhatsApp, VK, SMS).\n\n"
-                "Если передумал — нажми <b>«❌ Отмена»</b>.",
-                parse_mode="HTML",
-                reply_markup=invite_contact_keyboard()
-            )
-            return
-
-        if action == "donate":
-            from keyboards import donate_keyboard
-            from config import DONATE_TEXT, DONATE_URL
-            await message.answer(
-                f"{DONATE_TEXT}\n\n"
-                f"Ссылка для доната: {DONATE_URL}",
-                reply_markup=donate_keyboard()
-            )
-            return
-
-        # Если неизвестное действие — просто показываем меню
-        await show_main_menu(message)
-        return
