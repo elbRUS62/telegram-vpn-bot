@@ -6,7 +6,7 @@ from functools import wraps
 import aiosqlite
 from flask import Blueprint, jsonify, request
 
-from config import ADMIN_IDS, DB_PATH, MAX_USERS, BOT_NAME
+from config import ADMIN_IDS, DB_PATH, MAX_USERS, BOT_NAME, XUI_HOST, XUI_BASE_PATH
 from web.utils.auth import validate_init_data
 from web.utils.async_helper import run_async
 
@@ -43,6 +43,20 @@ async def _audit(admin_id, action, target_id=None, meta=""):
             await db.commit()
     except Exception as e:
         logger.warning("audit insert failed: %s", e)
+
+
+# ---------------- 3x-ui panel link ----------------
+
+@admin_api.route("/xui", methods=["POST"])
+@admin_required
+def xui_panel_url():
+    """Ссылка на панель 3x-ui. Только для админов: base path — секрет."""
+    host = (XUI_HOST or "").rstrip("/")
+    base = (XUI_BASE_PATH or "").strip("/")
+    if not host:
+        return jsonify({"error": "Панель 3x-ui не настроена"}), 503
+    url = f"{host}/{base}/panel" if base else f"{host}/panel"
+    return jsonify({"url": url})
 
 
 # ---------------- stats ----------------

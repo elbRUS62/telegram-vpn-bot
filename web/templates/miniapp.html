@@ -1799,6 +1799,19 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  return r || {};
  }
 
+ async function openXuiPanel() {
+ const r = await adminCall('/xui');
+ if (!r.url) {
+   showToast(r.error || 'Не удалось получить ссылку на 3x-ui', true);
+   return;
+ }
+ if (tg && typeof tg.openLink === 'function') {
+   tg.openLink(r.url);
+ } else {
+   window.open(r.url, '_blank', 'noopener');
+ }
+ }
+
  function adminBadge(u) {
  if (u.status === 'pending') return '<span class="badge pending">заявка</span>';
  if (u.status === 'rejected') return '<span class="badge dead">отклонён</span>';
@@ -2050,6 +2063,8 @@ async function openAdminUserCard(tgId) {
  </div>
  <button class="btn btn-secondary" style="width:100%; margin-bottom:12px;" onclick="openBroadcast()">Массовая рассылка</button>
  <button class="btn btn-secondary" style="width:100%; margin-bottom:12px;" onclick="openAudit()">История</button>
+ <button class="btn btn-secondary" style="width:100%; margin-bottom:12px;" onclick="openXuiPanel()">🔐 Панель 3x-ui</button>
+ <div style="font-size:12px; opacity:.65; margin:-6px 0 12px; text-align:center;">Откроется панель 3x-ui. Пароль может подставить менеджер паролей.</div>
  <div class="tabs" id="admin-filter-scroll">
  <button class="tab active" data-filter="all" onclick="ADMIN.status=this.dataset.filter; document.querySelectorAll('#admin-filter-scroll .tab').forEach(b=>b.classList.remove('active')); this.classList.add('active'); loadAdminUsers();">Все</button>
  <button class="tab" data-filter="active" onclick="ADMIN.status=this.dataset.filter; document.querySelectorAll('#admin-filter-scroll .tab').forEach(b=>b.classList.remove('active')); this.classList.add('active'); loadAdminUsers();">Активные</button>
