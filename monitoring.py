@@ -53,10 +53,13 @@ def _cert_info(panel):
             return None, None
         host = parts.hostname
         port = parts.port or 443
-        context = ssl.create_default_context()
         if not panel.get("verify_tls", True):
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
+            return None, "проверка TLS отключена для панели"
+
+        context = ssl.create_default_context()
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.check_hostname = True
+        context.verify_mode = ssl.CERT_REQUIRED
         with socket.create_connection((host, port), timeout=6) as sock:
             with context.wrap_socket(sock, server_hostname=host) as tls:
                 cert = tls.getpeercert()
