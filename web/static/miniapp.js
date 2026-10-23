@@ -351,7 +351,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
  const quickActions = [
    isActive ? { action: 'invite_friend', label: 'Пригласить друга', meta: '' } : null,
-   isActive ? { action: 'invite_no_tg', label: 'Добавить без Telegram', meta: '' } : null,
+   isActive ? { action: 'invite_no_tg', label: 'Гостевая подписка', meta: 'Работает без Telegram' } : null,
    { action: 'connect_help', label: 'Как подключиться', meta: 'Инструкция' },
    { action: 'donate', label: '❤️ Поддержать проект', meta: 'По желанию' },
  ].filter(Boolean);

@@ -294,7 +294,8 @@ async def _handle_invite_no_tg(callback: CallbackQuery):
 
     await callback.message.delete()
     await callback.message.answer(
-        "<b>Добавить друга без Telegram</b>\n\n"
+        "<b>Гостевая подписка</b>\n\n"
+        "<i>Работает без Telegram.</i>\n\n"
         "Выбери способ:\n"
         "• Выбрать из контактов Telegram\n"
         "• Или ввести @username / ID вручную\n\n"

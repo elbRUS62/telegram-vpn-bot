@@ -94,7 +94,8 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 return
             from keyboards import invite_contact_keyboard
             await message.answer(
-                "➕ <b>Добавить пользователя без Telegram</b>\n\n"
+                "<b>Гостевая подписка</b>\n\n"
+                "<i>Работает без Telegram.</i>\n\n"
                 "Если у друга нет доступа к Telegram. Ты можешь отправить ему ссылку через WhatsApp, VK или SMS.\n\n"
                 "<b>Как это работает:</b>\n"
                 "1️⃣ Нажми <b>«👤 Выбрать из контактов»</b> ниже.\n"

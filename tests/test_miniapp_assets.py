@@ -16,6 +16,13 @@ class MiniAppAssetsTest(unittest.TestCase):
         self.assertIn("/static/miniapp.js", template)
         self.assertNotIn("<style>", template)
 
+    def test_guest_subscription_quick_action(self):
+        script = (ROOT / "web" / "static" / "miniapp.js").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("label: 'Гостевая подписка'", script)
+        self.assertIn("meta: 'Работает без Telegram'", script)
+
     def test_brand_assets_exist(self):
         static = ROOT / "web" / "static"
         for name in (
