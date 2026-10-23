@@ -1030,7 +1030,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
  // ==================== АДМИН-ПАНЕЛЬ ====================
  let ADMIN = { loaded: false, view: 'overview', page: 1, q: '', status: 'all', sort: 'created_desc', busy: false, timer: null };
- let MONITOR_STATE = { index: 0, count: 0, touchX: null, touchY: null, heightTimer: null };
+ let MONITOR_STATE = { index: 0, count: 0, touchX: null, touchY: null, heightTimer: null, hours: 24, requestId: 0 };
 
  async function adminCall(path, body = {}) {
  const r = await apiCall('/api/miniapp/admin' + path, body);
@@ -1203,45 +1203,104 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  return `<div class="monitor-metric"><div class="monitor-metric__label">${label}</div><div class="monitor-metric__value">${value}</div>${bar}</div>`;
  }
 
+ function monitorPeriodText(hours) {
+ return Number(hours) === 168 ? '7 дней' : '24 часа';
+ }
+
+ function monitorAxisTime(ts, hours) {
+ const date = new Date(Number(ts) * 1000);
+ if (!Number.isFinite(date.getTime())) return '';
+ if (Number(hours) > 24) {
+   return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+ }
+ return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+ }
+
+ function monitorTimeAxis(history, hours) {
+ const stamps = (history || [])
+   .map(item => Number(item.ts))
+   .filter(value => Number.isFinite(value));
+ if (stamps.length < 2) return '';
+ const start = stamps[0];
+ const end = stamps[stamps.length - 1];
+ const labels = [0, 0.25, 0.5, 0.75, 1].map((ratio, index) => {
+   const ts = index === 4 ? end : start + (end - start) * ratio;
+   const text = index === 4 ? 'сейчас' : monitorAxisTime(ts, hours);
+   return `<span>${text}</span>`;
+ });
+ return `<div class="monitor-charts-axis">${labels.join('')}</div>`;
+ }
+
+ function monitorX(ts, start, end, index, count) {
+ if (Number.isFinite(ts) && end > start) {
+   return Math.min(100, Math.max(0, ((ts - start) / (end - start)) * 100));
+ }
+ return count > 1 ? (index / (count - 1)) * 100 : 0;
+ }
+
  function monitorSparkline(history, key, label, color) {
- const values = (history || [])
-   .map(item => item[key])
-   .filter(value => value !== null && value !== undefined && !isNaN(Number(value)))
-   .map(Number);
- const last = values.length ? Math.round(values[values.length - 1]) : null;
- if (values.length < 2) {
+ const items = (history || [])
+   .map(item => ({ ts: Number(item.ts), value: Number(item[key]) }))
+   .filter(item => Number.isFinite(item.value));
+ const last = items.length ? Math.round(items[items.length - 1].value) : null;
+ if (items.length < 2) {
    return `<div class="monitor-chart"><div class="monitor-chart__label">${label}<span>${last == null ? '—' : last + '%'}</span></div><div class="monitor-chart-empty" style="margin:0;">Мало данных</div></div>`;
  }
- const points = values.map((value, index) => {
-   const x = (index / (values.length - 1)) * 100;
-   const y = 26 - (Math.min(100, Math.max(0, value)) / 100) * 24;
+ const start = items[0].ts;
+ const end = items[items.length - 1].ts;
+ const points = items.map((item, index) => {
+   const x = monitorX(item.ts, start, end, index, items.length);
+   const y = 26 - (Math.min(100, Math.max(0, item.value)) / 100) * 24;
    return `${x.toFixed(1)},${y.toFixed(1)}`;
  }).join(' ');
  const grid = '<line class="monitor-chart__grid" x1="0" y1="14" x2="100" y2="14"></line>';
  return `<div class="monitor-chart"><div class="monitor-chart__label">${label}<span>${last}%</span></div><svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">${grid}<polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg></div>`;
  }
 
- function monitorTrafficChart(history) {
- const values = (history || [])
-   .map(item => Number(item.traffic_total))
-   .filter(value => Number.isFinite(value));
- if (values.length < 2) {
-   return `<div class="monitor-chart monitor-chart--wide"><div class="monitor-chart__label">Трафик за 24 часа<span>—</span></div><div class="monitor-chart-empty" style="margin:0;">Мало данных</div></div>`;
+ function monitorTrafficChart(history, hours) {
+ const items = (history || [])
+   .map(item => ({ ts: Number(item.ts), value: Number(item.traffic_total) }))
+   .filter(item => Number.isFinite(item.value));
+ if (items.length < 2) {
+   return `<div class="monitor-chart monitor-chart--wide"><div class="monitor-chart__label">Трафик за ${monitorPeriodText(hours)}<span>—</span></div><div class="monitor-chart-empty" style="margin:0;">Мало данных</div></div>`;
  }
  const deltas = [];
- for (let i = 1; i < values.length; i += 1) {
-   const diff = values[i] - values[i - 1];
-   deltas.push(diff > 0 ? diff : 0);
+ for (let i = 1; i < items.length; i += 1) {
+   const diff = items[i].value - items[i - 1].value;
+   if (diff > 0) deltas.push({ ts: items[i].ts, value: diff });
  }
- const total = deltas.reduce((sum, value) => sum + value, 0);
- const max = Math.max(...deltas, 1);
- const points = deltas.map((value, index) => {
-   const x = (index / (deltas.length - 1)) * 100;
-   const y = 26 - (value / max) * 24;
+ const total = deltas.reduce((sum, item) => sum + item.value, 0);
+ const max = Math.max(...deltas.map(item => item.value), 1);
+ const start = items[0].ts;
+ const end = items[items.length - 1].ts;
+ const points = deltas.map((item, index) => {
+   const x = monitorX(item.ts, start, end, index, deltas.length);
+   const y = 26 - (item.value / max) * 24;
    return `${x.toFixed(1)},${y.toFixed(1)}`;
  }).join(' ');
  const grid = '<line class="monitor-chart__grid" x1="0" y1="14" x2="100" y2="14"></line>';
- return `<div class="monitor-chart monitor-chart--wide"><div class="monitor-chart__label">Трафик за 24 часа<span>${fmtBytes(total)}</span></div><svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">${grid}<polyline points="${points}" fill="none" stroke="#8b5cf6" stroke-width="2" vector-effect="non-scaling-stroke"/></svg></div>`;
+ const empty = deltas.length < 2 ? '<div class="monitor-chart-empty" style="margin:0;">Мало данных</div>' : `<svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">${grid}<polyline points="${points}" fill="none" stroke="#8b5cf6" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+ return `<div class="monitor-chart monitor-chart--wide"><div class="monitor-chart__label">Трафик за ${monitorPeriodText(hours)}<span>${fmtBytes(total)}</span></div>${empty}</div>`;
+ }
+
+ function renderMonitorCharts(history, hours) {
+ return `
+   <div class="monitor-charts-head">История за ${monitorPeriodText(hours)}</div>
+   <div class="monitor-charts">
+     ${monitorSparkline(history, 'cpu_percent', 'CPU', '#31c46b')}
+     ${monitorSparkline(history, 'mem_percent', 'RAM', '#e0a33a')}
+     ${monitorSparkline(history, 'disk_percent', 'Диск', '#3390ec')}
+     ${monitorTrafficChart(history, hours)}
+   </div>
+   ${monitorTimeAxis(history, hours)}`;
+ }
+
+ function monitorPeriodControls() {
+ const current = Number(MONITOR_STATE.hours) === 168 ? 168 : 24;
+ return `<div class="monitor-period" role="group" aria-label="Период графиков">
+   <button type="button" class="monitor-period__btn${current === 24 ? ' active' : ''}" data-hours="24" aria-pressed="${current === 24}" onclick="setMonitorPeriod(24)">24 ч</button>
+   <button type="button" class="monitor-period__btn${current === 168 ? ' active' : ''}" data-hours="168" aria-pressed="${current === 168}" onclick="setMonitorPeriod(168)">7 дней</button>
+ </div>`;
  }
 
  function renderMonitorSlide(r) {
@@ -1250,14 +1309,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const mem = r.mem_percent;
  const disk = r.disk_percent;
  const history = Array.isArray(r.history) ? r.history : [];
- const chartsHtml = `
-  <div class="monitor-charts-head">История за 24 часа</div>
-  <div class="monitor-charts">
-    ${monitorSparkline(history, 'cpu_percent', 'CPU', '#31c46b')}
-    ${monitorSparkline(history, 'mem_percent', 'RAM', '#e0a33a')}
-    ${monitorSparkline(history, 'disk_percent', 'Диск', '#3390ec')}
-     ${monitorTrafficChart(history)}
-  </div>`;
+ const chartsHtml = renderMonitorCharts(history, MONITOR_STATE.hours);
  const stateText = ok ? 'онлайн' : 'ошибка';
  const panelId = escapeHtml(r.panel_id || '');
  const panelName = escapeHtml(r.panel_name || r.panel_id || '3x-ui');
@@ -1381,20 +1433,30 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  }
  }
 
+ function setMonitorPeriod(hours) {
+ const next = Number(hours) === 168 ? 168 : 24;
+ if (MONITOR_STATE.hours === next) return;
+ MONITOR_STATE.hours = next;
+ loadAdminMonitor(true);
+ }
+
  async function loadAdminMonitor(force = false) {
  const el = document.getElementById('admin-monitor');
  if (!el) return;
  if (el.dataset.loading === '1' && !force) return;
+ const requestId = (MONITOR_STATE.requestId || 0) + 1;
+ MONITOR_STATE.requestId = requestId;
  el.dataset.loading = '1';
  el.style.display = 'block';
  if (!el.innerHTML.trim() || force) el.innerHTML = '<div class="monitor-state"><span class="monitor-dot"></span> Загрузка метрик...</div>';
 
  let r;
  try {
-  r = await adminCall('/monitor');
+  r = await adminCall('/monitor', { hours: MONITOR_STATE.hours });
  } catch (e) {
   r = { error: e && e.message ? e.message : 'Нет ответа от панели' };
  }
+ if (requestId !== MONITOR_STATE.requestId) return;
  el.dataset.loading = '0';
 
  const panels = Array.isArray(r && r.panels)
@@ -1405,7 +1467,10 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
   el.innerHTML = `
    <div class="monitor-head">
     <div class="monitor-title">Серверы 3x-ui</div>
-    <button class="monitor-refresh" onclick="loadAdminMonitor(true)">Обновить</button>
+    <div class="monitor-head-actions">
+      ${monitorPeriodControls()}
+      <button class="monitor-refresh" onclick="loadAdminMonitor(true)">Обновить</button>
+    </div>
    </div>
    <div class="monitor-error">${escapeHtml((r && r.error) || 'Нет ответа от панелей')}</div>`;
   return;
@@ -1426,7 +1491,10 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  el.innerHTML = `
   <div class="monitor-head">
    <div class="monitor-title">Серверы 3x-ui</div>
-   <button class="monitor-refresh" onclick="loadAdminMonitor(true)">Обновить</button>
+   <div class="monitor-head-actions">
+     ${monitorPeriodControls()}
+     <button class="monitor-refresh" onclick="loadAdminMonitor(true)">Обновить</button>
+   </div>
   </div>
   <div class="monitor-viewport">
    <div class="monitor-track" id="admin-monitor-track">${slides}</div>

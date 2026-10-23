@@ -37,8 +37,21 @@ def monitor_status():
     """Текущее состояние всех панелей 3x-ui для карточки мониторинга."""
     from monitoring import collect_all_status_with_history
 
+    data = request.json or {}
     try:
-        return jsonify({"panels": run_async(collect_all_status_with_history())})
+        hours = int(data.get("hours", 24))
+    except (TypeError, ValueError):
+        hours = 24
+    if hours not in (24, 168):
+        hours = 24
+
+    try:
+        return jsonify({
+            "hours": hours,
+            "panels": run_async(
+                collect_all_status_with_history(hours=hours, max_points=288)
+            ),
+        })
     except Exception:
         logger.exception("admin/monitor failed")
         return jsonify({

@@ -975,7 +975,7 @@ body {
  padding: 14px;
  margin-bottom: 16px;
 }
-.monitor-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.monitor-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
 .monitor-title { font-size:15px; font-weight:600; }
 .monitor-state { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--hint-color); }
 .monitor-dot { width:9px; height:9px; border-radius:50%; background:#8b949e; flex-shrink:0; }
@@ -1000,7 +1000,10 @@ body {
  scroll-snap-align:center;
  padding:0 2px;
 }
-.monitor-head-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.monitor-head-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+.monitor-period { display:flex; align-items:center; gap:2px; padding:2px; border-radius:8px; background:rgba(127,127,127,.12); }
+.monitor-period__btn { border:0; border-radius:6px; padding:4px 7px; background:transparent; color:var(--hint-color); font-size:11px; cursor:pointer; }
+.monitor-period__btn.active { background:var(--link-color); color:#fff; font-weight:600; }
 .monitor-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
 .monitor-metric { background:rgba(0,0,0,.14); border-radius:10px; padding:8px 10px; min-width:0; }
 .monitor-metric__label { font-size:11px; color:var(--hint-color); }
@@ -1550,6 +1553,10 @@ button.tg-item:disabled { opacity: 0.5; cursor: default; }
   vector-effect: non-scaling-stroke;
 }
 .monitor-chart--wide { grid-column: 1 / -1; }
+.monitor-charts-axis { display:flex; justify-content:space-between; gap:8px; margin:6px 2px 0; color:var(--hint-color); font-size:10px; line-height:1.3; }
+.monitor-charts-axis span { flex:1; text-align:center; }
+.monitor-charts-axis span:first-child { text-align:left; }
+.monitor-charts-axis span:last-child { text-align:right; }
 .monitor-chart-empty { margin-top: 10px; color: var(--hint-color); font-size: 11px; }
 @media (max-width: 420px) {
   .monitor-charts { grid-template-columns: 1fr; }

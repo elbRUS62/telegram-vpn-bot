@@ -251,13 +251,27 @@ async def save_metrics(statuses: list[dict], min_interval: int = 240) -> None:
         logger.warning("monitor: metrics save failed: %s", e)
 
 
+def _downsample_history(rows: list[dict], max_points: int) -> list[dict]:
+    """Уменьшает число точек, сохраняя начало и конец периода."""
+    if max_points < 2 or len(rows) <= max_points:
+        return rows
+    step = (len(rows) - 1) / (max_points - 1)
+    indices = sorted({round(index * step) for index in range(max_points)})
+    return [rows[index] for index in indices]
+
+
 async def get_metrics_history(
     panel_id: str,
     hours: int = 24,
-    limit: int = 288,
+    max_points: int = 288,
 ) -> list[dict]:
-    """Последние точки метрик панели для графиков."""
+    """Последние точки метрик панели для графиков.
+
+    За 24 часа отдаём точки примерно каждые 5 минут, за неделю —
+    прореживаем до max_points, чтобы не перегружать Mini App.
+    """
     since = int(time.time()) - hours * 60 * 60
+    raw_limit = max(288, hours * 20)
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -275,20 +289,29 @@ async def get_metrics_history(
                 )
                 ORDER BY ts ASC
                 """,
-                (panel_id, since, limit),
+                (panel_id, since, raw_limit),
             ) as cur:
-                return [dict(row) for row in await cur.fetchall()]
+                rows = [dict(row) for row in await cur.fetchall()]
+        return _downsample_history(rows, max_points)
     except Exception as e:
         logger.warning("monitor: history load failed for %s: %s", panel_id, e)
         return []
 
 
-async def collect_all_status_with_history(force: bool = False) -> list[dict]:
+async def collect_all_status_with_history(
+    force: bool = False,
+    hours: int = 24,
+    max_points: int = 288,
+) -> list[dict]:
     """Собирает статусы панелей и добавляет историю для графиков."""
     statuses = await collect_all_status(force=force)
     await save_metrics(statuses)
     for status in statuses:
-        status["history"] = await get_metrics_history(status.get("panel_id") or "panel")
+        status["history"] = await get_metrics_history(
+            status.get("panel_id") or "panel",
+            hours=hours,
+            max_points=max_points,
+        )
     return statuses
 
 
