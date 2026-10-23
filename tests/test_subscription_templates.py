@@ -12,14 +12,27 @@ class SubscriptionTemplateTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         for token in (
             "{{ if not .isOnline }}",
-            "{{ .used }}",
-            "{{ .remained }}",
-            "{{ .total }}",
+            "{{ if .isOnline }}",
             "{{ .expire }}",
-            "{{ .totalByte }}",
-            "{{ .usedByte }}",
         ):
             self.assertIn(token, template)
+
+    def test_sub_template_has_new_stats(self):
+        template = (
+            ROOT / "sub_templates" / "skrepnet" / "index.html"
+        ).read_text(encoding="utf-8")
+        for label in (
+            "Сервер",
+            "Протокол",
+            "Трафик",
+            "Без лимитов",
+            "Дней осталось",
+            "Действует до",
+        ):
+            self.assertIn(label, template)
+        self.assertNotIn("Бесплатно для своих", template)
+        self.assertNotIn("progress-fill", template)
+        self.assertNotIn('<span class="server-badge">LV</span>', template)
 
     def test_subscription_pages_share_brand_and_style(self):
         invite = (ROOT / "web" / "templates" / "invite.html").read_text(

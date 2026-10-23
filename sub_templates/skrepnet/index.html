@@ -468,26 +468,15 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .progress-label {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 6px;
+        .expiry-note {
+            margin: -4px 2px 12px;
             color: var(--hint-color);
             font-size: 12px;
+            line-height: 1.4;
         }
-        .progress-track {
-            height: 8px;
-            overflow: hidden;
-            border-radius: 999px;
-            background: var(--bg-color);
-        }
-        .progress-fill {
-            width: 0%;
-            height: 100%;
-            border-radius: 999px;
-            background: linear-gradient(90deg, #2AABEE, #58A6FF);
-            transition: width 0.4s ease;
+        .expiry-note strong {
+            color: var(--text-color);
+            font-weight: 600;
         }
         .server-list {
             display: flex;
@@ -597,16 +586,16 @@
 
         <section class="stats-grid">
             <div class="stat-card">
-                <div class="stat-label">Использовано</div>
-                <div class="stat-value" id="used">{{ .used }}</div>
+                <div class="stat-label">Сервер</div>
+                <div class="stat-value">GB</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Осталось</div>
-                <div class="stat-value" id="remained">{{ .remained }}</div>
+                <div class="stat-label">Протокол</div>
+                <div class="stat-value">Hysteria2</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Всего</div>
-                <div class="stat-value" id="total">{{ .total }}</div>
+                <div class="stat-label">Трафик</div>
+                <div class="stat-value">Без лимитов</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Дней осталось</div>
@@ -614,32 +603,16 @@
             </div>
         </section>
 
-        <section class="card">
-            <div class="card-title">Трафик</div>
-            <div class="progress-label">
-                <span>Использовано</span>
-                <span id="progress-text">0%</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-        </section>
+        <div class="expiry-note">Действует до <strong id="expires-at">—</strong></div>
 
         <section class="card">
-            <div class="card-title">Серверы</div>
+            <div class="card-title">Сервер</div>
             <div class="server-list">
                 <div class="server-row">
                     <span class="server-badge">GB</span>
                     <div class="server-info">
                         <div class="server-name">Основной сервер</div>
                         <div class="server-desc">Hysteria2 · порт 9101</div>
-                    </div>
-                </div>
-                <div class="server-row">
-                    <span class="server-badge">LV</span>
-                    <div class="server-info">
-                        <div class="server-name">Резервный сервер</div>
-                        <div class="server-desc">Hysteria2 · порт 9102</div>
                     </div>
                 </div>
             </div>
@@ -650,15 +623,11 @@
             <p class="donate-text">Сервер работает для вас. Если хочется — помогите любой суммой, чтобы сервис работал без перебоев.</p>
             <a class="btn btn-primary" href="https://www.donationalerts.com/r/elbrus_62" target="_blank" rel="noopener">❤️ Поддержать проект</a>
         </section>
-
-        <div class="footer-note">SkrepNet · Бесплатно для своих</div>
     </main>
 
 <script>
         // Начальные данные из шаблона (Go вставляет их при рендере)
         let expireTs = {{ .expire }};  // секунды
-        let totalBytes = {{ .totalByte }};  // точные байты
-        let usedBytes = {{ .usedByte }};
 
         // Преобразование timestamp в дату
         function formatExpire(ts) {
@@ -674,21 +643,13 @@
             return diff > 0 ? diff : 0;
         }
 
-        // Обновление прогресс-бара
-        function updateProgress() {
-            if (totalBytes > 0) {
-                const pct = Math.min(100, (usedBytes / totalBytes) * 100);
-                document.getElementById('progress-fill').style.width = pct.toFixed(1) + '%';
-                document.getElementById('progress-text').textContent = pct.toFixed(1) + '%';
-            } else {
-                document.getElementById('progress-fill').style.width = '0%';
-                document.getElementById('progress-text').textContent = '∞';
-            }
+        function renderExpiry() {
+            document.getElementById('days-left').textContent = daysLeft(expireTs);
+            document.getElementById('expires-at').textContent = formatExpire(expireTs);
         }
 
         // Заполняем начальные значения
-        document.getElementById('days-left').textContent = daysLeft(expireTs);
-        updateProgress();
+        renderExpiry();
 
         // Автообновление через ?format=info
         async function refresh() {

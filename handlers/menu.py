@@ -1,8 +1,10 @@
 """Обработчики главного inline-меню."""
 
 import logging
+from pathlib import Path
+
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram.filters import Command
 
 from config import ADMIN_IDS, BOT_NAME, DONATE_TEXT
@@ -14,7 +16,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-async def show_main_menu(message: Message):
+async def show_main_menu(message: Message, with_photo: bool = False):
     from database import get_user
     user = await get_user(message.from_user.id)
     is_admin = message.from_user.id in ADMIN_IDS
@@ -33,11 +35,35 @@ async def show_main_menu(message: Message):
             f"Нажми «Открыть приложение», чтобы начать."
         )
 
+    keyboard = main_inline_menu(is_admin)
+
+    if with_photo:
+        logo_path = (
+            Path(__file__).resolve().parents[1]
+            / "brand"
+            / "png"
+            / "skrepnet-cover-1280x640.png"
+        )
+        if logo_path.is_file():
+            try:
+                await message.answer_photo(
+                    FSInputFile(logo_path),
+                    caption=text,
+                    parse_mode="HTML",
+                    reply_markup=keyboard,
+                )
+                return
+            except Exception:
+                logger.warning(
+                    "Не удалось отправить приветственное фото",
+                    exc_info=True,
+                )
+
     # Отправляем ТОЛЬКО inline-меню с WebApp
     await message.answer(
         text,
         parse_mode="HTML",
-        reply_markup=main_inline_menu(is_admin)
+        reply_markup=keyboard
     )
 
 

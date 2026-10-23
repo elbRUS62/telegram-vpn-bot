@@ -31,7 +31,7 @@ async def cmd_start(message: Message):
         if link:
             await bind_by_tg_id(message, link)
             return
-    await show_main_menu(message)
+    await show_main_menu(message, with_photo=True)
 
 @router.message(CommandStart(deep_link=True))
 async def cmd_start_deeplink(message: Message, command: CommandObject):
@@ -173,4 +173,4 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
             logger.warning("Не удалось уведомить пригласившего %s", invited_by, exc_info=True)
 
     # Ветка 3: обычный deep-link (не ref, не link) — просто показать меню
-    await show_main_menu(message)
+    await show_main_menu(message, with_photo=True)
