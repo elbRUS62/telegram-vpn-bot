@@ -12,8 +12,6 @@ Telegram-бот для выдачи бесплатных подписок Hyster
 Иконка и бренд: [brand/README.md](brand/README.md).
 Для GitHub Social Preview использовать `brand/png/og-image-1200x630.png`.
 
-[![CI](https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml)
-
 Живой пример: [@skrepnet_bot](https://t.me/skrepnet_bot)
 
 Проект можно использовать как шаблон: скопируйте репозиторий и настройте свой бот через `.env`.
