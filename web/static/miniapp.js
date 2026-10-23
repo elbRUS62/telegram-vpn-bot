@@ -17,17 +17,32 @@ const tg = window.Telegram.WebApp;
  let TICKETS_STATE = { filter: 'active', current: null, busy: false };
 
 
- async function apiCall(path, body = {}) {
+ async function apiCall(path, body = {}, attempt = 0) {
  if (!INIT_DATA) {
  INIT_DATA = tg.initData || "";
  }
- const res = await fetch(path, {
+ let res;
+ try {
+ res = await fetch(path, {
  method: 'POST',
  headers: {'Content-Type': 'application/json'},
  body: JSON.stringify({init_data: INIT_DATA, ...body}),
  });
+ } catch (error) {
+ if (attempt < 2) {
+ await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+ return apiCall(path, body, attempt + 1);
+ }
+ console.warn('apiCall network error:', error);
+ throw new Error('Не удалось загрузить данные. Проверьте соединение и попробуйте ещё раз.');
+ }
  if (res.status === 401) console.warn("Ошибка 401: init_data пустой или неверный");
- return res.json();
+ try {
+ return await res.json();
+ } catch (error) {
+ console.warn('apiCall json error:', error);
+ throw new Error('Сервер вернул некорректный ответ. Попробуйте ещё раз.');
+ }
  }
 
  function updateDots(activeIndex = null) {

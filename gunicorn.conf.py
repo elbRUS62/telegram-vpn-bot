@@ -26,9 +26,12 @@ timeout = 120
 graceful_timeout = 30
 keepalive = 5
 
-# Периодическая пересоздание воркера — страховка от утечек памяти.
-max_requests = 500
-max_requests_jitter = 50
+# Пересоздание единственного воркера создаёт короткое окно, когда запросы
+# из Mini App могут получить сетевую ошибку. Память web-процесса стабильна,
+# поэтому по умолчанию пересоздание отключено; при необходимости задаётся
+# через WEB_MAX_REQUESTS.
+max_requests = int(os.getenv("WEB_MAX_REQUESTS", "0"))
+max_requests_jitter = int(os.getenv("WEB_MAX_REQUESTS_JITTER", "0"))
 
 proc_name = "skrepnet-web"
 loglevel = os.getenv("WEB_LOG_LEVEL", "info")
