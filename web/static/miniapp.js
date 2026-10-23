@@ -4,6 +4,7 @@ const tg = window.Telegram.WebApp;
  try { tg.setHeaderColor('secondary_bg_color'); } catch (_) {}
  try { tg.setBackgroundColor('bg_color'); } catch (_) {}
  try { tg.setBottomBarColor?.('bg_color'); } catch (_) {}
+ try { tg.disableVerticalSwipes?.(); } catch (_) {}
 
  let CURRENT_SUB_DATA = null;
  let CURRENT_SUB_URL = "";

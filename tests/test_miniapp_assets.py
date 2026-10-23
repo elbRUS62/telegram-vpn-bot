@@ -33,6 +33,8 @@ class MiniAppAssetsTest(unittest.TestCase):
         for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log"):
             self.assertIn(token, css)
         self.assertIn("pull-indicator", html)
+        self.assertIn("disableVerticalSwipes", js)
+        self.assertIn("overscroll-behavior-y: none", css)
 
     def test_guest_subscription_quick_action(self):
         script = (ROOT / "web" / "static" / "miniapp.js").read_text(
