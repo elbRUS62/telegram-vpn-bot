@@ -4,6 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SkrepNet — Подписка</title>
+    <link rel="icon" href="/static/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="manifest" href="/static/site.webmanifest">
+    <meta name="application-name" content="SkrepNet">
+    <meta name="theme-color" content="#2AABEE">
+    <meta property="og:site_name" content="SkrepNet">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="SkrepNet — бесплатный VPN на Hysteria2">
+    <meta property="og:description" content="Быстро, стабильно, без рекламы. Подписка в Telegram-боте.">
+    <meta property="og:image" content="{{ request.url_root }}static/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -44,9 +58,18 @@
             margin: 24px auto;
         }
         .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             color: var(--hint-color);
             font-size: 13px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+        }
+        .brand img {
+            display: block;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
         }
         h1 {
             color: var(--text-color);
@@ -305,7 +328,10 @@
 </head>
 <body>
     <div class="card">
-        <div class="brand">SkrepNet</div>
+        <div class="brand">
+            <img src="/static/favicon.svg" alt="" width="28" height="28">
+            <span>SkrepNet</span>
+        </div>
         <h1>Бесплатный VPN на 3 дня</h1>
         <p class="subtitle">Гостевая подписка на 3 дня. Продление недоступно.</p>
 

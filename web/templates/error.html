@@ -4,10 +4,26 @@
     <meta charset="UTF-8">
     <title>SkrepNet — Ошибка</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" href="/static/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <link rel="manifest" href="/static/site.webmanifest">
+    <meta name="application-name" content="SkrepNet">
+    <meta name="theme-color" content="#2AABEE">
+    <style>
+        .error-logo {
+            display: block;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 12px;
+            border-radius: 14px;
+        }
+    </style>
 </head>
 <body>
     <div class="card">
-        <h1>? Ошибка</h1>
+        <img class="error-logo" src="/static/favicon.svg" alt="" width="56" height="56">
+        <h1>Ошибка</h1>
         <p class="subtitle">{{ message }}</p>
         <p class="subtitle">Обратись в поддержку: @SkrepNet_support</p>
     </div>

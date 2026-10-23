@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkrepNet - Подписка</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='116' fill='%232AABEE'/%3E%3Cg transform='translate(254 258) rotate(-45) scale(15.8) translate(-12 -12)' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'/%3E%3C/g%3E%3C/svg%3E">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -28,6 +29,12 @@
             font-size: 24px;
             margin-bottom: 8px;
             color: #58a6ff;
+        }
+        .brand {
+            display: block;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 12px;
         }
         .subtitle {
             color: #8b949e;
@@ -117,6 +124,20 @@
 </head>
 <body>
     <div class="card">
+        <svg class="brand" viewBox="0 0 512 512" width="64" height="64" aria-hidden="true">
+            <defs>
+                <linearGradient id="skrepnetBrandBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#5BC8F5"/>
+                    <stop offset=".52" stop-color="#2AABEE"/>
+                    <stop offset="1" stop-color="#1479B8"/>
+                </linearGradient>
+            </defs>
+            <circle cx="256" cy="256" r="256" fill="url(#skrepnetBrandBg)"/>
+            <g transform="translate(254 256) rotate(-45) scale(16.6) translate(-12 -12)"
+               fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </g>
+        </svg>
         <h1>SkrepNet</h1>
         <p class="subtitle">Бесплатный VPN для своих</p>
 

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <title>SkrepNet — обложка</title>
+  <defs>
+    <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5BC8F5"/>
+      <stop offset=".52" stop-color="#2AABEE"/>
+      <stop offset="1" stop-color="#1479B8"/>
+    </linearGradient>
+    <radialGradient id="iconGlow" cx=".32" cy=".18" r=".9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".28"/>
+      <stop offset=".6" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pageGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#2AABEE" stop-opacity=".26"/>
+      <stop offset=".55" stop-color="#2AABEE" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#2AABEE" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2AABEE"/>
+      <stop offset=".6" stop-color="#5BC8F5"/>
+      <stop offset="1" stop-color="#1479B8"/>
+    </linearGradient>
+    <linearGradient id="pillFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2AABEE" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#2AABEE" stop-opacity=".08"/>
+    </linearGradient>
+    <filter id="iconShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#04121d" flood-opacity=".55"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="#0d1117"/>
+  <ellipse cx="330" cy="340" rx="520" ry="440" fill="url(#pageGlow)"/>
+  <rect x="1" y="1" width="1278" height="638" fill="none" stroke="#22303f" stroke-width="2"/>
+
+  <!-- волны сети в правом нижнем углу -->
+  <g fill="none" stroke="#2AABEE" stroke-width="2">
+    <circle cx="1230" cy="640" r="150" opacity=".16"/>
+    <circle cx="1230" cy="640" r="230" opacity=".11"/>
+    <circle cx="1230" cy="640" r="310" opacity=".07"/>
+    <circle cx="1230" cy="640" r="390" opacity=".04"/>
+  </g>
+
+  <!-- иконка -->
+  <g transform="translate(100 225) scale(0.5859)" filter="url(#iconShadow)">
+    <circle cx="256" cy="256" r="256" fill="url(#iconBg)"/>
+    <circle cx="256" cy="256" r="256" fill="url(#iconGlow)"/>
+    <g transform="translate(254 256) rotate(-45) scale(16.6) translate(-12 -12)"
+       fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+    </g>
+  </g>
+
+  <!-- текст -->
+  <text x="460" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="600"
+        letter-spacing="5" fill="#58a6ff">TELEGRAM BOT · HYSTERIA2</text>
+  <text x="458" y="316" font-family="Segoe UI, Arial, sans-serif" font-size="94" font-weight="700"
+        letter-spacing="-1.5" fill="#e6edf3">SkrepNet</text>
+  <text x="460" y="368" font-family="Segoe UI, Arial, sans-serif" font-size="31" font-weight="400"
+        fill="#8b949e">Бесплатный VPN на Hysteria2</text>
+
+  <!-- преимущества -->
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600" fill="#8ed6ff">
+    <rect x="460" y="402" width="148" height="52" rx="26" fill="url(#pillFill)" stroke="#2AABEE" stroke-opacity=".35"/>
+    <text x="534" y="436" text-anchor="middle">Быстро</text>
+
+    <rect x="624" y="402" width="184" height="52" rx="26" fill="url(#pillFill)" stroke="#2AABEE" stroke-opacity=".35"/>
+    <text x="716" y="436" text-anchor="middle">Стабильно</text>
+
+    <rect x="824" y="402" width="214" height="52" rx="26" fill="url(#pillFill)" stroke="#2AABEE" stroke-opacity=".35"/>
+    <text x="931" y="436" text-anchor="middle">Без рекламы</text>
+  </g>
+
+  <!-- ссылка -->
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <circle cx="471" cy="540" r="5" fill="#3fb950"/>
+    <text x="492" y="548" font-size="25" font-weight="600" fill="#58a6ff">t.me/skrepnet_bot</text>
+  </g>
+
+  <rect x="0" y="634" width="1280" height="6" fill="url(#bar)"/>
+</svg>

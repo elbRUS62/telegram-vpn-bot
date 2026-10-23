@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="SkrepNet">
+  <title>SkrepNet — иконка сайта</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5BC8F5"/>
+      <stop offset=".52" stop-color="#2AABEE"/>
+      <stop offset="1" stop-color="#1479B8"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#bg)"/>
+  <path d="M0 116a116 116 0 0 1 116-116h280a116 116 0 0 1 116 116v96c-90 40-250 40-512-8z" fill="url(#sheen)"/>
+
+  <g transform="translate(254 258) rotate(-45) scale(15.8) translate(-12 -12)"
+     fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+  </g>
+</svg>

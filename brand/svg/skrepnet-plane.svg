@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="SkrepNet">
+  <title>SkrepNet — самолётик</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5BC8F5"/>
+      <stop offset=".52" stop-color="#2AABEE"/>
+      <stop offset="1" stop-color="#1479B8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".32" cy=".18" r=".9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".28"/>
+      <stop offset=".6" stop-color="#ffffff" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE2A8"/>
+      <stop offset="1" stop-color="#DFA24A"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="256" fill="url(#glow)"/>
+
+  <!-- орбита -->
+  <circle cx="256" cy="256" r="196" fill="none" stroke="url(#gold)" stroke-width="10"
+          stroke-linecap="round" stroke-dasharray="700 1232" transform="rotate(118 256 256)" opacity=".95"/>
+
+  <!-- самолётик -->
+  <g transform="rotate(-32 256 256)">
+    <path d="M392 256 L132 176 L132 230 L296 256 L132 282 L132 336 Z"
+          fill="#FFFFFF" stroke="#FFFFFF" stroke-width="18" stroke-linejoin="round"/>
+    <path d="M392 256 L296 256 L132 282 L132 336 Z" fill="#0F5C8C" opacity=".14"/>
+  </g>
+</svg>

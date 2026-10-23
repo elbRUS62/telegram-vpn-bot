@@ -1,9 +1,13 @@
 # Telegram VPN Bot
 
+<img src="brand/png/skrepnet-clip-256.png" alt="SkrepNet" width="96" height="96">
+
 Telegram-бот для выдачи бесплатных подписок Hysteria2 через панель 3x-ui.  
 В проект входят бот, Telegram Mini App, веб-выдача без Telegram, поддержка, мониторинг серверов и админ-панель.
 
 Версия: `3.5.0`
+
+Иконка и бренд: [brand/README.md](brand/README.md).
 
 [![CI](https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml)
 

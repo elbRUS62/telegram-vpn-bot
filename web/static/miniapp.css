@@ -791,6 +791,13 @@ body {
   opacity: 0;
   visibility: hidden;
 }
+.splash__logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+}
 .splash__title {
   font-size: 40px;
   font-weight: 650;
