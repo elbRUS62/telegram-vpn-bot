@@ -3,155 +3,736 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkrepNet - Подписка</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#2AABEE">
+    <title>SkrepNet — Подписка</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='116' fill='%232AABEE'/%3E%3Cg transform='translate(254 258) rotate(-45) scale(15.8) translate(-12 -12)' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'/%3E%3C/g%3E%3C/svg%3E">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #0d1117);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #161b22);
+            --text-color: var(--tg-theme-text-color, #c9d1d9);
+            --hint-color: var(--tg-theme-hint-color, #8b949e);
+            --link-color: var(--tg-theme-link-color, #58a6ff);
+            --button-color: var(--tg-theme-button-color, #2AABEE);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success-color: #31c46b;
+            --warning-color: #e0a33a;
+            --danger-color: #e5534b;
+            --radius: 16px;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html { background: var(--bg-color); }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0d1117;
-            color: #c9d1d9;
             min-height: 100vh;
+            padding: 20px 14px 36px;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 20px;
+            align-items: flex-start;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(ellipse 80% 40% at 50% 0%, rgba(88, 166, 255, 0.28), transparent 60%),
+                radial-gradient(ellipse 60% 50% at 18% 25%, rgba(88, 166, 255, 0.16), transparent 60%),
+                radial-gradient(ellipse 60% 50% at 82% 82%, rgba(139, 92, 246, 0.12), transparent 60%);
+            color: var(--text-color);
         }
-        .card {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 480px;
+        .main-bg-dot {
+            position: fixed;
+            z-index: 0;
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(40px);
+        }
+        .main-bg-dot--1 {
+            top: 12%;
+            left: 8%;
+            width: 90px;
+            height: 90px;
+            background: rgba(88, 166, 255, 0.28);
+        }
+        .main-bg-dot--2 {
+            top: 55%;
+            right: 6%;
+            width: 110px;
+            height: 110px;
+            background: rgba(139, 92, 246, 0.2);
+        }
+        .main-bg-dot--3 {
+            bottom: 12%;
+            left: 20%;
+            width: 80px;
+            height: 80px;
+            background: rgba(88, 166, 255, 0.2);
+        }
+        .page {
+            position: relative;
+            z-index: 1;
             width: 100%;
+            max-width: 480px;
+        }
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .brand-logo {
+            display: block;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            border-radius: 14px;
+            box-shadow: 0 8px 22px rgba(42, 171, 238, 0.2);
+        }
+        .brand-name {
+            color: var(--text-color);
+            font-size: 18px;
+            font-weight: 650;
+            line-height: 1.15;
+            letter-spacing: -0.2px;
+        }
+        .brand-sub {
+            margin-top: 2px;
+            color: var(--hint-color);
+            font-size: 12px;
+        }
+        .brand-badge {
+            margin-left: auto;
+            padding: 5px 9px;
+            border: 1px solid rgba(42, 171, 238, 0.28);
+            border-radius: 999px;
+            background: rgba(42, 171, 238, 0.12);
+            color: var(--link-color);
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .hero {
+            padding: 2px 2px 14px;
+        }
+        .kicker {
+            margin-bottom: 4px;
+            color: var(--hint-color);
+            font-size: 12px;
+            letter-spacing: 0.02em;
         }
         h1 {
-            font-size: 24px;
             margin-bottom: 8px;
-            color: #58a6ff;
-        }
-        .brand {
-            display: block;
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 12px;
+            color: var(--text-color);
+            font-size: 28px;
+            font-weight: 650;
+            line-height: 1.18;
+            letter-spacing: -0.4px;
         }
         .subtitle {
-            color: #8b949e;
-            font-size: 14px;
-            margin-bottom: 24px;
+            color: var(--hint-color);
+            font-size: 15px;
+            line-height: 1.45;
         }
-        .status {
+        .subtitle a {
+            color: var(--link-color);
+            text-decoration: none;
+        }
+        .chips {
             display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .chip {
+            padding: 5px 9px;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: var(--secondary-bg);
+            color: var(--hint-color);
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        .chip--accent {
+            border-color: rgba(49, 196, 107, 0.25);
+            background: rgba(49, 196, 107, 0.12);
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        .card {
+            margin-bottom: 12px;
+            padding: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            background: var(--secondary-bg);
+        }
+        .card-title {
+            margin: 0 2px 10px;
+            color: var(--hint-color);
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .notice-card {
+            margin-bottom: 12px;
+            padding: 14px;
+            border: 1px solid rgba(224, 163, 58, 0.28);
+            border-radius: 14px;
+            background: rgba(224, 163, 58, 0.1);
+        }
+        .notice-title {
+            margin-bottom: 5px;
+            color: var(--warning-color);
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .notice-text {
+            color: var(--text-color);
+            opacity: 0.82;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .doc-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .doc-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font: inherit;
+            font-size: 14px;
+            text-align: left;
+            cursor: pointer;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        .doc-row:hover { border-color: var(--link-color); }
+        .doc-row:active { background: var(--secondary-bg); }
+        .doc-row__arrow {
+            color: var(--hint-color);
+            font-size: 20px;
+            line-height: 1;
+        }
+        .checkbox-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--secondary-bg);
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.45;
+            cursor: pointer;
+        }
+        .checkbox-wrap input {
+            -webkit-appearance: none;
+            appearance: none;
+            position: relative;
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            margin-top: 1px;
+            border: 2px solid var(--border-color);
+            border-radius: 5px;
+            background: var(--bg-color);
+            cursor: pointer;
+        }
+        .checkbox-wrap input:checked {
+            border-color: var(--button-color);
+            background: var(--button-color);
+        }
+        .checkbox-wrap input:checked::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--button-text);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 48px;
+            margin-bottom: 8px;
+            padding: 12px 16px;
+            border: 0;
+            border-radius: 10px;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:active { opacity: 0.82; transform: scale(0.995); }
+        .btn-primary {
+            background: var(--button-color);
+            color: var(--button-text);
+            box-shadow: 0 4px 14px rgba(42, 171, 238, 0.2);
+        }
+        .btn-secondary {
+            border: 1px solid var(--border-color);
+            background: var(--secondary-bg);
+            color: var(--text-color);
+        }
+        .btn:disabled {
+            border: 1px solid var(--border-color);
+            background: var(--secondary-bg);
+            color: var(--hint-color);
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+        .result { margin-top: 6px; font-size: 14px; line-height: 1.5; }
+        .result:empty { display: none; }
+        .result.error { color: var(--danger-color); }
+        .result.success { color: var(--success-color); }
+        .result-title {
+            margin: 16px 0 12px;
+            color: var(--text-color);
+            font-size: 22px;
+            font-weight: 650;
+            line-height: 1.2;
+        }
+        .result-title--success { color: var(--success-color); }
+        .result .notice-card { margin-top: 0; }
+        .caption {
+            margin-top: 8px;
+            color: var(--hint-color);
+            font-size: 13px;
+            text-align: center;
+        }
+        .caption--accent {
+            margin-top: 4px;
+            color: var(--success-color);
+            font-weight: 600;
+        }
+        .qr-wrap { margin: 12px 0; text-align: center; }
+        .qr-wrap img {
+            width: 100%;
+            max-width: 220px;
+            padding: 10px;
+            border-radius: 14px;
+            background: #ffffff;
+        }
+        .link-box {
+            margin: 12px 0;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            word-break: break-all;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+        }
+        .footer-note {
+            margin-top: 14px;
+            color: var(--hint-color);
+            font-size: 12px;
+            line-height: 1.45;
+            text-align: center;
+        }
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.58);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+        }
+        .modal-backdrop.show { display: flex; }
+        .modal {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 420px;
+            max-height: 85vh;
+            padding: 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background: var(--secondary-bg);
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+        }
+        .modal h2 {
+            margin-bottom: 14px;
+            color: var(--text-color);
+            font-size: 20px;
+            font-weight: 650;
+            line-height: 1.2;
+        }
+        #docs-content {
+            max-height: 60vh;
+            padding-right: 8px;
+            overflow-y: auto;
+            color: var(--hint-color);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        #docs-content h2 {
+            margin: 16px 0 8px;
+            color: var(--text-color);
+            font-size: 16px;
+        }
+        #docs-content p, #docs-content ul { margin-bottom: 12px; }
+        #docs-content ul { padding-left: 20px; }
+        .modal .btn { margin-top: 14px; margin-bottom: 0; }
+        @media (max-width: 380px) {
+            body { padding: 16px 12px 30px; }
+            h1 { font-size: 25px; }
+            .brand-logo { width: 44px; height: 44px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .main-bg-dot { display: none; }
+        }
+    </style>
+    <style>
+        .status-pill {
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 20px;
-            padding: 12px;
-            background: #0d1117;
-            border-radius: 8px;
-        }
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #3fb950;
-        }
-        .dot.offline { background: #8b949e; }
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-        .stat {
-            background: #0d1117;
-            padding: 12px;
-            border-radius: 8px;
-        }
-        .stat-label {
-            font-size: 12px;
-            color: #8b949e;
-            margin-bottom: 4px;
-        }
-        .stat-value {
-            font-size: 16px;
+            margin: 0 0 12px 2px;
+            padding: 6px 10px;
+            border: 1px solid rgba(49, 196, 107, 0.26);
+            border-radius: 999px;
+            background: rgba(49, 196, 107, 0.12);
+            color: var(--success-color);
+            font-size: 13px;
             font-weight: 600;
         }
-        .servers {
-            margin-bottom: 24px;
+        .status-pill.offline {
+            border-color: rgba(229, 83, 75, 0.26);
+            background: rgba(229, 83, 75, 0.12);
+            color: var(--danger-color);
         }
-        .server {
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            box-shadow: 0 0 8px rgba(49, 196, 107, 0.55);
+            flex-shrink: 0;
+        }
+        .status-dot.offline {
+            background: var(--danger-color);
+            box-shadow: 0 0 8px rgba(229, 83, 75, 0.55);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .stat-card {
+            min-width: 0;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--secondary-bg);
+        }
+        .stat-label {
+            color: var(--hint-color);
+            font-size: 12px;
+        }
+        .stat-value {
+            margin-top: 4px;
+            overflow: hidden;
+            color: var(--text-color);
+            font-size: 18px;
+            font-weight: 650;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+            color: var(--hint-color);
+            font-size: 12px;
+        }
+        .progress-track {
+            height: 8px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: var(--bg-color);
+        }
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #2AABEE, #58A6FF);
+            transition: width 0.4s ease;
+        }
+        .server-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .server-row {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 12px;
-            background: #0d1117;
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-        .flag { font-size: 24px; }
-        .server-info { flex: 1; }
-        .server-name { font-size: 14px; font-weight: 500; }
-        .server-desc { font-size: 12px; color: #8b949e; }
-        .donate {
-            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 20px;
+            background: var(--bg-color);
+        }
+        .server-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #5BC8F5, #2AABEE 52%, #1479B8);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .server-info { min-width: 0; }
+        .server-name {
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .server-desc {
+            margin-top: 2px;
+            color: var(--hint-color);
+            font-size: 12px;
+        }
+        .donate-card {
+            margin-bottom: 12px;
+            padding: 16px;
+            border: 1px solid rgba(42, 171, 238, 0.3);
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(42, 171, 238, 0.18), rgba(88, 166, 255, 0.06));
             text-align: center;
         }
-        .donate p {
-            font-size: 14px;
+        .donate-title {
+            margin-bottom: 6px;
+            color: var(--text-color);
+            font-size: 16px;
+            font-weight: 650;
+        }
+        .donate-text {
             margin-bottom: 12px;
+            color: var(--hint-color);
+            font-size: 13px;
             line-height: 1.5;
         }
-        .donate a {
-            display: inline-block;
-            background: #fff;
-            color: #0d1117;
-            text-decoration: none;
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 16px;
-            font-size: 12px;
-            color: #8b949e;
-        }
+        .donate-card .btn { margin-bottom: 0; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <svg class="brand" viewBox="0 0 512 512" width="64" height="64" aria-hidden="true">
-            <defs>
-                <linearGradient id="skrepnetBrandBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#5BC8F5"/>
-                    <stop offset=".52" stop-color="#2AABEE"/>
-                    <stop offset="1" stop-color="#1479B8"/>
-                </linearGradient>
-            </defs>
-            <circle cx="256" cy="256" r="256" fill="url(#skrepnetBrandBg)"/>
-            <g transform="translate(254 256) rotate(-45) scale(16.6) translate(-12 -12)"
-               fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-            </g>
-        </svg>
-        <h1>SkrepNet</h1>
-        <p class="subtitle">Бесплатный VPN для своих</p>
+    <div class="main-bg-dot main-bg-dot--1"></div>
+    <div class="main-bg-dot main-bg-dot--2"></div>
+    <div class="main-bg-dot main-bg-dot--3"></div>
 
-        <div class="status">
-            <div class="dot {{ if not .isOnline }}offline{{ end }}"></div>
-            <span>{{ if .isOnline }}Онлайн{{ else }}Оффлайн{{ end }}</span>
+    <main class="page">
+        <header class="brand-header">
+            <svg class="brand-logo" viewBox="0 0 512 512" width="48" height="48" aria-hidden="true">
+                <defs>
+                    <linearGradient id="brandBg" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0" stop-color="#5BC8F5"/>
+                        <stop offset=".52" stop-color="#2AABEE"/>
+                        <stop offset="1" stop-color="#1479B8"/>
+                    </linearGradient>
+                    <linearGradient id="brandSheen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#ffffff" stop-opacity=".22"/>
+                        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#brandBg)"/>
+                <path d="M0 116a116 116 0 0 1 116-116h280a116 116 0 0 1 116 116v96c-90 40-250 40-512-8z" fill="url(#brandSheen)"/>
+                <g transform="translate(254 258) rotate(-45) scale(15.8) translate(-12 -12)"
+                   fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </g>
+            </svg>
+            <div>
+                <div class="brand-name">SkrepNet</div>
+                <div class="brand-sub">Бесплатный VPN</div>
+            </div>
+            <span class="brand-badge">Подписка</span>
+        </header>
+
+        <section class="hero">
+            <div class="kicker">Личный кабинет</div>
+            <h1>Ваша подписка</h1>
+            <p class="subtitle">Бесплатный доступ. Трафик без ограничений.</p>
+        </section>
+
+        <div class="status-pill {{ if not .isOnline }}offline{{ end }}" id="status-pill">
+            <span class="status-dot {{ if not .isOnline }}offline{{ end }}" id="status-dot"></span>
+            <span id="status-text">{{ if .isOnline }}Онлайн{{ else }}Оффлайн{{ end }}</span>
         </div>
 
-        <div class="stats">
-            <div class="stat">
+        <section class="stats-grid">
+            <div class="stat-card">
                 <div class="stat-label">Использовано</div>
-                <div class="stat-value">{{ .used }}</div>
+                <div class="stat-value" id="used">{{ .used }}</div>
             </div>
-            <div class="stat">
+            <div class="stat-card">
                 <div class="stat-label">Осталось</div>
-                <div class="stat-value">{{ .remained }}</div>
+                <div class="stat-value" id="remained">{{ .remained }}</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-label">Всего</div>
+                <div class="stat-value" id="total">{{ .total }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Дней осталось</div>
+                <div class="stat-value" id="days-left">—</div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-title">Трафик</div>
+            <div class="progress-label">
+                <span>Использовано</span>
+                <span id="progress-text">0%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-title">Серверы</div>
+            <div class="server-list">
+                <div class="server-row">
+                    <span class="server-badge">GB</span>
+                    <div class="server-info">
+                        <div class="server-name">Основной сервер</div>
+                        <div class="server-desc">Hysteria2 · порт 9101</div>
+                    </div>
+                </div>
+                <div class="server-row">
+                    <span class="server-badge">LV</span>
+                    <div class="server-info">
+                        <div class="server-name">Резервный сервер</div>
+                        <div class="server-desc">Hysteria2 · порт 9102</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="donate-card">
+            <div class="donate-title">Поддержать проект</div>
+            <p class="donate-text">Сервер работает для вас. Если хочется — помогите любой суммой, чтобы сервис работал без перебоев.</p>
+            <a class="btn btn-primary" href="https://www.donationalerts.com/r/elbrus_62" target="_blank" rel="noopener">❤️ Поддержать проект</a>
+        </section>
+
+        <div class="footer-note">SkrepNet · Бесплатно для своих</div>
+    </main>
+
+<script>
+        // Начальные данные из шаблона (Go вставляет их при рендере)
+        let expireTs = {{ .expire }};  // секунды
+        let totalBytes = {{ .totalByte }};  // точные байты
+        let usedBytes = {{ .usedByte }};
+
+        // Преобразование timestamp в дату
+        function formatExpire(ts) {
+            if (!ts || ts === 0) return 'Бессрочно';
+            const d = new Date(ts * 1000);  // секунды → миллисекунды
+            return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        // Дни до окончания
+        function daysLeft(ts) {
+            if (!ts || ts === 0) return '∞';
+            const diff = Math.ceil((ts * 1000 - Date.now()) / 86400000);
+            return diff > 0 ? diff : 0;
+        }
+
+        // Обновление прогресс-бара
+        function updateProgress() {
+            if (totalBytes > 0) {
+                const pct = Math.min(100, (usedBytes / totalBytes) * 100);
+                document.getElementById('progress-fill').style.width = pct.toFixed(1) + '%';
+                document.getElementById('progress-text').textContent = pct.toFixed(1) + '%';
+            } else {
+                document.getElementById('progress-fill').style.width = '0%';
+                document.getElementById('progress-text').textContent = '∞';
+            }
+        }
+
+        // Заполняем начальные значения
+        document.getElementById('days-left').textContent = daysLeft(expireTs);
+        updateProgress();
+
+        // Автообновление через ?format=info
+        async function refresh() {
+            try {
+                const res = await fetch(window.location.pathname + '?format=info');
+                if (!res.ok) return;
+                const info = await res.json();
+
+                // Онлайн-статус
+                const dot = document.getElementById('status-dot');
+                const text = document.getElementById('status-text');
+                const pill = document.getElementById('status-pill');
+                if (info.isOnline) {
+                    dot.classList.remove('offline');
+                    pill.classList.remove('offline');
+                    text.textContent = 'Онлайн';
+                } else {
+                    dot.classList.add('offline');
+                    pill.classList.add('offline');
+                    text.textContent = 'Оффлайн';
+                }
+
+                // Трафик
+                if (info.used) document.getElementById('used').textContent = info.used;
+                if (info.remained) document.getElementById('remained').textContent = info.remained;
+                if (info.total) document.getElementById('total').textContent = info.total;
+
+                // Обновляем байты для прогресса (если API отдаёт)
+                if (info.usedByte !== undefined) usedBytes = info.usedByte;
+                if (info.totalByte !== undefined) totalBytes = info.totalByte;
+
+                // Дни до окончания
+                if (info.expire !== undefined) {
+                    expireTs = info.expire;
+                    document.getElementById('days-left').textContent = daysLeft(expireTs);
+                }
+
+                updateProgress();
+            } catch (e) {
+                // Игнорируем ошибки сети — просто не обновляем
+            }
+        }
+
+        setInterval(refresh, 10000);  // каждые 10 секунд
+    </script>
+</body>
+</html>
