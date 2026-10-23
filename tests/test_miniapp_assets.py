@@ -28,6 +28,8 @@ class MiniAppAssetsTest(unittest.TestCase):
             "admin-bulk-bar",
             "ticket-quick-replies",
             "loadAdminErrors",
+            "admin-users-pending-badge",
+            "admin-system-tickets-badge",
         ):
             self.assertIn(token, js)
         for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log"):

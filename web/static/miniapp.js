@@ -1445,6 +1445,20 @@ document.addEventListener('visibilitychange', () => {
  <div class="weekly-card"><div class="weekly-num">${w.donated_rub ?? 0} ₽</div><div class="weekly-lbl">Донаты</div></div>
  </div>`;
  }
+ const usersPendingBadge = document.getElementById('admin-users-pending-badge');
+ if (usersPendingBadge) {
+ const pendingCount = Number(r.pending) || 0;
+ usersPendingBadge.textContent = pendingCount;
+ usersPendingBadge.title = `Заявки: ${pendingCount}`;
+ usersPendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+ }
+ const systemTicketsBadge = document.getElementById('admin-system-tickets-badge');
+ if (systemTicketsBadge) {
+ const ticketsCount = Number(r.tickets_unread) || 0;
+ systemTicketsBadge.textContent = ticketsCount;
+ systemTicketsBadge.title = `Тикеты без ответа: ${ticketsCount}`;
+ systemTicketsBadge.style.display = ticketsCount > 0 ? 'inline-block' : 'none';
+ }
  renderAdminAttention(r);
  renderAdminUsersSummary(r);
  const pendingBtn = document.getElementById('pending-count');
@@ -2281,8 +2295,8 @@ async function openAdminUserCard(tgId) {
  document.getElementById('admin-content').innerHTML = `
  <div class="admin-subtabs" id="admin-subtabs">
    <button class="tab active" data-admin-view="overview" onclick="switchAdminView('overview')">Обзор</button>
-   <button class="tab" data-admin-view="users" onclick="showAllUsers()">Пользователи</button>
-   <button class="tab" data-admin-view="system" onclick="switchAdminView('system')">Система</button>
+   <button class="tab" data-admin-view="users" onclick="showAllUsers()">Пользователи <span class="badge pending" id="admin-users-pending-badge" style="display:none;margin-left:4px;">0</span></button>
+   <button class="tab" data-admin-view="system" onclick="switchAdminView('system')">Система <span class="badge pending" id="admin-system-tickets-badge" style="display:none;margin-left:4px;">0</span></button>
  </div>
 
  <div class="admin-view" id="admin-view-overview">
