@@ -1559,3 +1559,35 @@ button.tg-item:disabled { opacity: 0.5; cursor: default; }
   background: rgba(255, 255, 255, 0.28);
   color: var(--button-text);
 }
+
+/* ===== Surface separation for Telegram themes ===== */
+.card,
+.tg-card,
+.tg-list,
+.monitor-card,
+.stat-card {
+  background: var(--secondary-bg);
+  background: color-mix(in srgb, var(--text-color) 6%, var(--secondary-bg));
+  border: 1px solid rgba(127, 127, 127, 0.16);
+}
+
+.tg-item {
+  border-bottom-color: rgba(127, 127, 127, 0.16);
+}
+
+.tg-chip--muted {
+  border: 1px solid rgba(127, 127, 127, 0.16);
+}
+
+.modal {
+  background: var(--bg-color);
+  background: color-mix(in srgb, var(--text-color) 4%, var(--bg-color));
+}
+
+.admin-search input,
+.admin-search select,
+.admin-sort__btn,
+.admin-sync {
+  background: var(--secondary-bg);
+  background: color-mix(in srgb, var(--text-color) 6%, var(--secondary-bg));
+}
