@@ -71,3 +71,23 @@ async def increment_renew_count(telegram_id: int) -> int:
         ) as cur:
             row = await cur.fetchone()
             return row[0] if row else 0
+
+async def get_state_value(key: str, default=None):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT value FROM monitor_state WHERE key = ?", (key,)
+        ) as cur:
+            row = await cur.fetchone()
+            return row[0] if row else default
+
+
+async def set_state_value(key: str, value):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO monitor_state(key, value, updated_at) "
+            "VALUES(?, ?, CURRENT_TIMESTAMP) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
+            "updated_at=CURRENT_TIMESTAMP",
+            (key, str(value)),
+        )
+        await db.commit()

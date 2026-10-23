@@ -418,5 +418,9 @@ async def check_xui_health(bot):
     """Проверка всех 3x-ui панелей по расписанию и алерты администраторам."""
     statuses = await collect_all_status(force=True)
     await save_metrics(statuses)
+    checked_at = int(time.time())
     for status in statuses:
+        panel_id = status.get("panel_id") or "panel"
+        await _state_set(_state_key(panel_id, "last_check"), checked_at)
+        await _state_set(_state_key(panel_id, "last_ok"), 1 if status.get("ok") else 0)
         await _check_panel_health(bot, status)

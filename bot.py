@@ -1,11 +1,12 @@
 import asyncio
 import logging
 import os
+import time
 from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN, ADMIN_IDS, BOT_NAME, BOT_VERSION
 from handlers import router
 from scheduler import setup_scheduler
-from database import init_db
+from database import init_db, set_state_value
 from donation_socket import start_donation_socket
 
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +14,7 @@ logging.basicConfig(level=logging.INFO)
 async def main():
     logging.info(f"🚀 {BOT_NAME} v{BOT_VERSION} запускается...")
     await init_db()
+    await set_state_value("bot:heartbeat", int(time.time()))
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()

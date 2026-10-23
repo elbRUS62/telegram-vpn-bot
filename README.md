@@ -5,6 +5,8 @@ Telegram-бот для выдачи бесплатных подписок Hyster
 
 Версия: `3.5.0`
 
+[![CI](https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml)
+
 Живой пример: [@skrepnet_bot](https://t.me/skrepnet_bot)
 
 Проект можно использовать как шаблон: скопируйте репозиторий и настройте свой бот через `.env`.
@@ -137,6 +139,35 @@ systemctl restart skrepnet-bot
 systemctl restart skrepnet-web
 ls -la backups/
 ```
+
+## Бэкапы
+
+`backup.sh` создаёт консистентную копию SQLite через Online Backup API, проверяет `PRAGMA integrity_check`, считает SHA-256 и сохраняет метаданные с количеством записей. Старые копии хранятся 30 дней.
+
+Проверка восстановления:
+
+```bash
+./scripts/verify-backup.sh
+```
+
+Скрипт берёт последний бэкап, копирует его во временную папку, проверяет контрольную сумму, целостность и наличие обязательных таблиц. Проверка также запускается по cron 1-го числа каждого месяца в 06:00.
+
+## Healthcheck и мониторинг
+
+Публичные endpoint:
+
+- `/health`
+- `/healthz`
+
+Они возвращают JSON и проверяют:
+
+- доступность базы данных;
+- свежесть heartbeat бота;
+- последнее известное состояние панелей 3x-ui.
+
+Если всё работает, ответ `200`. Если база недоступна, бот не обновлял heartbeat более 3 минут или панель не отвечала более 15 минут, ответ `503`.
+
+Heartbeat бота обновляется раз в минуту через планировщик. Внешний uptime-мониторинг можно подключить через UptimeRobot, Better Stack, Healthchecks.io или Uptime Kuma: проверять `/health` каждые 1–5 минут и отправлять алерты в Telegram или на почту.
 
 ## Переменные .env
 

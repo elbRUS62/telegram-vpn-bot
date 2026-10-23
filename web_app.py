@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 from database import init_db
 from web.routes.docs import docs_bp
+from web.routes.health import health_bp
 from web.routes.invite import invite_bp
 from web.routes.miniapp import miniapp_bp
 from web.routes.api import api
@@ -20,6 +21,7 @@ from web.routes.api.support import support_api
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 
 # Blueprint'ы
+app.register_blueprint(health_bp)
 app.register_blueprint(invite_bp)
 app.register_blueprint(docs_bp)
 app.register_blueprint(miniapp_bp)

@@ -2,6 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Bot
 from datetime import datetime, timedelta
 import logging
+import time
 import aiosqlite
 
 from monitoring import check_xui_health
@@ -9,6 +10,7 @@ from database import (
     get_expiring_users, get_expired_today, mark_notified,
     get_inactive_users, delete_user,
     get_abandoned_web_invites, get_expired_web_guests,
+    set_state_value,
 )
 from keyboards import renew_keyboard
 from xui_client import XUIClient
@@ -21,6 +23,17 @@ scheduler = AsyncIOScheduler()
 
 
 def setup_scheduler(bot: Bot):
+    # Heartbeat бота для /health
+    scheduler.add_job(
+        update_bot_heartbeat,
+        "interval",
+        minutes=1,
+        id="bot_heartbeat",
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now(),
+    )
+
     # Напоминания о продлении — каждый день в 10:00
     scheduler.add_job(
         check_subscriptions,
@@ -86,6 +99,10 @@ def setup_scheduler(bot: Bot):
     )
 
     scheduler.start()
+
+
+async def update_bot_heartbeat():
+    await set_state_value("bot:heartbeat", int(time.time()))
 
 
 async def check_subscriptions(bot: Bot):
