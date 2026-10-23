@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import aiosqlite
 from flask import Blueprint, jsonify, render_template, request
 
-from config import BOT_NAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, WEB_SUBSCRIPTION_DAYS
+from config import BOT_NAME, BOT_USERNAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, WEB_SUBSCRIPTION_DAYS
 from database import get_user, use_invite_link, get_invite_link_any
 from text_utils import sanitize_email
 from xui_client import XUIClient
@@ -79,7 +79,8 @@ def invite_page(token):
     return render_template('invite.html',
         token=token,
         inviter_name=inviter_name,
-        friend_username=invite["friend_username"] or "друг")
+        friend_username=invite["friend_username"] or "друг",
+        bot_username=BOT_USERNAME or "skrepnet_bot")
 
 
 @invite_bp.route('/api/invite/<token>/status', methods=['GET'])

@@ -33,6 +33,14 @@ class SubscriptionTemplateTest(unittest.TestCase):
             self.assertIn("main-bg-dot", text)
             self.assertIn("--button-color", text)
 
+    def test_guest_page_explains_bot_renewal(self):
+        invite = (ROOT / "web" / "templates" / "invite.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("https://t.me/{{ bot_username }}", invite)
+        self.assertIn("Гостевая подписка на 3 дня", invite)
+        self.assertIn("Перейти в бота", invite)
+
 
 if __name__ == "__main__":
     unittest.main()

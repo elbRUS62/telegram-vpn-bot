@@ -207,6 +207,21 @@
             font-size: 13px;
             line-height: 1.45;
         }
+        .notice-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 8px 11px;
+            border: 1px solid rgba(42, 171, 238, 0.25);
+            border-radius: 9px;
+            background: rgba(42, 171, 238, 0.12);
+            color: var(--link-color);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .notice-link:hover { border-color: var(--link-color); }
         .doc-list {
             display: flex;
             flex-direction: column;
@@ -442,7 +457,7 @@
         <section class="hero">
             <div class="kicker">Гостевая подписка</div>
             <h1>Бесплатный VPN на 3 дня</h1>
-            <p class="subtitle">Без лимитов трафика. Продление недоступно.</p>
+            <p class="subtitle">Без лимитов трафика. После окончания — бесплатная подписка в боте.</p>
             <div class="chips">
                 <span class="chip chip--accent">3 дня</span>
                 <span class="chip">Без лимитов</span>
@@ -450,8 +465,9 @@
         </section>
 
         <div class="notice-card">
-            <div class="notice-title">Подписка всего на 3 дня</div>
-            <div class="notice-text">Через 3 дня доступ будет удалён. Продлить или сохранить подписку нельзя.</div>
+            <div class="notice-title">Гостевая подписка на 3 дня</div>
+            <div class="notice-text">Это пробный доступ на 3 дня. Когда он закончится, оформите бесплатную подписку в Telegram-боте — там её можно продлевать.</div>
+            <a class="notice-link" href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener">Перейти в бота</a>
         </div>
 
         <section class="card">
@@ -479,7 +495,7 @@
 
         <button class="btn btn-primary" id="activateBtn" onclick="activate()" disabled>Получить 3-дневную подписку бесплатно</button>
         <div class="result" id="result"></div>
-        <p class="footer-note">Сервис бесплатный. Трафик не ограничен.</p>
+        <p class="footer-note">Гостевая подписка действует 3 дня. Постоянная подписка — бесплатно в боте.</p>
     </main>
 
     <div class="modal-backdrop" id="docs-modal">
@@ -501,6 +517,7 @@
         }
 
         const token = "{{ token }}";
+        const botUrl = "https://t.me/{{ bot_username }}";
 
         function subscriptionResultHtml(data, title) {
             const qr = data.qr_base64
@@ -514,11 +531,13 @@
             return `
                 <div class="result-title result-title--success">${title}</div>
                 <div class="notice-card notice-card--warning">
-                    <div class="notice-title">Подписка всего на 3 дня</div>
-                    <div class="notice-text">Продление недоступно. Через 3 дня доступ будет удалён.</div>
+                    <div class="notice-title">Гостевая подписка на 3 дня</div>
+                    <div class="notice-text">Она закончится через 3 дня. Чтобы продолжить пользоваться VPN, оформите бесплатную подписку в боте — там её можно продлевать.</div>
+                    <a class="notice-link" href="${botUrl}" target="_blank" rel="noopener">Перейти в бота</a>
                 </div>
                 ${qr}
                 <button class="btn btn-primary" onclick="copyLink('${subUrl}')">Скопировать ссылку</button>
+                <a class="btn btn-secondary" href="${botUrl}" target="_blank" rel="noopener">Перейти в бота</a>
             `;
         }
 
@@ -612,7 +631,7 @@
                     <ul>
                         <li>Один пользователь — одна подписка.</li>
                         <li>Лимит: <strong>3 IP одновременно</strong>.</li>
-                        <li>Срок подписки: <strong>3 дня</strong>. Продление недоступно.</li>
+                        <li>Срок гостевой подписки: <strong>3 дня</strong>. После окончания оформите бесплатную подписку в боте.</li>
                     </ul>
                     <h2>4. Ответственность</h2>
                     <ul>
@@ -674,7 +693,7 @@
                     <h2>3. Стоимость</h2>
                     <p>Сервис предоставляется <strong>бесплатно</strong>. Добровольные донаты приветствуются и не влияют на доступ.</p>
                     <h2>4. Срок действия</h2>
-                    <p>Подписка действует <strong>3 дня</strong>. Продление недоступно.</p>
+                    <p>Гостевая подписка действует <strong>3 дня</strong>. После окончания оформите бесплатную подписку в боте.</p>
                     <h2>5. Прекращение доступа</h2>
                     <ul>
                         <li>По истечении срока подписки.</li>
@@ -723,7 +742,7 @@
                 banner = document.createElement('div');
                 banner.id = 'copy-banner';
                 banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--button-color);color:var(--button-text);padding:12px 18px;border-radius:10px;max-width:420px;width:calc(100% - 40px);z-index:9999;opacity:0;transition:opacity 0.3s;text-align:center;font-size:14px;';
-                banner.innerHTML = '<div style="font-weight:600;margin-bottom:4px;">Ссылка скопирована</div><div style="font-size:13px;opacity:0.85;">Подписка действует 3 дня. Продление недоступно.</div>';
+                banner.innerHTML = '<div style="font-weight:600;margin-bottom:4px;">Ссылка скопирована</div><div style="font-size:13px;opacity:0.85;">Гостевая подписка действует 3 дня. Продолжить пользоваться VPN можно в боте.</div>';
                 document.body.appendChild(banner);
             }
             banner.style.opacity = '1';
