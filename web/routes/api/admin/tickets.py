@@ -1,5 +1,8 @@
+import csv
+import io
+
 import aiosqlite
-from flask import jsonify, request
+from flask import Response, jsonify, request
 
 from config import DB_PATH
 from web.utils.async_helper import run_async
@@ -107,6 +110,49 @@ def tickets_list():
     except Exception:
         logger.exception("admin/tickets failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+
+
+@admin_api.route("/tickets/export", methods=["POST"])
+@admin_required
+def tickets_export():
+    async def get_rows():
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                """SELECT t.id, t.telegram_id, t.username, t.first_name,
+                          t.subject, t.category, t.status, t.unread_admin,
+                          t.unread_user, t.created_at, t.updated_at, t.closed_at,
+                          (SELECT text FROM support_messages m
+                           WHERE m.ticket_id = t.id ORDER BY m.id DESC LIMIT 1) AS last_text
+                   FROM support_tickets t
+                   ORDER BY t.created_at DESC
+                   LIMIT 10000"""
+            ) as cur:
+                return [dict(row) for row in await cur.fetchall()]
+
+    rows = run_async(get_rows())
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+    writer.writerow([
+        "id", "telegram_id", "username", "first_name", "subject",
+        "category", "status", "unread_admin", "unread_user",
+        "created_at", "updated_at", "closed_at", "last_text",
+    ])
+    for row in rows:
+        writer.writerow([
+            row.get("id"), row.get("telegram_id"), row.get("username") or "",
+            row.get("first_name") or "", row.get("subject") or "",
+            TICKET_CATEGORIES.get(row.get("category"), row.get("category") or ""),
+            TICKET_STATUSES.get(row.get("status"), row.get("status") or ""),
+            row.get("unread_admin") or 0, row.get("unread_user") or 0,
+            row.get("created_at") or "", row.get("updated_at") or "",
+            row.get("closed_at") or "", (row.get("last_text") or "")[:500],
+        ])
+    return Response(
+        "\ufeff" + output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=skrepnet-tickets.csv"},
+    )
 
 
 @admin_api.route("/ticket", methods=["POST"])

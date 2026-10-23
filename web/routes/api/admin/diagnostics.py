@@ -1,3 +1,5 @@
+import subprocess
+
 from flask import jsonify, request
 
 from web.utils.async_helper import run_async
@@ -18,3 +20,31 @@ def user_diagnostics():
     if "error" in result:
         return jsonify(result), 400
     return jsonify(result)
+
+
+@admin_api.route("/errors", methods=["POST"])
+@admin_required
+def errors_log():
+    """Последние ошибки web- и bot-сервисов из journald."""
+    try:
+        result = subprocess.run(
+            [
+                "journalctl",
+                "-u", "skrepnet-web",
+                "-u", "skrepnet-bot",
+                "--since", "24 hours ago",
+                "--no-pager",
+                "-o", "cat",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        markers = ("ERROR", "Traceback", "CRITICAL", "Exception", "SIGKILL", "out of memory")
+        lines = [
+            line for line in (result.stdout or "").splitlines()
+            if any(marker in line for marker in markers)
+        ]
+        return jsonify({"lines": lines[-120:], "count": len(lines)})
+    except Exception:
+        return jsonify({"error": "Не удалось прочитать журнал"}), 500

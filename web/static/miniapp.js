@@ -16,6 +16,80 @@ const tg = window.Telegram.WebApp;
  let SUPPORT_STATE = { view: 'list', ticket: null };
  let TICKETS_STATE = { filter: 'active', current: null, busy: false };
 
+ const CACHE_PREFIX = 'skrepnet_cache:';
+ const CACHE_TTL = 10 * 60 * 1000;
+ const CACHEABLE_PATHS = new Set([
+ '/api/miniapp/main',
+ '/api/miniapp/subscription',
+ '/api/miniapp/donate',
+ '/api/miniapp/support/list',
+ ]);
+ const ACTIVE_TAB_KEY = 'skrepnet_active_tab';
+ const HINTS_KEY = 'skrepnet_hints_dismissed';
+
+ function cacheSet(path, data) {
+ try {
+ sessionStorage.setItem(CACHE_PREFIX + path, JSON.stringify({ ts: Date.now(), data }));
+ } catch (_) {}
+ }
+
+ function cacheGet(path) {
+ try {
+ const raw = sessionStorage.getItem(CACHE_PREFIX + path);
+ if (!raw) return null;
+ const parsed = JSON.parse(raw);
+ if (!parsed || Date.now() - Number(parsed.ts || 0) > CACHE_TTL) {
+ sessionStorage.removeItem(CACHE_PREFIX + path);
+ return null;
+ }
+ return parsed.data;
+ } catch (_) {
+ return null;
+ }
+ }
+
+ function skeletonHtml(cards = 3) {
+ const card = '<div class="skeleton-card"><div class="skeleton-line skeleton-line--short"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--medium"></div></div>';
+ return `<div class="skeleton-list">${card.repeat(cards)}</div>`;
+ }
+
+ function loadErrorHtml(message, retryAction) {
+ return `<div class="error-state">
+ <div class="error-title">Не удалось загрузить</div>
+ <div class="error-text">${escapeHtml(message || 'Проверьте соединение и попробуйте ещё раз.')}</div>
+ <button class="btn btn-secondary" onclick="${retryAction}">Повторить</button>
+ </div>`;
+ }
+
+ function dismissHints() {
+ try { localStorage.setItem(HINTS_KEY, '1'); } catch (_) {}
+ const element = document.getElementById('onboarding-hints');
+ if (element) element.remove();
+ }
+
+ async function loadServerStatus() {
+ const target = document.getElementById('server-status-list');
+ if (!target) return;
+ try {
+ const response = await fetch('/health', { cache: 'no-store' });
+ const data = await response.json();
+ const panels = Array.isArray(data.panels) ? data.panels : [];
+ if (!panels.length) {
+ target.innerHTML = '<div class="tg-note">Нет данных о серверах.</div>';
+ return;
+ }
+ target.innerHTML = panels.map(panel => {
+ const ok = !!panel.ok;
+ const name = escapeHtml(panel.name || panel.id || 'Сервер');
+ return `<div class="server-status-row">
+ <span class="server-status-name"><span class="server-status-dot ${ok ? 'ok' : 'bad'}"></span>${name}</span>
+ <span class="server-status-value ${ok ? 'ok' : 'bad'}">${ok ? 'Онлайн' : 'Недоступен'}</span>
+ </div>`;
+ }).join('');
+ } catch (_) {
+ target.innerHTML = '<div class="tg-note">Не удалось получить статус серверов.</div>';
+ }
+ }
 
  async function apiCall(path, body = {}, attempt = 0) {
  if (!INIT_DATA) {
@@ -34,11 +108,20 @@ const tg = window.Telegram.WebApp;
  return apiCall(path, body, attempt + 1);
  }
  console.warn('apiCall network error:', error);
+ if (CACHEABLE_PATHS.has(path)) {
+ const cached = cacheGet(path);
+ if (cached) {
+ showToast('Нет связи. Показаны последние сохранённые данные');
+ return cached;
+ }
+ }
  throw new Error('Не удалось загрузить данные. Проверьте соединение и попробуйте ещё раз.');
  }
  if (res.status === 401) console.warn("Ошибка 401: init_data пустой или неверный");
  try {
- return await res.json();
+ const data = await res.json();
+ if (CACHEABLE_PATHS.has(path) && !(data && data.error)) cacheSet(path, data);
+ return data;
  } catch (error) {
  console.warn('apiCall json error:', error);
  throw new Error('Сервер вернул некорректный ответ. Попробуйте ещё раз.');
@@ -266,9 +349,76 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mainContent) _slideObserver.observe(mainContent, { childList: true, subtree: true });
 });
 
+const SCROLL_KEY_PREFIX = 'skrepnet_scroll:';
+
+function saveScroll(name) {
+ try { sessionStorage.setItem(SCROLL_KEY_PREFIX + name, String(window.scrollY)); } catch (_) {}
+}
+
+function restoreScroll(name) {
+ let value = 0;
+ try { value = Number(sessionStorage.getItem(SCROLL_KEY_PREFIX + name) || 0); } catch (_) {}
+ if (value > 0) setTimeout(() => window.scrollTo(0, value), 120);
+}
+
+function startSubTimer() {
+ if (SUB_TIMER) clearInterval(SUB_TIMER);
+ SUB_TIMER = setInterval(() => {
+ if (document.getElementById('screen-sub').classList.contains('active')) loadSubscription(true);
+ else { clearInterval(SUB_TIMER); SUB_TIMER = null; }
+ }, 15000);
+}
+
+function refreshActiveTab() {
+ const active = document.querySelector('.tab.active');
+ if (!active) return;
+ const name = active.dataset.tab;
+ if (name === 'main') loadMain();
+ else if (name === 'sub') { loadSubscription(); startSubTimer(); }
+ else if (name === 'donate') loadDonate();
+ else if (name === 'support') loadSupport();
+ else if (name === 'admin') loadAdmin();
+}
+
+function initPullToRefresh() {
+ let startY = null;
+ let pullDistance = 0;
+ const indicator = document.getElementById('pull-indicator');
+ document.addEventListener('touchstart', (event) => {
+ if (window.scrollY > 0 || document.querySelector('.modal-backdrop.show')) {
+ startY = null;
+ return;
+ }
+ startY = event.touches[0].clientY;
+ pullDistance = 0;
+ }, { passive: true });
+ document.addEventListener('touchmove', (event) => {
+ if (startY === null) return;
+ pullDistance = Math.max(0, event.touches[0].clientY - startY);
+ if (indicator && pullDistance > 0) {
+ indicator.style.opacity = String(Math.min(pullDistance / 90, 1));
+ indicator.style.transform = `translate(-50%, ${Math.min(pullDistance, 80)}px)`;
+ }
+ }, { passive: true });
+ document.addEventListener('touchend', () => {
+ if (startY === null) return;
+ const shouldRefresh = pullDistance > 80;
+ startY = null;
+ pullDistance = 0;
+ if (indicator) {
+ indicator.style.opacity = '0';
+ indicator.style.transform = 'translate(-50%, 0)';
+ }
+ if (shouldRefresh) refreshActiveTab();
+ }, { passive: true });
+}
+
 document.querySelectorAll('.tab').forEach((tab, index) => {
  tab.addEventListener('click', () => {
  const name = tab.dataset.tab;
+ const previous = document.querySelector('.tab.active');
+ if (previous) saveScroll(previous.dataset.tab);
+ try { localStorage.setItem(ACTIVE_TAB_KEY, name); } catch (_) {}
  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
  tab.classList.add('active');
@@ -276,20 +426,42 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  updateDots(index);
 
  setTimeout(updateDots, 100);
+ restoreScroll(name);
  if (name === 'main') loadMain();
  else if (name === 'sub') {
  if (SUB_TIMER) { clearInterval(SUB_TIMER); SUB_TIMER = null; }
  loadSubscription();
- SUB_TIMER = setInterval(() => {
- if (document.getElementById('screen-sub').classList.contains('active')) loadSubscription(true);
- else { clearInterval(SUB_TIMER); SUB_TIMER = null; }
- }, 5000);
+ startSubTimer();
  }
  else if (name === 'donate') loadDonate();
  else if (name === 'support') loadSupport();
  else if (name === 'admin') loadAdmin();
  });
  });
+
+document.addEventListener('DOMContentLoaded', () => {
+ initPullToRefresh();
+ let saved = null;
+ try { saved = localStorage.getItem(ACTIVE_TAB_KEY); } catch (_) {}
+ if (saved && saved !== 'main' && saved !== 'admin') {
+ const tab = document.querySelector(`.tab[data-tab="${saved}"]`);
+ if (tab && tab.style.display !== 'none') setTimeout(() => switchTab(saved), 0);
+ }
+});
+
+window.addEventListener('scroll', () => {
+ const active = document.querySelector('.tab.active');
+ if (active) saveScroll(active.dataset.tab);
+}, { passive: true });
+
+document.addEventListener('visibilitychange', () => {
+ if (document.hidden) {
+ if (POLLING_TIMER) { clearTimeout(POLLING_TIMER); POLLING_TIMER = null; }
+ if (SUB_TIMER) { clearInterval(SUB_TIMER); SUB_TIMER = null; }
+ } else {
+ refreshActiveTab();
+ }
+});
 
  function switchTab(name) {
  const tab = document.querySelector(`.tab[data-tab="${name}"]`);
@@ -315,7 +487,11 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const loading = document.getElementById('main-loading');
  const content = document.getElementById('main-content');
  
- if (!isSilent) { loading.style.display = 'block'; content.style.display = 'none'; }
+ if (!isSilent) {
+ loading.innerHTML = skeletonHtml(4);
+ loading.style.display = 'block';
+ content.style.display = 'none';
+ }
  if (POLLING_TIMER) { clearTimeout(POLLING_TIMER); POLLING_TIMER = null; }
 
  try {
@@ -325,7 +501,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const currentStatusEl = content.querySelector('.status-badge');
  const currentStatusText = currentStatusEl ? currentStatusEl.textContent : '';
  if (currentStatusText === data.status_text) {
- if (data.status === 'pending') POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
+ if (data.status === 'pending') POLLING_TIMER = setTimeout(() => loadMain(true), 15000);
  return;
  }
  }
@@ -338,7 +514,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  return;
  }
 
- if (data.status === 'pending') POLLING_TIMER = setTimeout(() => loadMain(true), 5000);
+ if (data.status === 'pending') POLLING_TIMER = setTimeout(() => loadMain(true), 15000);
 
  CURRENT_SUB_URL = data.sub_url || '';
  const statusClass = data.status === 'active' ? 'active' : (data.status === 'pending' ? 'pending' : (data.status === 'rejected' ? 'expired' : 'new'));
@@ -378,6 +554,19 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
    </button>
  `).join('');
 
+ let hintsDismissed = false;
+ try { hintsDismissed = localStorage.getItem(HINTS_KEY) === '1'; } catch (_) {}
+ const hintsHtml = (!isActive && !isPending && !data.is_admin && !hintsDismissed) ? `
+ <div class="onboarding-card" id="onboarding-hints">
+   <div class="onboarding-title">Как начать</div>
+   <div class="onboarding-steps">
+     <div class="onboarding-step"><span class="onboarding-num">1</span><span>Получите бесплатную подписку.</span></div>
+     <div class="onboarding-step"><span class="onboarding-num">2</span><span>Откройте QR-код или скопируйте ссылку.</span></div>
+     <div class="onboarding-step"><span class="onboarding-num">3</span><span>Подключитесь в Happ по инструкции.</span></div>
+   </div>
+   <button type="button" class="onboarding-dismiss" onclick="dismissHints()">Понятно</button>
+ </div>` : '';
+
  content.innerHTML = `
  <div class="tg-hero tg-card">
    <div class="tg-kicker">${data.bot_name || 'SkrepNet'}</div>
@@ -392,6 +581,15 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
  <div class="tg-card" style="padding:12px;">
    ${primaryAction}
+ </div>
+
+ ${hintsHtml}
+
+ <div class="tg-card server-status-card" id="server-status-card">
+   <div class="card-title">Серверы</div>
+   <div class="server-status-list" id="server-status-list">
+     <div class="tg-note">Проверяем доступность...</div>
+   </div>
  </div>
 
  <div class="tg-list">
@@ -436,6 +634,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  if (docsLink) {
  docsLink.addEventListener('click', (e) => { e.preventDefault(); openDocsModal(); });
  }
+ loadServerStatus();
 
  IS_ADMIN = !!data.is_admin;
  const tabAdmin = document.getElementById('tab-admin');
@@ -451,7 +650,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  } catch (e) {
  loading.style.display = 'none';
  content.style.display = 'block';
- if (!isSilent) content.innerHTML = `<div class="error"> ${e.message}</div>`;
+ if (!isSilent) content.innerHTML = loadErrorHtml(e.message, 'loadMain()');
  }
  }
 
@@ -460,7 +659,11 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const loading = document.getElementById('sub-loading');
  const content = document.getElementById('sub-content');
 
- if (!isSilent) { loading.style.display = 'block'; content.style.display = 'none'; }
+ if (!isSilent) {
+ loading.innerHTML = skeletonHtml(3);
+ loading.style.display = 'block';
+ content.style.display = 'none';
+ }
 
  try {
  const data = await apiCall('/api/miniapp/subscription');
@@ -586,7 +789,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  } catch (e) {
  loading.style.display = 'none';
  content.style.display = 'block';
- if (!isSilent) content.innerHTML = `<div class="error"> ${e.message}</div>`;
+ if (!isSilent) content.innerHTML = loadErrorHtml(e.message, 'loadSubscription()');
  }
  }
 
@@ -641,11 +844,12 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  async function loadDonate() {
  const loading = document.getElementById('donate-loading');
  const content = document.getElementById('donate-content');
+ loading.innerHTML = skeletonHtml(3);
  loading.style.display = 'block'; content.style.display = 'none';
  try {
  const data = await apiCall('/api/miniapp/donate');
  loading.style.display = 'none'; content.style.display = 'block';
- if (data.error) { content.innerHTML = `<div class="error"> ${data.error}</div>`; return; }
+ if (data.error) { content.innerHTML = loadErrorHtml(data.error, 'loadDonate()'); return; }
  content.innerHTML = `
  <div class="tg-hero">
    <div class="tg-kicker">Поддержка проекта</div>
@@ -682,7 +886,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  });
  } catch (e) {
  loading.style.display = 'none'; content.style.display = 'block';
- content.innerHTML = `<div class="error"> ${e.message}</div>`;
+ content.innerHTML = loadErrorHtml(e.message, 'loadDonate()');
  }
  }
 
@@ -731,20 +935,21 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  async function loadSupport() {
  const loading = document.getElementById('support-loading');
  const content = document.getElementById('support-content');
+ loading.innerHTML = skeletonHtml(3);
  loading.style.display = 'block'; content.style.display = 'none';
  SUPPORT_STATE = { view: 'list', ticket: null };
  try {
   const data = await apiCall('/api/miniapp/support/list');
   loading.style.display = 'none'; content.style.display = 'block';
   if (data.error) {
-   content.innerHTML = `<div class="error"> ${escapeHtml(data.error)}</div>`;
+   content.innerHTML = loadErrorHtml(data.error, 'loadSupport()');
    return;
   }
   updateSupportTabBadge(data.unread_count || 0);
   renderSupportList(data);
  } catch (e) {
   loading.style.display = 'none'; content.style.display = 'block';
-  content.innerHTML = `<div class="error"> ${escapeHtml(e.message)}</div>`;
+  content.innerHTML = loadErrorHtml(e.message, 'loadSupport()');
  }
  }
 
@@ -1044,13 +1249,39 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  });
 
  // ==================== АДМИН-ПАНЕЛЬ ====================
- let ADMIN = { loaded: false, view: 'overview', page: 1, q: '', status: 'all', sort: 'created_desc', busy: false, timer: null };
+ let ADMIN = { loaded: false, view: 'overview', page: 1, q: '', status: 'all', sort: 'created_desc', busy: false, timer: null, selected: new Set() };
  let MONITOR_STATE = { index: 0, count: 0, touchX: null, touchY: null, heightTimer: null, hours: 24, requestId: 0 };
 
  async function adminCall(path, body = {}) {
  const r = await apiCall('/api/miniapp/admin' + path, body);
  // toast убран — вызывающий код сам решает
  return r || {};
+ }
+
+ async function downloadAdminCsv(path, filename, body = {}) {
+ try {
+ const response = await fetch('/api/miniapp/admin' + path, {
+ method: 'POST',
+ headers: {'Content-Type': 'application/json'},
+ body: JSON.stringify({init_data: INIT_DATA, ...body}),
+ });
+ if (!response.ok) {
+ showToast('Не удалось подготовить CSV', true);
+ return;
+ }
+ const blob = await response.blob();
+ const url = URL.createObjectURL(blob);
+ const link = document.createElement('a');
+ link.href = url;
+ link.download = filename;
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+ setTimeout(() => URL.revokeObjectURL(url), 1000);
+ showToast('CSV скачан');
+ } catch (_) {
+ showToast('Не удалось скачать CSV', true);
+ }
  }
 
  async function openXuiPanel(panelId = '') {
@@ -1106,6 +1337,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
     }
     return `
     <div class="admin-user" data-tg="${u.telegram_id}">
+        <input type="checkbox" class="admin-user-check" data-tg="${u.telegram_id}" ${ADMIN.selected && ADMIN.selected.has(String(u.telegram_id)) ? 'checked' : ''} onclick="event.stopPropagation(); toggleUserSelection(this)">
         <div class="admin-user-info">
             <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}</div>
             <div class="admin-user-badges">${adminUserBadges(u, daysLeft)}</div>
@@ -1113,6 +1345,45 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
         <div class="admin-user-arrow">›</div>
     </div>`;
 }
+
+ function toggleUserSelection(el) {
+ const tgId = String(el.dataset.tg || '');
+ if (!tgId) return;
+ if (el.checked) ADMIN.selected.add(tgId);
+ else ADMIN.selected.delete(tgId);
+ updateBulkBar();
+ }
+
+ function updateBulkBar() {
+ const bar = document.getElementById('admin-bulk-bar');
+ const count = document.getElementById('admin-bulk-count');
+ if (!bar || !count) return;
+ const size = ADMIN.selected ? ADMIN.selected.size : 0;
+ bar.style.display = size ? 'flex' : 'none';
+ count.textContent = `${size} выбрано`;
+ }
+
+ function clearUserSelection() {
+ if (ADMIN.selected) ADMIN.selected.clear();
+ document.querySelectorAll('.admin-user-check').forEach(el => { el.checked = false; });
+ updateBulkBar();
+ }
+
+ async function bulkUserAction(action) {
+ if (!ADMIN.selected || !ADMIN.selected.size) return;
+ const ids = Array.from(ADMIN.selected).map(Number).filter(Boolean);
+ if (!ids.length) return;
+ const label = action === 'delete' ? 'удалить' : 'заблокировать';
+ const ok = await showConfirm(`Вы уверены, что хотите ${label} ${ids.length} пользователей?`, 'Массовое действие');
+ if (!ok) return;
+ const r = await adminCall('/users/bulk', { ids, action });
+ if (r.error) { showToast(r.error, true); return; }
+ showToast(`Готово: ${r.updated || 0}, ошибок: ${r.errors || 0}`);
+ clearUserSelection();
+ ADMIN.page = 1;
+ loadAdminUsers();
+ loadAdminStats();
+ }
 
  function renderAdminAttention(r) {
  const el = document.getElementById('admin-attention');
@@ -1162,6 +1433,18 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  <div class="stat-card"><div class="stat-num">${r.pending}</div><div class="stat-lbl">Заявки</div></div>
  <div class="stat-card"><div class="stat-num">${r.tickets_unread ?? 0}</div><div class="stat-lbl">Тикеты без ответа</div></div>
  `;
+ const weekly = document.getElementById('admin-weekly');
+ if (weekly) {
+ const w = r.weekly || {};
+ weekly.innerHTML = `
+ <div class="admin-section-title">За 7 дней</div>
+ <div class="weekly-grid">
+ <div class="weekly-card"><div class="weekly-num">${w.new_users ?? 0}</div><div class="weekly-lbl">Новых</div></div>
+ <div class="weekly-card"><div class="weekly-num">${w.expired_users ?? 0}</div><div class="weekly-lbl">Истекли</div></div>
+ <div class="weekly-card"><div class="weekly-num">${w.tickets ?? 0}</div><div class="weekly-lbl">Обращений</div></div>
+ <div class="weekly-card"><div class="weekly-num">${w.donated_rub ?? 0} ₽</div><div class="weekly-lbl">Донаты</div></div>
+ </div>`;
+ }
  renderAdminAttention(r);
  renderAdminUsersSummary(r);
  const pendingBtn = document.getElementById('pending-count');
@@ -1608,6 +1891,21 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  loadAdminStats();
  }
 
+ const ADMIN_QUICK_REPLIES = [
+ 'Здравствуйте! Опишите, пожалуйста, проблему подробнее.',
+ 'Проверьте, пожалуйста, подключение по QR-коду или ссылке.',
+ 'Попробуйте переподключиться и сообщите, сохраняется ли ошибка.',
+ 'Подписка активна. Если проблема осталась — напишите снова.',
+ 'Закрываю обращение. Если понадобится помощь — создайте новое.',
+ ];
+
+ function setAdminTicketReply(text) {
+ const el = document.getElementById('admin-ticket-reply');
+ if (!el) return;
+ el.value = text;
+ el.focus();
+ }
+
  function renderAdminTicket(data) {
  const el = document.getElementById('admin-tickets-content');
  if (!el) return;
@@ -1629,6 +1927,9 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
   <div class="ticket-divider"></div>
   <div class="ticket-msgs">${msgs}</div>
   <div class="ticket-form">
+   <div class="ticket-quick-replies">
+    ${ADMIN_QUICK_REPLIES.map(text => `<button type="button" class="ticket-quick" data-reply="${escapeHtml(text)}" onclick="setAdminTicketReply(this.dataset.reply)">${escapeHtml(text)}</button>`).join('')}
+   </div>
    <textarea id="admin-ticket-reply" class="ticket-textarea" maxlength="3000" placeholder="Ответ пользователю..."></textarea>
    <div class="ticket-actions">
     <button class="btn btn-primary" id="admin-ticket-reply-btn" onclick="sendAdminTicketReply()">Ответить</button>
@@ -1962,6 +2263,20 @@ async function openAdminUserCard(tgId) {
  }
  }
 
+ async function loadAdminErrors() {
+ const target = document.getElementById('admin-error-log');
+ if (!target) return;
+ target.style.display = 'block';
+ target.textContent = 'Загрузка...';
+ const r = await adminCall('/errors');
+ if (r.error) {
+ target.textContent = r.error;
+ return;
+ }
+ const lines = Array.isArray(r.lines) ? r.lines : [];
+ target.textContent = lines.length ? lines.join('\n') : 'Ошибок за 24 часа не найдено.';
+ }
+
  function renderAdminScreen() {
  document.getElementById('admin-content').innerHTML = `
  <div class="admin-subtabs" id="admin-subtabs">
@@ -1972,6 +2287,7 @@ async function openAdminUserCard(tgId) {
 
  <div class="admin-view" id="admin-view-overview">
    <div class="stats-grid" id="admin-stats"></div>
+   <div class="admin-weekly" id="admin-weekly"></div>
    <div class="admin-section">
      <div class="admin-section-title">Требует внимания</div>
      <div class="tg-list" id="admin-attention"></div>
@@ -2020,6 +2336,12 @@ async function openAdminUserCard(tgId) {
      <button class="tab" data-filter="blocked" onclick="setAdminStatus('blocked')">Заблокированные</button>
      <button class="tab" data-filter="rejected" onclick="setAdminStatus('rejected')">Отклонённые</button>
    </div>
+   <div class="admin-bulk-bar" id="admin-bulk-bar" style="display:none;">
+     <span id="admin-bulk-count">0 выбрано</span>
+     <button type="button" onclick="bulkUserAction('block')">Заблокировать</button>
+     <button type="button" onclick="bulkUserAction('delete')">Удалить</button>
+     <button type="button" onclick="clearUserSelection()">Сбросить</button>
+   </div>
    <div class="card" style="padding:0;" id="admin-users"></div>
    <button class="btn btn-secondary" id="admin-more" style="width:100%;display:none;margin-top:8px;">Показать ещё</button>
  </div>
@@ -2030,10 +2352,19 @@ async function openAdminUserCard(tgId) {
      <div class="admin-section-title">Инструменты</div>
      <div class="tg-list">
        <button class="tg-item" onclick="syncAdminUsers()"><span>Синхронизировать с 3x-ui</span><span class="tg-item__meta">Обновить даты</span></button>
+       <button class="tg-item" onclick="downloadAdminCsv('/users/export', 'skrepnet-users.csv', {q: ADMIN.q, status: ADMIN.status})"><span>Экспорт пользователей</span><span class="tg-item__meta">CSV</span></button>
+       <button class="tg-item" onclick="downloadAdminCsv('/tickets/export', 'skrepnet-tickets.csv')"><span>Экспорт тикетов</span><span class="tg-item__meta">CSV</span></button>
        <button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>
        <button class="tg-item" onclick="openBroadcast()"><span>Массовая рассылка</span><span class="tg-item__arrow">›</span></button>
        <button class="tg-item" onclick="openTickets()"><span>Тикеты <span class="badge pending admin-tickets-badge" style="display:none;margin-left:4px;">0</span></span><span class="tg-item__arrow">›</span></button>
      </div>
+   </div>
+   <div class="admin-section">
+     <div class="admin-section-title">Журнал ошибок</div>
+     <div class="tg-list">
+       <button class="tg-item" onclick="loadAdminErrors()"><span>Показать ошибки за 24 часа</span><span class="tg-item__meta">journalctl</span></button>
+     </div>
+     <pre id="admin-error-log" class="admin-error-log" style="display:none;"></pre>
    </div>
  </div>
  `;

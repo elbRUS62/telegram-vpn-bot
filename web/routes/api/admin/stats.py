@@ -40,6 +40,23 @@ def stats():
                 "SELECT COUNT(*) FROM support_tickets "
                 "WHERE status != 'closed' AND unread_admin = 1"
             )
+            new_users_7d = await one(
+                "SELECT COUNT(*) FROM users "
+                "WHERE created_at >= datetime('now','-7 days')"
+            )
+            expired_7d = await one(
+                "SELECT COUNT(*) FROM users "
+                "WHERE expires_at IS NOT NULL "
+                "AND DATE(expires_at) BETWEEN DATE('now','-7 days') AND DATE('now')"
+            )
+            tickets_7d = await one(
+                "SELECT COUNT(*) FROM support_tickets "
+                "WHERE created_at >= datetime('now','-7 days')"
+            )
+            donated_7d = await one(
+                "SELECT COALESCE(SUM(amount),0) FROM donations "
+                "WHERE currency='RUB' AND created_at >= datetime('now','-7 days')"
+            )
 
             # --- Трафик (накопительный, из 3x-ui) ---
             traffic_gb = None
@@ -105,6 +122,12 @@ def stats():
             "online_count": online_count,
             "tickets_open": tickets_open,
             "tickets_unread": tickets_unread,
+            "weekly": {
+                "new_users": new_users_7d,
+                "expired_users": expired_7d,
+                "tickets": tickets_7d,
+                "donated_rub": int(round(donated_7d or 0)),
+            },
         }
 
     try:

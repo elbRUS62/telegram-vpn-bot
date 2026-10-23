@@ -1,10 +1,13 @@
+import csv
+import io
+
 import aiosqlite
-from flask import jsonify, request
+from flask import Response, jsonify, request
 
 from config import DB_PATH, XUI_PANELS
 from web.utils.async_helper import run_async
 
-from .common import admin_api, admin_required, logger
+from .common import _audit, admin_api, admin_required, logger
 
 @admin_api.route("/sync", methods=["POST"])
 @admin_required
@@ -149,6 +152,155 @@ def users_list():
         return jsonify(run_async(get_data()))
     except Exception as e:
         logger.error("admin/users failed")
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+
+
+@admin_api.route("/users/export", methods=["POST"])
+@admin_required
+def users_export():
+    data = request.json or {}
+    q = (data.get("q") or "").strip().lower()
+    status = data.get("status") or "all"
+
+    async def get_rows():
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            where, args = [], []
+            if status == "web":
+                where.append("source = 'web'")
+            elif status == "expiring":
+                where.append(
+                    "status='active' AND DATE(expires_at) "
+                    "BETWEEN DATE('now') AND DATE('now','+3 days')"
+                )
+            elif status != "all":
+                where.append("status=?")
+                args.append(status)
+            if q:
+                where.append(
+                    "(LOWER(COALESCE(username,'')) LIKE ? "
+                    "OR LOWER(COALESCE(first_name,'')) LIKE ? "
+                    "OR CAST(telegram_id AS TEXT) LIKE ?)"
+                )
+                like = f"%{q}%"
+                args += [like, like, like]
+            where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+            async with db.execute(
+                f"""SELECT telegram_id, username, first_name, status, xui_email,
+                           source, expires_at, invites_count, renew_count,
+                           created_at, last_seen
+                    FROM users {where_sql}
+                    ORDER BY created_at DESC
+                    LIMIT 10000""",
+                args,
+            ) as cur:
+                return [dict(row) for row in await cur.fetchall()]
+
+    rows = run_async(get_rows())
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+    writer.writerow([
+        "telegram_id", "username", "first_name", "status", "xui_email",
+        "source", "expires_at", "invites_count", "renew_count",
+        "created_at", "last_seen",
+    ])
+    for row in rows:
+        writer.writerow([
+            row.get("telegram_id"), row.get("username") or "",
+            row.get("first_name") or "", row.get("status") or "",
+            row.get("xui_email") or "", row.get("source") or "",
+            row.get("expires_at") or "", row.get("invites_count") or 0,
+            row.get("renew_count") or 0, row.get("created_at") or "",
+            row.get("last_seen") or "",
+        ])
+    return Response(
+        "\ufeff" + output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=skrepnet-users.csv"},
+    )
+
+
+@admin_api.route("/users/bulk", methods=["POST"])
+@admin_required
+def users_bulk():
+    data = request.json or {}
+    action = data.get("action")
+    if action not in ("block", "delete"):
+        return jsonify({"error": "Недопустимое действие"}), 400
+    ids = []
+    for value in (data.get("ids") or [])[:100]:
+        try:
+            ids.append(int(value))
+        except (TypeError, ValueError):
+            continue
+    if not ids:
+        return jsonify({"error": "Пользователи не выбраны"}), 400
+
+    async def do():
+        from database import get_user, delete_user
+        from xui_client import XUIClient
+
+        updated = 0
+        errors = 0
+        for tg_id in ids:
+            try:
+                user = await get_user(tg_id)
+                if not user:
+                    errors += 1
+                    continue
+                if action == "block":
+                    if not user["xui_email"]:
+                        errors += 1
+                        continue
+                    async with XUIClient() as xui:
+                        client = await xui.get_client(user["xui_email"])
+                        if not client:
+                            errors += 1
+                            continue
+                        result = await xui._post(
+                            f"/panel/api/clients/update/{user['xui_email']}",
+                            {
+                                "email": user["xui_email"],
+                                "enable": False,
+                                "limitIp": client.get("limitIp", 3),
+                                "totalGB": client.get("totalGB", 0),
+                                "expiryTime": client.get("expiryTime", 0),
+                            },
+                        )
+                    if not result.get("success"):
+                        errors += 1
+                        continue
+                    async with aiosqlite.connect(DB_PATH) as db:
+                        await db.execute(
+                            "UPDATE users SET status = 'blocked' WHERE telegram_id = ?",
+                            (tg_id,),
+                        )
+                        await db.commit()
+                else:
+                    if user["xui_email"]:
+                        try:
+                            async with XUIClient() as xui:
+                                await xui.delete_client(user["xui_email"])
+                        except Exception:
+                            logger.warning("bulk delete: xui delete failed for %s", tg_id)
+                    await delete_user(tg_id)
+                updated += 1
+            except Exception:
+                logger.warning("bulk action failed for %s", tg_id)
+                errors += 1
+
+        await _audit(
+            request.admin_user["id"],
+            f"bulk_{action}",
+            None,
+            f"updated={updated}, errors={errors}",
+        )
+        return {"success": True, "updated": updated, "errors": errors}
+
+    try:
+        return jsonify(run_async(do()))
+    except Exception:
+        logger.error("admin/users/bulk failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 

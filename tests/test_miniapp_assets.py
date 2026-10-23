@@ -16,6 +16,24 @@ class MiniAppAssetsTest(unittest.TestCase):
         self.assertIn("/static/miniapp.js", template)
         self.assertNotIn("<style>", template)
 
+    def test_app_improvements_are_present(self):
+        js = (ROOT / "web" / "static" / "miniapp.js").read_text(encoding="utf-8")
+        css = (ROOT / "web" / "static" / "miniapp.css").read_text(encoding="utf-8")
+        html = (ROOT / "web" / "templates" / "miniapp.html").read_text(encoding="utf-8")
+        for token in (
+            "skeletonHtml",
+            "initPullToRefresh",
+            "loadServerStatus",
+            "downloadAdminCsv",
+            "admin-bulk-bar",
+            "ticket-quick-replies",
+            "loadAdminErrors",
+        ):
+            self.assertIn(token, js)
+        for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log"):
+            self.assertIn(token, css)
+        self.assertIn("pull-indicator", html)
+
     def test_guest_subscription_quick_action(self):
         script = (ROOT / "web" / "static" / "miniapp.js").read_text(
             encoding="utf-8"

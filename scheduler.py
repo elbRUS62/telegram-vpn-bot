@@ -1,6 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Bot
 from datetime import datetime, timedelta
+from html import escape
 import logging
 import time
 import aiosqlite
@@ -10,11 +11,11 @@ from database import (
     get_expiring_users, get_expired_today, mark_notified,
     get_inactive_users, delete_user,
     get_abandoned_web_invites, get_expired_web_guests,
-    set_state_value,
+    get_state_value, set_state_value,
 )
 from keyboards import renew_keyboard
 from xui_client import XUIClient
-from config import ADMIN_ID, DB_PATH
+from config import ADMIN_IDS, DB_PATH
 from handlers.progress import render_progress
 from handlers.waitlist import notify_next_in_queue, cleanup_waitlist
 
@@ -86,6 +87,18 @@ def setup_scheduler(bot: Bot):
         next_run_time=datetime.now() + timedelta(minutes=2),
     )
 
+    # Напоминание о тикетах без ответа — каждые 6 часов
+    scheduler.add_job(
+        remind_stale_tickets,
+        "interval",
+        hours=6,
+        args=[bot],
+        id="remind_stale_tickets",
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now() + timedelta(minutes=5),
+    )
+
     # Мониторинг 3x-ui — каждые 5 минут, первый запуск через 30 секунд
     scheduler.add_job(
         check_xui_health,
@@ -103,6 +116,45 @@ def setup_scheduler(bot: Bot):
 
 async def update_bot_heartbeat():
     await set_state_value("bot:heartbeat", int(time.time()))
+
+
+async def remind_stale_tickets(bot: Bot):
+    """Напоминает админам о тикетах, ожидающих ответа больше суток."""
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute(
+                """SELECT id, subject, updated_at
+                   FROM support_tickets
+                   WHERE status IN ('open', 'answered')
+                     AND unread_admin = 1
+                     AND COALESCE(updated_at, created_at) <= datetime('now','-24 hours')
+                   ORDER BY COALESCE(updated_at, created_at) ASC
+                   LIMIT 20"""
+            ) as cur:
+                rows = await cur.fetchall()
+        if not rows:
+            return
+        now = int(time.time())
+        last = await get_state_value("tickets:stale_reminder")
+        try:
+            if last and now - int(last) < 12 * 60 * 60:
+                return
+        except (TypeError, ValueError):
+            pass
+        lines = [f"#{row['id']} · {escape(str(row['subject'] or '')[:80])}" for row in rows]
+        text = (
+            f"⏰ <b>Тикеты без ответа больше 24 часов: {len(rows)}</b>\n\n"
+            + "\n".join(lines)
+        )
+        for admin_id in ADMIN_IDS:
+            try:
+                await bot.send_message(admin_id, text, parse_mode="HTML")
+            except Exception:
+                logger.warning("Не удалось отправить напоминание о тикетах админу %s", admin_id)
+        await set_state_value("tickets:stale_reminder", now)
+    except Exception:
+        logger.exception("Ошибка напоминания о тикетах")
 
 
 async def check_subscriptions(bot: Bot):
