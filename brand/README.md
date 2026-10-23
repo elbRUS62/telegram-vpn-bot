@@ -46,11 +46,16 @@
 
 ## Обложка и превью ссылки
 
-- `png/skrepnet-cover-1280x640.png` — широкая обложка: можно прикрепить к посту
-  канала или использовать как баннер.
+- `png/skrepnet-cover-1280x640.png` — широкая обложка. Используется в шапке
+  README, подходит для поста канала или баннера.
 - `png/og-image-1200x630.png` — картинка для превью ссылки. Файл уже скопирован
   в `web/static/og-image.png`, шаблон `invite.html` подставляет его в `og:image`.
 - `svg/skrepnet-cover.svg` — исходник обложки.
+
+## GitHub Social Preview
+
+Готовую картинку `png/og-image-1200x630.png` можно загрузить вручную:
+Settings → Social preview. Через GitHub API социальное превью не загружается.
 
 ## PWA
 
