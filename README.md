@@ -169,6 +169,8 @@ ls -la backups/
 
 Heartbeat бота обновляется раз в минуту через планировщик. Внешний uptime-мониторинг можно подключить через UptimeRobot, Better Stack, Healthchecks.io или Uptime Kuma: проверять `/health` каждые 1–5 минут и отправлять алерты в Telegram или на почту.
 
+Подробная настройка offsite-бэкапов, UptimeRobot и технических алертов: `docs/backup-and-uptime.md`.
+
 ## Переменные .env
 
 ### Telegram
