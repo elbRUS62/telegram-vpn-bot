@@ -74,20 +74,19 @@ const tg = window.Telegram.WebApp;
  const response = await fetch('/health', { cache: 'no-store' });
  const data = await response.json();
  const panels = Array.isArray(data.panels) ? data.panels : [];
- if (!panels.length) {
- target.innerHTML = '<div class="tg-note">Нет данных о серверах.</div>';
+ const panel = panels.find(item => String(item.id || '').toLowerCase() === 'gb');
+ if (!panel) {
+ target.innerHTML = '<div class="tg-note">Нет данных о сервере GB.</div>';
  return;
  }
- target.innerHTML = panels.map(panel => {
  const ok = !!panel.ok;
- const name = escapeHtml(panel.name || panel.id || 'Сервер');
- return `<div class="server-status-row">
+ const name = escapeHtml(panel.name || 'GB');
+ target.innerHTML = `<div class="server-status-row">
  <span class="server-status-name"><span class="server-status-dot ${ok ? 'ok' : 'bad'}"></span>${name}</span>
  <span class="server-status-value ${ok ? 'ok' : 'bad'}">${ok ? 'Онлайн' : 'Недоступен'}</span>
  </div>`;
- }).join('');
  } catch (_) {
- target.innerHTML = '<div class="tg-note">Не удалось получить статус серверов.</div>';
+ target.innerHTML = '<div class="tg-note">Не удалось получить статус сервера GB.</div>';
  }
  }
 
@@ -586,7 +585,7 @@ document.addEventListener('visibilitychange', () => {
  ${hintsHtml}
 
  <div class="tg-card server-status-card" id="server-status-card">
-   <div class="card-title">Серверы</div>
+   <div class="card-title">Сервер</div>
    <div class="server-status-list" id="server-status-list">
      <div class="tg-note">Проверяем доступность...</div>
    </div>

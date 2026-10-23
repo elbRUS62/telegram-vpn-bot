@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from flask import jsonify, request
@@ -27,9 +28,14 @@ def user_diagnostics():
 def errors_log():
     """Последние ошибки web- и bot-сервисов из journald."""
     try:
+        journalctl = (
+            "/usr/bin/journalctl"
+            if os.path.exists("/usr/bin/journalctl")
+            else "journalctl"
+        )
         result = subprocess.run(
             [
-                "journalctl",
+                journalctl,
                 "-u", "skrepnet-web",
                 "-u", "skrepnet-bot",
                 "--since", "24 hours ago",
