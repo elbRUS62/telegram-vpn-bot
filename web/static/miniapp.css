@@ -293,35 +293,45 @@ body {
   .slide-to-sub__thumb { transition: none; }
 }
 
-/* Shimmer-блик для кнопки «Поддержать проект» (data-action="donate") */
-.btn[data-action="donate"] {
+/* Shimmer-блик для кнопок «Поддержать проект» (data-action="donate") */
+.btn[data-action="donate"],
+.tg-item[data-action="donate"] {
   position: relative;
   overflow: hidden;
 }
-.btn[data-action="donate"]::before {
+.btn[data-action="donate"]::before,
+.tg-item[data-action="donate"]::before {
   content: "";
   position: absolute;
   top: 0;
-  left: -150%;
-  width: 100%;
-  height: 100%;
+  bottom: 0;
+  left: -75%;
+  width: 60%;
   pointer-events: none;
-  transform: skewX(-20deg);
+  transform: skewX(-18deg);
+  will-change: transform;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(88, 166, 255, 0.10) 50%,
+    rgba(88, 166, 255, 0.14) 50%,
     transparent 100%
   );
-  animation: donate-shimmer 6s ease-in-out infinite;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--link-color) 22%, transparent) 50%,
+    transparent 100%
+  );
+  animation: donate-shimmer 7s ease-in-out infinite;
 }
 @keyframes donate-shimmer {
-  0%   { left: -150%; }
-  55%  { left: 150%; }
-  100% { left: 150%; }   /* пауза между проходами */
+  0%, 18% { transform: translateX(0) skewX(-18deg); }
+  55%     { transform: translateX(350%) skewX(-18deg); }
+  100%    { transform: translateX(350%) skewX(-18deg); } /* пауза между проходами */
 }
 @media (prefers-reduced-motion: reduce) {
-  .btn[data-action="donate"]::before { animation: none; }
+  .btn[data-action="donate"]::before,
+  .tg-item[data-action="donate"]::before { animation: none; }
 }
 
 /* Мягкая пульсация чекбокса «Я прочитал и принимаю все условия» */
@@ -1138,7 +1148,6 @@ body { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   color: var(--text-color);
 }
 .btn[disabled] { opacity: 0.5; }
-.btn[data-action="donate"]::before { display: none; }
 
 .status-badge {
   display: inline-flex;

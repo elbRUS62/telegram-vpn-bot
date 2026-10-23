@@ -353,7 +353,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
    isActive ? { action: 'invite_friend', label: 'Пригласить друга', meta: '' } : null,
    isActive ? { action: 'invite_no_tg', label: 'Добавить без Telegram', meta: '' } : null,
    { action: 'connect_help', label: 'Как подключиться', meta: 'Инструкция' },
-   { action: 'donate', label: 'Поддержать проект', meta: 'По желанию' },
+   { action: 'donate', label: '❤️ Поддержать проект', meta: 'По желанию' },
  ].filter(Boolean);
 
  const quickHtml = quickActions.map(item => `
@@ -547,7 +547,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
  <div class="tg-card">
    <button class="btn btn-secondary" data-action="renew_sub">Продлить бесплатно</button>
-   <button class="btn btn-secondary" data-action="donate">Поддержать проект</button>
+   <button class="btn btn-secondary" data-action="donate">❤️ Поддержать проект</button>
  </div>
 
  <div class="tg-note" style="text-align:center;">Трафик не ограничен. Платные тарифы не используются.</div>
