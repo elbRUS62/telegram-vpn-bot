@@ -13,6 +13,17 @@ from web.utils.telegram import notify_user
 from .common import _audit, admin_api, logger, superadmin_required
 
 
+def _user_profile(user):
+    """Приводит sqlite3.Row или dict к безопасному профилю."""
+    if not user:
+        return None
+    data = dict(user)
+    return {
+        "username": data.get("username") or "",
+        "first_name": data.get("first_name") or "",
+    }
+
+
 def _audit_async(admin_id, action, target_id=None, meta=""):
     run_async(_audit(admin_id, action, target_id, meta))
 
@@ -40,11 +51,9 @@ def admins_add():
         from database import get_user
 
         user = await get_user(telegram_id)
-        if user:
-            return {
-                "username": user.get("username") or "",
-                "first_name": user.get("first_name") or "",
-            }
+        profile = _user_profile(user)
+        if profile:
+            return profile
 
         # Если пользователь ещё не писал боту, getChat может не сработать.
         from telegram_api import call

@@ -114,8 +114,8 @@ async def admin_admins_add_process(message: Message, state: FSMContext):
 
         user = await get_user(telegram_id)
         if user:
-            username = user.get("username") or username
-            first_name = user.get("first_name") or first_name
+            username = user["username"] or username
+            first_name = user["first_name"] or first_name
 
         save_admin(
             telegram_id,
