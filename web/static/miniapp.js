@@ -1103,7 +1103,7 @@ document.addEventListener('visibilitychange', () => {
  </div>
 
  <div class="tg-card">
-   <div style="white-space:pre-line;line-height:1.5;">${data.donate_text}</div>
+   <div style="white-space:pre-line;line-height:1.5;">Сервер работает благодаря вашей поддержке.</div>
  </div>
 
  <div class="tg-card">
