@@ -1,4 +1,5 @@
 import hashlib
+import json
 import aiohttp
 import logging
 from datetime import datetime, timedelta
@@ -216,6 +217,28 @@ class XUIClient:
         if not result.get("success"):
             raise Exception(f"Inbounds list failed: {result.get('msg') or result}")
         return result.get("obj", []) or []
+
+
+    async def get_clients(self) -> list:
+        """Возвращает всех клиентов всех inbound этой панели."""
+        inbounds = await self.get_inbounds()
+        clients = []
+        for inbound in inbounds:
+            settings = inbound.get("settings") or {}
+            if isinstance(settings, str):
+                try:
+                    settings = json.loads(settings)
+                except (TypeError, ValueError):
+                    continue
+            for client in settings.get("clients") or []:
+                email = (client.get("email") or "").strip()
+                if not email:
+                    continue
+                item = dict(client)
+                item["_inbound_id"] = inbound.get("id")
+                item["_panel_id"] = self.panel.get("id")
+                clients.append(item)
+        return clients
 
     async def get_online_clients(self) -> list:
         """Список email клиентов, которые сейчас онлайн."""

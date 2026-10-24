@@ -8,6 +8,8 @@ ADMIN_ENDPOINTS = (
     "/api/miniapp/admin/monitor",
     "/api/miniapp/admin/stats",
     "/api/miniapp/admin/sync",
+    "/api/miniapp/admin/reconcile",
+    "/api/miniapp/admin/reconcile/status",
     "/api/miniapp/admin/users",
     "/api/miniapp/admin/users/export",
     "/api/miniapp/admin/users/bulk",

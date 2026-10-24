@@ -2236,6 +2236,7 @@ async function openAdminUserCard(tgId) {
  else if (view === 'admins') loadAdminAdmins();
  else if (view === 'system') {
    loadAdminMonitor().then(() => requestAnimationFrame(monitorResize));
+   loadAdminReconcile();
  }
  }
 
@@ -2265,18 +2266,68 @@ async function openAdminUserCard(tgId) {
  }
 
  async function syncAdminUsers() {
- const btn = document.getElementById('admin-sync');
- if (btn) { btn.dataset.loading = '1'; btn.disabled = true; }
- const r = await adminCall('/sync');
- if (btn) { delete btn.dataset.loading; btn.disabled = false; }
- if (r.success) {
-   showToast(`Синхронизировано: ${r.updated}`);
+ const buttons = ['admin-sync', 'admin-reconcile-run']
+   .map(id => document.getElementById(id))
+   .filter(Boolean);
+ buttons.forEach(btn => { btn.dataset.loading = '1'; btn.disabled = true; });
+ const r = await adminCall('/reconcile');
+ buttons.forEach(btn => { delete btn.dataset.loading; btn.disabled = false; });
+ if (!r.error) {
+   const fixed = (r.fixed_disabled || 0) + (r.fixed_expiry || 0);
+   showToast(`Сверка завершена: исправлено ${fixed}`);
+   renderAdminReconcile(r);
    loadAdminUsers();
    loadAdminStats();
    loadAdminMonitor(true);
  } else {
-   showToast(r.error || 'Не удалось синхронизировать', true);
+   showToast(r.error || 'Не удалось выполнить сверку', true);
  }
+ }
+
+ async function loadAdminReconcile() {
+ const target = document.getElementById('admin-reconcile');
+ if (!target) return;
+ const r = await adminCall('/reconcile/status');
+ if (r.error) {
+   target.innerHTML = `<div class="tg-note" style="padding:4px 0;">${escapeHtml(r.error)}</div>`;
+   return;
+ }
+ renderAdminReconcile(r.result);
+ }
+
+ function renderAdminReconcile(data) {
+ const target = document.getElementById('admin-reconcile');
+ if (!target) return;
+ if (!data || !data.checked_at) {
+   target.innerHTML = '<div class="tg-note" style="padding:4px 0;">Сверка ещё не выполнялась. Запускается автоматически каждые 30 минут.</div>';
+   return;
+ }
+ const issues = data.issues || {};
+ const missing = (issues.missing_client || []).length + (issues.missing_email || []).length;
+ const orphan = (issues.orphan_client || []).length;
+ const expired = (issues.expired_client || []).length;
+ const failed = (issues.update_failed || []).length;
+ const panelErrors = (data.panel_errors || []).length;
+ const problems = missing + expired + failed + panelErrors;
+ const fixed = (data.fixed_disabled || 0) + (data.fixed_expiry || 0);
+ const statusColor = problems ? 'var(--danger-color)' : (orphan ? 'var(--warning-color)' : 'var(--success-color)');
+ const statusText = problems ? `Требуют внимания: ${problems}` : (orphan ? `Клиенты вне базы: ${orphan}` : 'Расхождений нет');
+
+ const details = [];
+ if (missing) details.push(`<div class="tg-note" style="padding:2px 0;">Без клиента в панели: ${missing}</div>`);
+ if (orphan) details.push(`<div class="tg-note" style="padding:2px 0;">Клиенты вне базы (только просмотр): ${orphan}</div>`);
+ if (expired) details.push(`<div class="tg-note" style="padding:2px 0;">Истёк срок в панели: ${expired}</div>`);
+ if (failed) details.push(`<div class="tg-note" style="padding:2px 0;">Не удалось исправить: ${failed}</div>`);
+ if (panelErrors) details.push(`<div class="tg-note" style="padding:2px 0;">Ошибки панели: ${escapeHtml((data.panel_errors || []).join(', '))}</div>`);
+ if (data.dry_run) details.push('<div class="tg-note" style="padding:2px 0;">Последний запуск был тестовым, изменения не применялись.</div>');
+
+ target.innerHTML = `
+ <div class="weekly-grid">
+ <div class="weekly-card"><div class="weekly-num" style="color:${statusColor};font-size:15px;">${statusText}</div><div class="weekly-lbl">${escapeHtml(data.checked_at)}</div></div>
+ <div class="weekly-card"><div class="weekly-num">${data.active_users ?? 0} / ${data.clients ?? 0}</div><div class="weekly-lbl">Подписки / клиенты</div></div>
+ <div class="weekly-card"><div class="weekly-num" style="color:var(--success-color);">${fixed}</div><div class="weekly-lbl">Исправлено</div></div>
+ </div>
+ ${details.join('')}`;
  }
 
  async function loadAdminErrors() {
@@ -2396,7 +2447,7 @@ async function openAdminUserCard(tgId) {
          <button type="button" data-value="expires">По сроку</button>
        </div>
      </div>
-     <button id="admin-sync" class="admin-sync" title="Обновить даты из 3x-ui">
+     <button id="admin-sync" class="admin-sync" title="Сверка с 3x-ui">
        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
          <polyline points="23 4 23 10 17 10"></polyline>
          <polyline points="1 20 1 14 7 14"></polyline>
@@ -2437,9 +2488,15 @@ async function openAdminUserCard(tgId) {
  <div class="admin-view" id="admin-view-system" style="display:none;">
    <div class="monitor-card" id="admin-monitor"></div>
    <div class="admin-section">
+     <div class="admin-section-title">Сверка с 3x-ui</div>
+     <div class="card" style="padding:0;" id="admin-reconcile"></div>
+     <div class="tg-list" style="margin-top:8px;">
+       <button class="tg-item" id="admin-reconcile-run" onclick="syncAdminUsers()"><span>Проверить сейчас</span><span class="tg-item__meta">Сверка</span></button>
+     </div>
+   </div>
+   <div class="admin-section">
      <div class="admin-section-title">Инструменты</div>
      <div class="tg-list">
-       <button class="tg-item" onclick="syncAdminUsers()"><span>Синхронизировать с 3x-ui</span><span class="tg-item__meta">Обновить даты</span></button>
        ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv(&#39;/users/export&#39;, &#39;skrepnet-users.csv&#39;, {q: ADMIN.q, status: ADMIN.status})"><span>Экспорт пользователей</span><span class="tg-item__meta">CSV</span></button>' : ''}
        ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv(&#39;/tickets/export&#39;, &#39;skrepnet-tickets.csv&#39;)"><span>Экспорт тикетов</span><span class="tg-item__meta">CSV</span></button>' : ''}
        ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>' : ''}

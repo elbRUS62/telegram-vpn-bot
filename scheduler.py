@@ -7,6 +7,7 @@ import time
 import aiosqlite
 
 from monitoring import check_xui_health
+from reconciliation import reconcile_xui
 from database import (
     get_expiring_users, get_expired_today, mark_notified,
     get_inactive_users, delete_user,
@@ -110,6 +111,17 @@ def setup_scheduler(bot: Bot):
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now() + timedelta(seconds=30),
+    )
+
+    # Сверка пользователей и клиентов 3x-ui — каждые 30 минут
+    scheduler.add_job(
+        reconcile_xui,
+        "interval",
+        minutes=30,
+        id="reconcile_xui",
+        max_instances=1,
+        coalesce=True,
+        next_run_time=datetime.now() + timedelta(minutes=2),
     )
 
     scheduler.start()
