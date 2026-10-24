@@ -130,6 +130,18 @@ async def init_db():
             CREATE INDEX IF NOT EXISTS idx_monitor_metrics_panel_ts
             ON monitor_metrics(panel_id, ts)
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                telegram_id INTEGER PRIMARY KEY,
+                username TEXT,
+                first_name TEXT,
+                role TEXT NOT NULL DEFAULT 'admin',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                added_by INTEGER,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         # Миграция: добавляем поле renew_count, если его нет
         async with db.execute("PRAGMA table_info(users)") as cur:
             columns = [row[1] for row in await cur.fetchall()]
@@ -154,3 +166,8 @@ async def init_db():
             logger.info("🔧 Добавлено поле bound_at в invite_links")
             
         await db.commit()
+
+    # После создания таблиц переносим старых админов из ADMIN_ID.
+    from permissions import seed_admins
+
+    seed_admins()

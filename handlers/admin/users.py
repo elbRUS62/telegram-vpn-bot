@@ -1,8 +1,9 @@
+from permissions import is_admin_user, is_superadmin
 from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from config import ADMIN_IDS
+
 from database import (
     count_users_by_statuses,
     delete_user,
@@ -26,7 +27,7 @@ PER_PAGE = 10
 
 @router.callback_query(F.data == "admin_extend")
 async def admin_extend_list(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         return
     await _show_users_list(callback, action="extend", page=0)
     await callback.answer()
@@ -34,7 +35,8 @@ async def admin_extend_list(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_delete_user")
 async def admin_delete_user_list(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_superadmin(callback.from_user.id):
+        await callback.answer("Доступно только суперадмину", show_alert=True)
         return
     await _show_users_list(callback, action="delete", page=0)
     await callback.answer()
@@ -42,7 +44,7 @@ async def admin_delete_user_list(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_reset")
 async def admin_reset_list(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         return
     await _show_users_list(callback, action="reset", page=0)
     await callback.answer()
@@ -50,7 +52,7 @@ async def admin_reset_list(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("users_page:"))
 async def users_page_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         return
     _, action, page_str = callback.data.split(":")
     await _show_users_list(callback, action=action, page=int(page_str))
@@ -134,11 +136,14 @@ async def _show_users_list(callback: CallbackQuery, action: str, page: int):
 
 @router.callback_query(F.data.startswith("user_action:"))
 async def user_action_callback(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
     _, action, tg_id_str = callback.data.split(":")
+    if action == "delete" and not is_superadmin(callback.from_user.id):
+        await callback.answer("Доступно только суперадмину", show_alert=True)
+        return
     telegram_id = int(tg_id_str)
     user = await get_user(telegram_id)
 
@@ -210,14 +215,14 @@ async def user_action_callback(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "admin_extend_cancel")
 async def admin_extend_cancel(callback: CallbackQuery, state: FSMContext):
     """Отмена продления подписки."""
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
     await state.clear()
     await callback.message.edit_text(
         "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
-        reply_markup=admin_manage_keyboard(),
+        reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )
     await callback.answer("Отменено")
@@ -225,7 +230,7 @@ async def admin_extend_cancel(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AdminStates.waiting_extend_days)
 async def admin_extend_days_process(message: Message, state: FSMContext):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(message.from_user.id):
         return
 
     try:

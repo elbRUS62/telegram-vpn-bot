@@ -28,6 +28,10 @@ ADMIN_ENDPOINTS = (
     "/api/miniapp/admin/ticket",
     "/api/miniapp/admin/ticket/reply",
     "/api/miniapp/admin/ticket/close",
+    "/api/miniapp/admin/admins",
+    "/api/miniapp/admin/admins/add",
+    "/api/miniapp/admin/admins/role",
+    "/api/miniapp/admin/admins/remove",
 )
 
 

@@ -13,7 +13,8 @@ from urllib.parse import urlsplit
 
 import aiosqlite
 
-from config import ADMIN_IDS, DB_PATH, XUI_PANELS
+from config import DB_PATH, XUI_PANELS
+from permissions import get_admin_ids
 from xui_client import XUIClient
 
 logger = logging.getLogger(__name__)
@@ -349,7 +350,7 @@ def _state_key(panel_id, key):
 async def _notify_admins(bot, text: str):
     if not bot:
         return
-    for admin_id in ADMIN_IDS:
+    for admin_id in get_admin_ids():
         try:
             await bot.send_message(admin_id, text, disable_notification=False)
         except Exception as e:

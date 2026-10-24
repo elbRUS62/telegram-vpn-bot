@@ -3,7 +3,8 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from config import ADMIN_IDS, DB_PATH, DONATE_TEXT
+from config import DB_PATH, DONATE_TEXT
+from permissions import is_admin_user
 from database import approve_user, get_user, reject_user
 from keyboards import email_conflict_keyboard, subscription_keyboard
 from xui_client import XUIClient
@@ -16,7 +17,7 @@ from .common import logger, router
 
 @router.callback_query(F.data.startswith("retry_email:"))
 async def retry_email_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -85,7 +86,7 @@ async def retry_email_callback(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("manual_email:"))
 async def manual_email_start(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -109,7 +110,7 @@ async def manual_email_start(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "manual_email_cancel")
 async def manual_email_cancel(callback: CallbackQuery, state: FSMContext):
     """Отмена ручного ввода email."""
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -127,7 +128,7 @@ async def manual_email_cancel(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AdminStates.waiting_custom_email)
 async def manual_email_process(message: Message, state: FSMContext):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(message.from_user.id):
         return
 
     data = await state.get_data()
@@ -218,7 +219,7 @@ async def manual_email_process(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("cancel_email:"))
 async def cancel_email_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -233,7 +234,7 @@ async def cancel_email_callback(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("use_existing:"))
 async def use_existing_email_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -373,7 +374,7 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
 
 @router.callback_query(F.data.startswith("approve_skip_comment:"))
 async def approve_skip_comment_callback(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 

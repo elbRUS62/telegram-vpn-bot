@@ -4,10 +4,10 @@ from flask import jsonify, request
 from config import DB_PATH
 from web.utils.async_helper import run_async
 
-from .common import admin_api, admin_required
+from .common import admin_api, superadmin_required
 
 @admin_api.route("/audit", methods=["POST"])
-@admin_required
+@superadmin_required
 def audit_log():
     """Возвращает журнал действий админов."""
     data = request.json or {}

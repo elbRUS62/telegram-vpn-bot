@@ -19,6 +19,7 @@ REQUIRED_TABLES = {
     "support_messages",
     "monitor_state",
     "monitor_metrics",
+    "admins",
 }
 
 COUNT_TABLES = (
@@ -32,6 +33,7 @@ COUNT_TABLES = (
     "monitor_state",
     "monitor_metrics",
     "admin_audit",
+    "admins",
 )
 
 

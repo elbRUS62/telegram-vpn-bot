@@ -20,12 +20,13 @@ def main():
         return jsonify({'error': 'Нет ID'}), 400
 
     async def get_data():
-        from config import ADMIN_IDS, BOT_NAME, SERVER_COST, SUB_BASE_URL, SUB_PATH
+        from config import BOT_NAME, SERVER_COST, SUB_BASE_URL, SUB_PATH
         from database import get_user, get_donations_total, get_support_unread_count
+        from permissions import get_admin_summary
         from datetime import datetime
 
         db_user = await get_user(telegram_id)
-        is_admin = telegram_id in ADMIN_IDS
+        admin = get_admin_summary(telegram_id)
         support_unread = await get_support_unread_count(telegram_id)
 
         if not db_user:
@@ -52,7 +53,9 @@ def main():
             'status': status,
             'status_text': status_text,
             'has_subscription': has_sub,
-            'is_admin': is_admin,
+            'is_admin': admin["is_admin"],
+            'is_superadmin': admin["is_superadmin"],
+            'admin_role': admin["role"],
             'progress_percent': percent,
             'bot_name': BOT_NAME,
             'next_month': next_month_name,

@@ -4,7 +4,8 @@ import threading
 
 import httpx
 
-from config import ADMIN_IDS, BOT_TOKEN
+from config import BOT_TOKEN
+from permissions import get_admin_ids
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +37,13 @@ def _send(chat_id, text: str) -> bool:
 
 
 def _notify_admins(text: str):
-    for admin_id in ADMIN_IDS:
+    for admin_id in get_admin_ids():
         _send(admin_id, text)
 
 
 def notify_admins(text: str):
     """Отправить уведомление всем администраторам в фоне."""
-    if not ADMIN_IDS:
+    if not get_admin_ids():
         return
     threading.Thread(
         target=_notify_admins, args=(text,), daemon=True, name="tg-admins"

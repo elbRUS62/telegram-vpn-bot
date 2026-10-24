@@ -8,7 +8,8 @@
 import logging
 from aiogram.types import Message
 
-from config import ADMIN_IDS, BOT_NAME
+from config import BOT_NAME
+from permissions import get_admin_ids
 from database import (
     get_user,
     get_invite_link_any,
@@ -133,7 +134,7 @@ async def handle_web_link(message: Message, token: str):
         f"📧 {link['xui_email']}\n"
         f"👥 Пригласил: <code>{inviter_id}</code>"
     )
-    for admin_id in ADMIN_IDS:
+    for admin_id in get_admin_ids():
         try:
             await message.bot.send_message(
                 admin_id,
@@ -207,7 +208,7 @@ async def bind_by_tg_id(message: Message, link):
         f"📧 {link['xui_email']}\n"
         f"👥 Пригласил: <code>{inviter_id}</code>"
     )
-    for admin_id in ADMIN_IDS:
+    for admin_id in get_admin_ids():
         try:
             await message.bot.send_message(
                 admin_id,

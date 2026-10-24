@@ -6,10 +6,10 @@ from flask import jsonify, request
 from config import DB_PATH
 from web.utils.async_helper import run_async
 
-from .common import _audit, admin_api, admin_required, logger
+from .common import _audit, admin_api, superadmin_required, logger
 
 @admin_api.route("/broadcast", methods=["POST"])
-@admin_required
+@superadmin_required
 def broadcast():
     """Отправляет рассылку всем пользователям."""
     data = request.json or {}

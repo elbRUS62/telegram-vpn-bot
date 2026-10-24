@@ -16,7 +16,7 @@ class StartPhotoTest(unittest.IsolatedAsyncioTestCase):
         with (
             patch("database.get_user", new=AsyncMock(return_value=None)),
             patch("handlers.menu.main_inline_menu", return_value="keyboard"),
-            patch("handlers.menu.ADMIN_IDS", []),
+            patch("handlers.menu.is_admin_user", return_value=False),
         ):
             await show_main_menu(message, with_photo=True)
 
@@ -33,7 +33,7 @@ class StartPhotoTest(unittest.IsolatedAsyncioTestCase):
         with (
             patch("database.get_user", new=AsyncMock(return_value=None)),
             patch("handlers.menu.main_inline_menu", return_value="keyboard"),
-            patch("handlers.menu.ADMIN_IDS", []),
+            patch("handlers.menu.is_admin_user", return_value=False),
         ):
             await show_main_menu(message, with_photo=False)
 

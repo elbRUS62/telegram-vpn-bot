@@ -15,7 +15,8 @@ from database import (
 )
 from keyboards import renew_keyboard
 from xui_client import XUIClient
-from config import ADMIN_IDS, DB_PATH
+from config import DB_PATH
+from permissions import get_admin_ids
 from handlers.progress import render_progress
 from handlers.waitlist import notify_next_in_queue, cleanup_waitlist
 
@@ -147,7 +148,7 @@ async def remind_stale_tickets(bot: Bot):
             f"⏰ <b>Тикеты без ответа больше 24 часов: {len(rows)}</b>\n\n"
             + "\n".join(lines)
         )
-        for admin_id in ADMIN_IDS:
+        for admin_id in get_admin_ids():
             try:
                 await bot.send_message(admin_id, text, parse_mode="HTML")
             except Exception:

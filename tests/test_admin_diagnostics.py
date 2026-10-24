@@ -20,7 +20,8 @@ class AdminDiagnosticsTest(unittest.TestCase):
         }
         with app.test_client() as client:
             with patch.object(admin_common, "validate_init_data", return_value={"id": 1}), \
-                 patch.object(admin_common, "ADMIN_IDS", {1}), \
+                 patch.object(admin_common, "is_admin_user", return_value=True), \
+                 patch.object(admin_common, "is_superadmin", return_value=True), \
                  patch.object(
                      diagnostics_module,
                      "_collect_diagnostics",

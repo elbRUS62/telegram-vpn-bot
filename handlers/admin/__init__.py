@@ -1,3 +1,3 @@
 from .common import router
 
-from . import broadcast, menu, panel, requests, stats, users  # noqa: E402,F401
+from . import admins, broadcast, menu, panel, requests, stats, users  # noqa: E402,F401

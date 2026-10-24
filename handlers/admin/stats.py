@@ -3,7 +3,8 @@ from aiogram import F
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from config import ADMIN_IDS, BOT_NAME, DB_PATH, MAX_USERS
+from config import BOT_NAME, DB_PATH, MAX_USERS
+from permissions import is_admin_user
 from database import (
     approve_user,
     count_users_by_statuses,
@@ -24,7 +25,7 @@ from .common import logger, router
 
 @router.callback_query(F.data == "admin_stats")
 async def admin_stats_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -105,7 +106,7 @@ async def admin_stats_callback(callback: CallbackQuery):
 
 @router.message(Command("stats"))
 async def cmd_stats(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(message.from_user.id):
         return
 
     async with aiosqlite.connect(DB_PATH) as db:

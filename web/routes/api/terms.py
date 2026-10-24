@@ -1,3 +1,4 @@
+from permissions import get_admin_ids
 from flask import jsonify, request
 
 from web.utils.async_helper import run_async
@@ -22,7 +23,7 @@ def accept_terms():
         from config import MAX_USERS
         from text_utils import sanitize_email
         from xui_client import XUIClient
-        from config import ADMIN_IDS, DONATE_TEXT, BOT_TOKEN
+        from config import DONATE_TEXT, BOT_TOKEN
         
         db_user = await get_user(telegram_id)
         
@@ -64,14 +65,14 @@ def accept_terms():
             # Отправляем уведомление админам (без aiogram — через Bot API по HTTP)
             from telegram_api import call as tg_call
 
-            logger.info(f"Отправка заявки админам {ADMIN_IDS} для {telegram_id}")
+            logger.info("Отправка заявки админам для %s", telegram_id)
             reply_markup = {
                 "inline_keyboard": [[
                     {"text": "✅ Одобрить", "callback_data": f"approve:{telegram_id}"},
                     {"text": "❌ Отклонить", "callback_data": f"reject:{telegram_id}"},
                 ]]
             }
-            for admin_id in ADMIN_IDS:
+            for admin_id in get_admin_ids():
                 result = await tg_call(
                     BOT_TOKEN,
                     "sendMessage",

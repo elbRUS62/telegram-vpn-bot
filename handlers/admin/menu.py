@@ -1,7 +1,8 @@
+from permissions import is_admin_user, is_superadmin
 from aiogram import F
 from aiogram.types import CallbackQuery
 
-from config import ADMIN_IDS
+
 from keyboards import admin_manage_keyboard, admin_submenu_users
 
 from .common import router
@@ -11,12 +12,12 @@ from .common import router
 
 @router.callback_query(F.data == "admin_manage")
 async def admin_manage_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
     await callback.message.edit_text(
         "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
-        reply_markup=admin_manage_keyboard(),
+        reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )
     await callback.answer()
@@ -30,7 +31,7 @@ async def admin_manage_back(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_close")
 async def admin_close(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         return
     await callback.message.delete()
     await callback.answer()
@@ -43,11 +44,11 @@ async def admin_close(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_menu_users")
 async def admin_menu_users_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         return
     await callback.message.edit_text(
         "👥 <b>Управление пользователями</b>\n\nВыбери действие:",
-        reply_markup=admin_submenu_users(),
+        reply_markup=admin_submenu_users(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )
     await callback.answer()

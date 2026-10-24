@@ -2,7 +2,8 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import ADMIN_IDS, DONATE_TEXT, SUPPORT_USERNAME
+from config import DONATE_TEXT, SUPPORT_USERNAME
+from permissions import is_admin_user, get_admin_ids
 from database import (
     approve_user,
     create_user_request,
@@ -90,7 +91,7 @@ async def accept_terms(callback: CallbackQuery):
             else:
                 inviter_name = str(invited_by)
 
-            for admin_id in ADMIN_IDS:
+            for admin_id in get_admin_ids():
                 try:
                     await callback.bot.send_message(
                         admin_id,
@@ -112,7 +113,7 @@ async def accept_terms(callback: CallbackQuery):
             )
 
     else:
-        for admin_id in ADMIN_IDS:
+        for admin_id in get_admin_ids():
             try:
                 await callback.bot.send_message(
                     admin_id,
@@ -145,7 +146,7 @@ async def decline_terms(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("approve:"))
 async def approve_callback(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -200,7 +201,7 @@ async def approve_callback(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "approve_comment_cancel")
 async def approve_comment_cancel(callback: CallbackQuery, state: FSMContext):
     """Отмена ввода комментария из уведомления о новой заявке."""
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 
@@ -218,7 +219,7 @@ async def approve_comment_cancel(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data.startswith("reject:"))
 async def reject_callback(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
 

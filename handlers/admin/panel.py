@@ -1,7 +1,8 @@
+from permissions import is_superadmin
 from aiogram import F
 from aiogram.types import CallbackQuery
 
-from config import ADMIN_IDS
+
 from keyboards import admin_panel_keyboard
 
 from .common import router
@@ -11,8 +12,8 @@ from .common import router
 
 @router.callback_query(F.data == "admin_panel")
 async def admin_panel_link(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("Не твоя кнопка", show_alert=True)
+    if not is_superadmin(callback.from_user.id):
+        await callback.answer("Доступно только суперадмину", show_alert=True)
         return
 
     await callback.message.edit_text(

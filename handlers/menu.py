@@ -7,7 +7,8 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram.filters import Command
 
-from config import ADMIN_IDS, BOT_NAME, DONATE_TEXT
+from config import BOT_NAME, DONATE_TEXT
+from permissions import is_admin_user, is_superadmin
 from database import get_user, is_in_waitlist, get_waitlist_position
 from keyboards import main_inline_menu, admin_manage_keyboard, support_keyboard
 from handlers.progress import render_progress
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 async def show_main_menu(message: Message, with_photo: bool = False):
     from database import get_user
     user = await get_user(message.from_user.id)
-    is_admin = message.from_user.id in ADMIN_IDS
+    is_admin = is_admin_user(message.from_user.id)
 
     if user and user["status"] == "active":
         text = (
@@ -70,20 +71,20 @@ async def show_main_menu(message: Message, with_photo: bool = False):
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
     """Секретная команда для админа — открывает панель управления."""
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_admin_user(message.from_user.id):
         return
     
     await message.answer(
         "🛠 <b>Панель администратора</b>\n\nВыбери действие:",
         parse_mode="HTML",
-        reply_markup=admin_manage_keyboard()
+        reply_markup=admin_manage_keyboard(is_superadmin(message.from_user.id))
     )
 
 
 @router.callback_query(F.data == "back_to_main")
 async def back_to_main(callback: CallbackQuery):
     """Возврат в главное меню."""
-    is_admin = callback.from_user.id in ADMIN_IDS
+    is_admin = is_admin_user(callback.from_user.id)
 
     await callback.message.edit_text(
         "🏠 <b>Главное меню</b>\n\nВыбери действие:",

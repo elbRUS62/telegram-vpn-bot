@@ -14,7 +14,8 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from config import ADMIN_IDS, WEB_BASE_URL
+from config import WEB_BASE_URL
+from permissions import is_admin_user
 from database import create_invite_link
 from keyboards import (
     invite_share_keyboard,
@@ -34,7 +35,7 @@ async def handle_shared_user(message: Message, state: FSMContext):
     shared = message.users_shared
     if not shared or not shared.users:
         await message.answer("❌ Никто не выбран")
-        is_admin = message.from_user.id in ADMIN_IDS
+        is_admin = is_admin_user(message.from_user.id)
         await message.answer(
             "📋 <b>Меню</b>",
             parse_mode="HTML",
@@ -50,7 +51,7 @@ async def handle_shared_user(message: Message, state: FSMContext):
     # Нельзя пригласить себя
     if friend_id == message.from_user.id:
         await message.answer("❌ Нельзя пригласить самого себя")
-        is_admin = message.from_user.id in ADMIN_IDS
+        is_admin = is_admin_user(message.from_user.id)
         await message.answer(
             "📋 <b>Меню</b>",
             parse_mode="HTML",
@@ -86,7 +87,7 @@ async def handle_shared_user(message: Message, state: FSMContext):
     )
 
     # Возвращаем главное меню
-    is_admin = message.from_user.id in ADMIN_IDS
+    is_admin = is_admin_user(message.from_user.id)
     await message.answer(
         "📋 <b>Меню</b>\n\nВыбери действие:",
         parse_mode="HTML",
@@ -100,7 +101,7 @@ async def handle_shared_user(message: Message, state: FSMContext):
 async def invite_cancel_message(message: Message, state: FSMContext):
     """Отмена выбора контакта."""
     await state.clear()
-    is_admin = message.from_user.id in ADMIN_IDS
+    is_admin = is_admin_user(message.from_user.id)
 
     await message.answer(
         "❌ Отменено.\n\n"

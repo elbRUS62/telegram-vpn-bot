@@ -5,7 +5,8 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from config import ADMIN_IDS, DB_PATH
+from config import DB_PATH
+from permissions import is_superadmin
 from keyboards import admin_manage_keyboard
 from ..states import AdminStates
 
@@ -16,8 +17,8 @@ from .common import router
 
 @router.callback_query(F.data == "admin_broadcast")
 async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("Не твоя кнопка", show_alert=True)
+    if not is_superadmin(callback.from_user.id):
+        await callback.answer("Доступно только суперадмину", show_alert=True)
         return
 
     await callback.message.edit_text(
@@ -36,14 +37,14 @@ async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == "admin_broadcast_cancel")
 async def admin_broadcast_cancel(callback: CallbackQuery, state: FSMContext):
     """Отмена рассылки."""
-    if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("Не твоя кнопка", show_alert=True)
+    if not is_superadmin(callback.from_user.id):
+        await callback.answer("Доступно только суперадмину", show_alert=True)
         return
 
     await state.clear()
     await callback.message.edit_text(
         "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
-        reply_markup=admin_manage_keyboard(),
+        reply_markup=admin_manage_keyboard(True),
         parse_mode="HTML"
     )
     await callback.answer("Отменено")
@@ -51,7 +52,7 @@ async def admin_broadcast_cancel(callback: CallbackQuery, state: FSMContext):
 
 @router.message(AdminStates.waiting_broadcast_text)
 async def admin_broadcast_process(message: Message, state: FSMContext):
-    if message.from_user.id not in ADMIN_IDS:
+    if not is_superadmin(message.from_user.id):
         return
 
     text = message.text.strip()

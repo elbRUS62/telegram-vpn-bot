@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 import aiosqlite
 from flask import Blueprint, jsonify, render_template, request
 
-from config import BOT_NAME, BOT_USERNAME, ADMIN_IDS, BOT_TOKEN, DB_PATH, WEB_SUBSCRIPTION_DAYS
+from config import BOT_NAME, BOT_USERNAME, BOT_TOKEN, DB_PATH, WEB_SUBSCRIPTION_DAYS
+from permissions import get_admin_ids
 from database import get_user, use_invite_link, get_invite_link_any
 from text_utils import sanitize_email
 from xui_client import XUIClient
@@ -48,7 +49,7 @@ async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, su
         f"👥 Пригласил: <code>{inviter_id}</code>\n\n"
         f"🔗 {sub_url}"
     )
-    for admin_id in ADMIN_IDS:
+    for admin_id in get_admin_ids():
         result = await tg_call(
             BOT_TOKEN,
             "sendMessage",

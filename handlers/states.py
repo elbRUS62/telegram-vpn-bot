@@ -10,4 +10,5 @@ class AdminStates(StatesGroup):
     waiting_custom_email = State()
     waiting_custom_email_tg_id = State()
     waiting_approve_request_username = State()
-    waiting_comment = State() 
+    waiting_comment = State()
+    waiting_admin_id = State()

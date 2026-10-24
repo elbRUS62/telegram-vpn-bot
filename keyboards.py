@@ -7,7 +7,7 @@ from aiogram.types import (
 )
 from config import (
     DONATE_URL, BOT_NAME, SUPPORT_USERNAME, MINIAPP_URL,
-    XUI_HOST, XUI_BASE_PATH,
+    XUI_HOST, XUI_BASE_PATH, SUPERADMIN_IDS,
 )
 
 
@@ -44,31 +44,98 @@ def main_inline_menu(is_admin: bool = False):
 # ОСТАЛЬНЫЕ КЛАВИАТУРЫ (без изменений, только добавил «Назад»)
 # ============================================================
 
-def admin_manage_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
+def admin_manage_keyboard(is_superadmin: bool = False):
+    rows = [
         [
             InlineKeyboardButton(text="📋 Список заявок", callback_data="admin_list_requests"),
             InlineKeyboardButton(text="🔄 Обновить подписку", callback_data="admin_extend"),
         ],
         [
-            InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast"),
             InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_menu_users"),
         ],
-        [
+    ]
+    if is_superadmin:
+        rows.append([
+            InlineKeyboardButton(text="📢 Рассылка", callback_data="admin_broadcast"),
+            InlineKeyboardButton(text="🛡 Админы", callback_data="admin_admins"),
+        ])
+        rows.append([
             InlineKeyboardButton(text="🔐 Панель 3x-ui", callback_data="admin_panel"),
-        ],
-        [
-            InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main"),
-        ],
+        ])
+    rows.append([
+        InlineKeyboardButton(text="⬅️ Назад", callback_data="back_to_main"),
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def admin_submenu_users():
-    return InlineKeyboardMarkup(inline_keyboard=[
+def admin_submenu_users(is_superadmin: bool = False):
+    rows = [
         [InlineKeyboardButton(text="♻️ Сбросить заявку", callback_data="admin_reset")],
-        [InlineKeyboardButton(text="🗑 Удалить пользователя", callback_data="admin_delete_user")],
-        [InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_manage")],
+    ]
+    if is_superadmin:
+        rows.append([
+            InlineKeyboardButton(text="🗑 Удалить пользователя", callback_data="admin_delete_user")
+        ])
+    rows.append([
+        InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_manage")
     ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def admin_admins_keyboard(admins: list, current_id: int):
+    rows = []
+    for admin in admins:
+        telegram_id = int(admin["telegram_id"])
+        role = admin.get("role") or "admin"
+        label = admin.get("first_name") or admin.get("username") or str(telegram_id)
+        mark = "суперадмин" if role == "superadmin" else "админ"
+        status = "" if admin.get("is_active", 1) else " · отключён"
+        prefix = "✓ " if telegram_id == current_id else ""
+        rows.append([
+            InlineKeyboardButton(
+                text=f"{prefix}{label} · {mark}{status}",
+                callback_data=f"admin_admins_info:{telegram_id}",
+            )
+        ])
+    rows.append([
+        InlineKeyboardButton(text="➕ Добавить админа", callback_data="admin_admins_add")
+    ])
+    rows.append([
+        InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_manage")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def admin_admin_actions_keyboard(admin: dict, current_id: int):
+    telegram_id = int(admin["telegram_id"])
+    role = admin.get("role") or "admin"
+    rows = []
+    if telegram_id not in SUPERADMIN_IDS:
+        if role == "superadmin":
+            rows.append([
+                InlineKeyboardButton(
+                    text="Понизить до админа",
+                    callback_data=f"admin_admins_demote:{telegram_id}",
+                )
+            ])
+        else:
+            rows.append([
+                InlineKeyboardButton(
+                    text="Сделать суперадмином",
+                    callback_data=f"admin_admins_promote:{telegram_id}",
+                )
+            ])
+        if telegram_id != current_id:
+            rows.append([
+                InlineKeyboardButton(
+                    text="Удалить из админов",
+                    callback_data=f"admin_admins_remove:{telegram_id}",
+                )
+            ])
+    rows.append([
+        InlineKeyboardButton(text="⬅️ К списку", callback_data="admin_admins")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def admin_approve_keyboard(telegram_id: int):

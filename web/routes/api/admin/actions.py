@@ -4,7 +4,7 @@ from flask import jsonify, request
 from config import DB_PATH
 from web.utils.async_helper import run_async
 
-from .common import VALID_DAYS, _audit, admin_api, admin_required, logger
+from .common import VALID_DAYS, _audit, admin_api, admin_required, superadmin_required, logger
 
 @admin_api.route("/approve", methods=["POST"])
 @admin_required
@@ -122,7 +122,7 @@ def extend():
 
 
 @admin_api.route("/delete", methods=["POST"])
-@admin_required
+@superadmin_required
 def delete():
     tg_id = int((request.json or {}).get("tg_id", 0))
 

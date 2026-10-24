@@ -3,7 +3,8 @@ import logging
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, LabeledPrice, PreCheckoutQuery
 
-from config import ADMIN_IDS, DONATE_TEXT, DONATE_URL, BOT_NAME
+from config import DONATE_TEXT, DONATE_URL, BOT_NAME
+from permissions import get_admin_ids
 from keyboards import donate_keyboard, donate_stars_keyboard
 
 router = Router()
@@ -78,7 +79,7 @@ async def process_successful_payment(message: Message):
         f"💵 <b>Сумма:</b> <code>{amount} ⭐</code>\n"
     )
 
-    for admin_id in ADMIN_IDS:
+    for admin_id in get_admin_ids():
         try:
             await message.bot.send_message(
                 admin_id,

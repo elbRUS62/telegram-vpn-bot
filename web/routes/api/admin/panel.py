@@ -5,10 +5,10 @@ from flask import jsonify, request
 from config import XUI_PANELS
 from web.utils.async_helper import run_async
 
-from .common import admin_api, admin_required, logger
+from .common import admin_api, admin_required, superadmin_required, logger
 
 @admin_api.route("/xui", methods=["POST"])
-@admin_required
+@superadmin_required
 def xui_panel_url():
     """Ссылка на панель 3x-ui. Только для админов: base path — секрет."""
     data = request.json or {}

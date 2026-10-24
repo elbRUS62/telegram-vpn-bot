@@ -69,7 +69,8 @@ fi
 
 header "Telegram"
 read -p "  BOT_TOKEN (от @BotFather): " BOT_TOKEN
-read -p "  ADMIN_ID (твой Telegram ID, можно несколько через запятую): " ADMIN_ID
+read -p "  ADMIN_ID (Telegram ID администраторов через запятую): " ADMIN_ID
+read -p "  SUPERADMIN_ID (ID владельца; пусто — первый ADMIN_ID): " SUPERADMIN_ID
 read -p "  BOT_USERNAME (без @, например skrepnet_bot): " BOT_USERNAME
 read -p "  BOT_NAME (отображаемое имя бота, например SkrepNet): " BOT_NAME
 read -p "  SUPPORT_USERNAME (без @, например SkrepNet_support): " SUPPORT_USERNAME
@@ -158,6 +159,7 @@ cat > .env <<EOF
 # Telegram
 BOT_TOKEN=$BOT_TOKEN
 ADMIN_ID=$ADMIN_ID
+SUPERADMIN_ID=$SUPERADMIN_ID
 BOT_USERNAME=$BOT_USERNAME
 BOT_NAME=$BOT_NAME
 SUPPORT_USERNAME=$SUPPORT_USERNAME

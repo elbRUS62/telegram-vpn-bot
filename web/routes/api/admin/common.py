@@ -4,7 +4,8 @@ from functools import wraps
 import aiosqlite
 from flask import Blueprint, jsonify, request
 
-from config import ADMIN_IDS, DB_PATH
+from config import DB_PATH
+from permissions import get_admin_role, is_admin_user, is_superadmin
 from web.utils.auth import validate_init_data
 
 logger = logging.getLogger(__name__)
@@ -12,17 +13,45 @@ logger = logging.getLogger(__name__)
 admin_api = Blueprint("miniapp_admin_api", __name__, url_prefix="/api/miniapp/admin")
 VALID_DAYS = {1, 3, 7, 14, 30, 90, 180, 365, 3650}
 
+
+def _authenticate():
+    data = request.json or {}
+    user = validate_init_data(data.get("init_data", ""))
+    if not user:
+        return None, None, (jsonify({"error": "Неверная авторизация"}), 401)
+
+    telegram_id = user.get("id")
+    if not is_admin_user(telegram_id):
+        return None, None, (jsonify({"error": "Доступ запрещён"}), 403)
+
+    return user, get_admin_role(telegram_id), None
+
+
 def admin_required(fn):
     @wraps(fn)
     def wrapper(*a, **kw):
-        data = request.json or {}
-        user = validate_init_data(data.get("init_data", ""))
-        if not user:
-            return jsonify({"error": "Неверная авторизация"}), 401
-        if user.get("id") not in ADMIN_IDS:
-            return jsonify({"error": "Доступ запрещён"}), 403
+        user, role, error = _authenticate()
+        if error:
+            return error
         request.admin_user = user
+        request.admin_role = role
         return fn(*a, **kw)
+
+    return wrapper
+
+
+def superadmin_required(fn):
+    @wraps(fn)
+    def wrapper(*a, **kw):
+        user, role, error = _authenticate()
+        if error:
+            return error
+        if not is_superadmin(user.get("id")):
+            return jsonify({"error": "Доступно только суперадмину"}), 403
+        request.admin_user = user
+        request.admin_role = role
+        return fn(*a, **kw)
+
     return wrapper
 
 

@@ -4,12 +4,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Version
-BOT_VERSION = os.getenv("BOT_VERSION", "3.5.0") 
+BOT_VERSION = os.getenv("BOT_VERSION", "3.6.0")
 
 # Telegram
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_ID", "").split(",") if x.strip()]
-ADMIN_ID = ADMIN_IDS[0] if ADMIN_IDS else 0  # первый админ, для совместимости
+SUPERADMIN_IDS = [
+    int(x.strip())
+    for x in os.getenv("SUPERADMIN_ID", "").split(",")
+    if x.strip()
+]
+# Для старых установок без SUPERADMIN_ID владельцем считается первый ADMIN_ID.
+if not SUPERADMIN_IDS and ADMIN_IDS:
+    SUPERADMIN_IDS = ADMIN_IDS[:1]
+ADMIN_ID = SUPERADMIN_IDS[0] if SUPERADMIN_IDS else (ADMIN_IDS[0] if ADMIN_IDS else 0)
 BOT_USERNAME = os.getenv("BOT_USERNAME", "")
 
 # Branding

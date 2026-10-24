@@ -5,10 +5,10 @@ from flask import jsonify, request
 
 from web.utils.async_helper import run_async
 
-from .common import admin_api, admin_required
+from .common import admin_api, superadmin_required
 
 @admin_api.route("/diagnostics", methods=["POST"])
-@admin_required
+@superadmin_required
 def user_diagnostics():
     data = request.json or {}
     tg_id = int(data.get("tg_id", 0))
@@ -24,7 +24,7 @@ def user_diagnostics():
 
 
 @admin_api.route("/errors", methods=["POST"])
-@admin_required
+@superadmin_required
 def errors_log():
     """Последние ошибки web- и bot-сервисов из journald."""
     try:

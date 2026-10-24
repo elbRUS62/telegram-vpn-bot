@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from database import init_db
+from permissions import seed_admins
 from web.routes.docs import docs_bp
 from web.routes.health import health_bp
 from web.routes.invite import invite_bp
@@ -19,6 +20,9 @@ from web.routes.api.admin import admin_api
 from web.routes.api.support import support_api
 
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
+
+# Таблица ролей и перенос ADMIN_ID выполняются и без bot-процесса.
+seed_admins()
 
 # Blueprint'ы
 app.register_blueprint(health_bp)

@@ -13,6 +13,8 @@ const tg = window.Telegram.WebApp;
  let POLLING_TIMER = null;
  let SUB_TIMER = null;
  let IS_ADMIN = false;
+ let IS_SUPERADMIN = false;
+ let ADMIN_ROLE = "";
  let INIT_DATA = tg.initData || "";
  let SUPPORT_STATE = { view: 'list', ticket: null };
  let TICKETS_STATE = { filter: 'active', current: null, busy: false };
@@ -637,6 +639,8 @@ document.addEventListener('visibilitychange', () => {
  loadServerStatus();
 
  IS_ADMIN = !!data.is_admin;
+ IS_SUPERADMIN = !!data.is_superadmin;
+ ADMIN_ROLE = data.admin_role || "";
  const tabAdmin = document.getElementById('tab-admin');
  if (tabAdmin) tabAdmin.style.display = IS_ADMIN ? '' : 'none';
  updateSupportTabBadge(data.support_unread || 0);
@@ -1312,6 +1316,8 @@ document.addEventListener('visibilitychange', () => {
 
  function adminUserBadges(u, daysLeft) {
     const badges = [];
+    if (u.is_superadmin) badges.push('<span class="badge superadmin">суперадмин</span>');
+    else if (u.is_admin) badges.push('<span class="badge admin">админ</span>');
     if (u.vpn_online) badges.push('<span class="badge online">онлайн</span>');
     else badges.push('<span class="badge offline">офлайн</span>');
     if (u.status === 'pending') badges.push('<span class="badge pending">заявка</span>');
@@ -1337,7 +1343,7 @@ document.addEventListener('visibilitychange', () => {
     }
     return `
     <div class="admin-user" data-tg="${u.telegram_id}">
-        <input type="checkbox" class="admin-user-check" data-tg="${u.telegram_id}" ${ADMIN.selected && ADMIN.selected.has(String(u.telegram_id)) ? 'checked' : ''} onclick="event.stopPropagation(); toggleUserSelection(this)">
+        ${IS_SUPERADMIN ? `<input type="checkbox" class="admin-user-check" data-tg="${u.telegram_id}" ${ADMIN.selected && ADMIN.selected.has(String(u.telegram_id)) ? 'checked' : ''} onclick="event.stopPropagation(); toggleUserSelection(this)">` : ''}
         <div class="admin-user-info">
             <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}</div>
             <div class="admin-user-badges">${adminUserBadges(u, daysLeft)}</div>
@@ -2070,7 +2076,7 @@ async function openAdminUserCard(tgId) {
  } else if (isBlocked) {
  actionsHtml = `<div class="user-card-actions-row">
  <button class="btn-unblock" data-act="unblock" data-tg="${tgId}">Разблокировать</button>
- <button class="btn-delete" data-act="delete" data-tg="${tgId}">Удалить</button>
+ ${IS_SUPERADMIN ? `<button class="btn-delete" data-act="delete" data-tg="${tgId}">Удалить</button>` : ''}
  </div>`;
  } else {
  actionsHtml = `<div class="user-card-actions-row">
@@ -2078,7 +2084,7 @@ async function openAdminUserCard(tgId) {
  </div>
  <div class="user-card-actions-row">
  <button class="btn-block" data-act="block" data-tg="${tgId}">Заблокировать</button>
- <button class="btn-delete" data-act="delete" data-tg="${tgId}">Удалить</button>
+ ${IS_SUPERADMIN ? `<button class="btn-delete" data-act="delete" data-tg="${tgId}">Удалить</button>` : ''}
  </div>`;
  }
 
@@ -2111,12 +2117,12 @@ async function openAdminUserCard(tgId) {
  ${trafficHtml}
  ${commentHtml}
  <div class="user-card-actions">${actionsHtml}</div>
- <div class="tg-card" style="margin-top:12px;">
+ ${IS_SUPERADMIN ? `<div class="tg-card" style="margin-top:12px;">
    <div class="tg-card-title">Диагностика</div>
    <div id="admin-diag-result" class="tg-note" style="padding:0 0 8px;">Проверьте состояние клиента и ссылки подписки.</div>
    <button class="btn btn-secondary" id="admin-diag-run" style="margin-bottom:0;">Проверить подключение</button>
  </div>
- <button class="btn btn-secondary" style="width:100%; margin-top:12px;" onclick="openAuditForUser(${tgId})">История действий</button>
+ <button class="btn btn-secondary" style="width:100%; margin-top:12px;" onclick="openAuditForUser(${tgId})">История действий</button>` : ''}
  `;
 
  container.querySelectorAll('[data-act]').forEach(btn => {
@@ -2232,6 +2238,7 @@ async function openAdminUserCard(tgId) {
  });
  if (view === 'overview') loadAdminStats();
  else if (view === 'users') loadAdminUsers();
+ else if (view === 'admins') loadAdminAdmins();
  else if (view === 'system') {
    loadAdminMonitor().then(() => requestAnimationFrame(monitorResize));
  }
@@ -2291,12 +2298,71 @@ async function openAdminUserCard(tgId) {
  target.textContent = lines.length ? lines.join('\n') : 'Ошибок за 24 часа не найдено.';
  }
 
+
+ function adminRoleLabel(role) {
+ return role === 'superadmin' ? 'Суперадмин' : (role === 'admin' ? 'Админ' : 'Отключён');
+ }
+
+ async function loadAdminAdmins() {
+ const target = document.getElementById('admin-admins-list');
+ if (!target) return;
+ target.innerHTML = skeletonHtml(2);
+ const r = await adminCall('/admins');
+ if (r.error) { target.innerHTML = `<div class="tg-note">${escapeHtml(r.error)}</div>`; return; }
+ const items = Array.isArray(r.items) ? r.items : [];
+ if (!items.length) { target.innerHTML = '<div class="tg-note" style="padding:16px;">Админов пока нет.</div>'; return; }
+ target.innerHTML = items.map(admin => {
+ const id = Number(admin.telegram_id);
+ const name = admin.first_name || admin.username || String(id);
+ const username = admin.username ? ` @${escapeHtml(admin.username)}` : '';
+ const inactive = !admin.is_active;
+ const role = admin.role === 'superadmin' ? 'superadmin' : 'admin';
+ const actions = inactive ? '' : `
+ ${role === 'superadmin' ? `<button class="btn btn-secondary" onclick="changeAdminRole(${id}, 'admin')">Понизить</button>` : `<button class="btn btn-secondary" onclick="changeAdminRole(${id}, 'superadmin')">Повысить</button>`}
+ <button class="btn btn-secondary" onclick="removeAdmin(${id})">Удалить</button>`;
+ return `<div class="admin-admin-row">
+ <div class="admin-admin-main">
+ <div><strong>${escapeHtml(name)}</strong>${username}</div>
+ <div class="tg-note"><code>${id}</code> · ${adminRoleLabel(inactive ? 'inactive' : role)}</div>
+ </div>
+ <div class="admin-admin-actions">${actions}</div>
+ </div>`;
+ }).join('');
+ }
+
+ async function addAdminFromUI() {
+ const input = document.getElementById('admin-new-id');
+ const raw = (input?.value || '').trim();
+ if (!/^\d+$/.test(raw)) { showToast('Введите Telegram ID числом', true); input?.focus(); return; }
+ const r = await adminCall('/admins/add', { tg_id: Number(raw) });
+ if (r.error) { showToast(r.error, true); return; }
+ if (input) input.value = '';
+ showToast('Админ добавлен');
+ loadAdminAdmins();
+ }
+
+ async function changeAdminRole(tgId, role) {
+ const r = await adminCall('/admins/role', { tg_id: tgId, role });
+ if (r.error) { showToast(r.error, true); return; }
+ showToast('Роль обновлена');
+ loadAdminAdmins();
+ }
+
+ async function removeAdmin(tgId) {
+ if (!confirm('Отключить этого администратора?')) return;
+ const r = await adminCall('/admins/remove', { tg_id: tgId });
+ if (r.error) { showToast(r.error, true); return; }
+ showToast('Админ отключён');
+ loadAdminAdmins();
+ }
+
  function renderAdminScreen() {
  document.getElementById('admin-content').innerHTML = `
  <div class="admin-subtabs" id="admin-subtabs">
    <button class="tab active" data-admin-view="overview" onclick="switchAdminView('overview')">Обзор</button>
    <button class="tab" data-admin-view="users" onclick="showAllUsers()">Пользователи <span class="badge pending" id="admin-users-pending-badge" style="display:none;margin-left:4px;">0</span></button>
    <button class="tab" data-admin-view="system" onclick="switchAdminView('system')">Система <span class="badge pending" id="admin-system-tickets-badge" style="display:none;margin-left:4px;">0</span></button>
+   ${IS_SUPERADMIN ? '<button class="tab" data-admin-view="admins" onclick="switchAdminView(&#39;admins&#39;)">Админы</button>' : ''}
  </div>
 
  <div class="admin-view" id="admin-view-overview">
@@ -2313,9 +2379,9 @@ async function openAdminUserCard(tgId) {
    <div class="admin-section">
      <div class="admin-section-title">Быстрые действия</div>
      <div class="tg-list">
-       <button class="tg-item" onclick="openBroadcast()"><span>Создать рассылку</span><span class="tg-item__arrow">›</span></button>
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openBroadcast()"><span>Создать рассылку</span><span class="tg-item__arrow">›</span></button>' : ''}
        <button class="tg-item" onclick="openTickets()"><span>Тикеты <span class="badge pending admin-tickets-badge" style="display:none;margin-left:4px;">0</span></span><span class="tg-item__arrow">›</span></button>
-       <button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>' : ''}
        <button class="tg-item" onclick="switchAdminView('system')"><span>Серверы и инструменты</span><span class="tg-item__arrow">›</span></button>
      </div>
    </div>
@@ -2360,26 +2426,38 @@ async function openAdminUserCard(tgId) {
    <button class="btn btn-secondary" id="admin-more" style="width:100%;display:none;margin-top:8px;">Показать ещё</button>
  </div>
 
+  <div class="admin-view" id="admin-view-admins" style="display:none;">
+    <div class="admin-section">
+      <div class="admin-section-title">Добавить администратора</div>
+      <div class="admin-search">
+        <input id="admin-new-id" inputmode="numeric" placeholder="Telegram ID">
+        <button class="admin-sync" type="button" onclick="addAdminFromUI()" title="Добавить">+</button>
+      </div>
+      <div class="tg-note" style="padding:8px 0 0;">Пользователь должен хотя бы раз открыть бота.</div>
+    </div>
+    <div class="card" style="padding:0;" id="admin-admins-list"></div>
+  </div>
+
  <div class="admin-view" id="admin-view-system" style="display:none;">
    <div class="monitor-card" id="admin-monitor"></div>
    <div class="admin-section">
      <div class="admin-section-title">Инструменты</div>
      <div class="tg-list">
        <button class="tg-item" onclick="syncAdminUsers()"><span>Синхронизировать с 3x-ui</span><span class="tg-item__meta">Обновить даты</span></button>
-       <button class="tg-item" onclick="downloadAdminCsv('/users/export', 'skrepnet-users.csv', {q: ADMIN.q, status: ADMIN.status})"><span>Экспорт пользователей</span><span class="tg-item__meta">CSV</span></button>
-       <button class="tg-item" onclick="downloadAdminCsv('/tickets/export', 'skrepnet-tickets.csv')"><span>Экспорт тикетов</span><span class="tg-item__meta">CSV</span></button>
-       <button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>
-       <button class="tg-item" onclick="openBroadcast()"><span>Массовая рассылка</span><span class="tg-item__arrow">›</span></button>
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv('/users/export', 'skrepnet-users.csv', {q: ADMIN.q, status: ADMIN.status})"><span>Экспорт пользователей</span><span class="tg-item__meta">CSV</span></button>' : ''}
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv('/tickets/export', 'skrepnet-tickets.csv')"><span>Экспорт тикетов</span><span class="tg-item__meta">CSV</span></button>' : ''}
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>' : ''}
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openBroadcast()"><span>Массовая рассылка</span><span class="tg-item__arrow">›</span></button>' : ''}
        <button class="tg-item" onclick="openTickets()"><span>Тикеты <span class="badge pending admin-tickets-badge" style="display:none;margin-left:4px;">0</span></span><span class="tg-item__arrow">›</span></button>
      </div>
    </div>
-   <div class="admin-section">
+   ${IS_SUPERADMIN ? `<div class="admin-section">
      <div class="admin-section-title">Журнал ошибок</div>
      <div class="tg-list">
        <button class="tg-item" onclick="loadAdminErrors()"><span>Показать ошибки за 24 часа</span><span class="tg-item__meta">journalctl</span></button>
      </div>
      <pre id="admin-error-log" class="admin-error-log" style="display:none;"></pre>
-   </div>
+   </div>` : ''}
  </div>
  `;
 

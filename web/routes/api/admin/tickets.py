@@ -7,7 +7,7 @@ from flask import Response, jsonify, request
 from config import DB_PATH
 from web.utils.async_helper import run_async
 
-from .common import _audit, admin_api, admin_required, logger
+from .common import _audit, admin_api, admin_required, superadmin_required, logger
 
 TICKET_CATEGORIES = {
     "connect": "Подключение",
@@ -113,7 +113,7 @@ def tickets_list():
 
 
 @admin_api.route("/tickets/export", methods=["POST"])
-@admin_required
+@superadmin_required
 def tickets_export():
     async def get_rows():
         async with aiosqlite.connect(DB_PATH) as db:

@@ -7,7 +7,7 @@ from flask import Response, jsonify, request
 from config import DB_PATH, XUI_PANELS
 from web.utils.async_helper import run_async
 
-from .common import _audit, admin_api, admin_required, logger
+from .common import _audit, admin_api, admin_required, superadmin_required, logger
 
 @admin_api.route("/sync", methods=["POST"])
 @admin_required
@@ -100,7 +100,10 @@ def users_list():
             async with db.execute(
                 f"""SELECT telegram_id, username, first_name, status, xui_email, source,
                            expires_at, invites_count, renew_count, created_at,
-                           last_seen, invited_by
+                           last_seen, invited_by,
+                           (SELECT role FROM admins
+                            WHERE admins.telegram_id = users.telegram_id
+                              AND admins.is_active = 1) AS admin_role
                     FROM users {where_sql}
                     ORDER BY {order_sql}
                     LIMIT ? OFFSET ?""",
@@ -128,6 +131,9 @@ def users_list():
             email = u.get("xui_email")
             u["vpn_online"] = email in online_emails
             u["is_web"] = (u.get("source") == "web")
+            admin_role = u.get("admin_role")
+            u["is_admin"] = bool(admin_role)
+            u["is_superadmin"] = admin_role == "superadmin"
 
             # role: web / реферал / бот
             if u.get("source") == "web":
@@ -156,7 +162,7 @@ def users_list():
 
 
 @admin_api.route("/users/export", methods=["POST"])
-@admin_required
+@superadmin_required
 def users_export():
     data = request.json or {}
     q = (data.get("q") or "").strip().lower()
@@ -221,7 +227,7 @@ def users_export():
 
 
 @admin_api.route("/users/bulk", methods=["POST"])
-@admin_required
+@superadmin_required
 def users_bulk():
     data = request.json or {}
     action = data.get("action")
@@ -320,6 +326,12 @@ def user_card():
 
         u = dict(u)  # sqlite3.Row → dict (чтобы работал .get())
         result = dict(u)
+        from permissions import get_admin_role
+
+        admin_role = get_admin_role(tg_id)
+        result["admin_role"] = admin_role
+        result["is_admin"] = admin_role is not None
+        result["is_superadmin"] = admin_role == "superadmin"
         # Обрезаем микросекунды у expires_at
         if result.get("expires_at"):
             try:
