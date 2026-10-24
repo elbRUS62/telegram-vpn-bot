@@ -30,7 +30,7 @@ const tg = window.Telegram?.WebApp || {
  let ADMIN_ROLE = "";
  let INIT_DATA = tg.initData || "";
  let SUPPORT_STATE = { view: 'list', ticket: null };
- let TICKETS_STATE = { filter: 'active', current: null, busy: false };
+ let TICKETS_STATE = { filter: 'all', current: null, busy: false, counts: null };
 
  const CACHE_PREFIX = 'skrepnet_cache:v2:';
  const CACHE_DEFAULT_TTL = 60 * 60 * 1000;
@@ -1272,7 +1272,7 @@ document.addEventListener('visibilitychange', () => {
       <textarea id="support-reply-text" class="ticket-textarea" maxlength="3000" placeholder="Написать сообщение..."></textarea>
       <div class="ticket-actions">
        <button class="btn btn-primary" id="support-reply-btn" onclick="sendSupportReply()">Отправить</button>
-       <button class="btn btn-secondary" onclick="closeSupportTicket()">Закрыть</button>
+       <button class="btn btn-secondary" onclick="closeSupportTicket()">Закрыть обращение</button>
       </div>
      </div>`;
 
@@ -1308,8 +1308,7 @@ document.addEventListener('visibilitychange', () => {
 
  async function closeSupportTicket() {
  if (!SUPPORT_STATE.ticket) return;
- const ok = await showConfirm('Закрыть это обращение?', 'Закрыть обращение');
- if (!ok) return;
+ const ok = await showConfirm('Закрыть это обращение?', 'Закрыть обращение'); if (!ok) return;
  const r = await apiCall('/api/miniapp/support/close', {
   ticket_id: SUPPORT_STATE.ticket.id
  });
@@ -2151,7 +2150,7 @@ document.addEventListener('visibilitychange', () => {
  function openTickets() {
  const modal = document.getElementById('tickets-modal');
  if (!modal) return;
- TICKETS_STATE = { filter: 'active', current: null, busy: false };
+ TICKETS_STATE = { filter: 'all', current: null, busy: false, counts: null };
  modal.classList.add('show');
  const closeBtn = document.getElementById('tickets-modal-close');
  if (closeBtn) closeBtn.onclick = closeTickets;
@@ -2186,29 +2185,35 @@ document.addEventListener('visibilitychange', () => {
   </div>`;
  }
 
+ function ticketsToolbar(filter, counts) {
+ const open = Number(counts && counts.open) || 0;
+ const closed = Number(counts && counts.closed) || 0;
+ const total = open + closed;
+ const suffix = (n) => n > 0 ? ` (${n})` : '';
+ return `
+  <div class="ticket-toolbar">
+   <button class="tab ${filter === 'active' ? 'active' : ''}" onclick="setTicketFilter('active')">Активные${suffix(open)}</button>
+   <button class="tab ${filter === 'closed' ? 'active' : ''}" onclick="setTicketFilter('closed')">Закрытые${suffix(closed)}</button>
+   <button class="tab ${filter === 'all' ? 'active' : ''}" onclick="setTicketFilter('all')">Все${suffix(total)}</button>
+  </div>`;
+ }
+
  async function loadAdminTickets() {
  const el = document.getElementById('admin-tickets-content');
  if (!el) return;
  const f = TICKETS_STATE.filter;
- el.innerHTML = `
-  <div class="ticket-toolbar">
-   <button class="tab ${f === 'active' ? 'active' : ''}" onclick="setTicketFilter('active')">Активные</button>
-   <button class="tab ${f === 'closed' ? 'active' : ''}" onclick="setTicketFilter('closed')">Закрытые</button>
-   <button class="tab ${f === 'all' ? 'active' : ''}" onclick="setTicketFilter('all')">Все</button>
-  </div>
-  <div class="loading">Загрузка...</div>`;
+ el.innerHTML = `${ticketsToolbar(f, TICKETS_STATE.counts)}<div class="loading">Загрузка...</div>`;
  const r = await adminCall('/tickets', { status: f, limit: 50 });
  if (!el) return;
  if (r.error) { el.innerHTML = `<div class="monitor-error">${escapeHtml(r.error)}</div>`; return; }
  updateTicketsBadge(r.tickets_unread || 0);
+ TICKETS_STATE.counts = { open: r.tickets_open || 0, closed: r.tickets_closed || 0 };
  const list = r.tickets || [];
- el.innerHTML = `
-  <div class="ticket-toolbar">
-   <button class="tab ${f === 'active' ? 'active' : ''}" onclick="setTicketFilter('active')">Активные</button>
-   <button class="tab ${f === 'closed' ? 'active' : ''}" onclick="setTicketFilter('closed')">Закрытые</button>
-   <button class="tab ${f === 'all' ? 'active' : ''}" onclick="setTicketFilter('all')">Все</button>
-  </div>
-  ${list.length ? list.map(adminTicketRow).join('') : '<div class="ticket-empty">Тикетов нет</div>'}`;
+ const emptyText = (f === 'active' && TICKETS_STATE.counts.closed)
+   ? 'Активных тикетов нет. Закрытые — во вкладке «Закрытые».'
+   : 'Тикетов нет';
+ el.innerHTML = `${ticketsToolbar(f, TICKETS_STATE.counts)}
+  ${list.length ? list.map(adminTicketRow).join('') : `<div class="ticket-empty">${emptyText}</div>`}`;
  }
 
  async function openAdminTicket(id) {

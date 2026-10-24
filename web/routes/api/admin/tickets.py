@@ -91,7 +91,8 @@ def tickets_list():
             async with db.execute("""
                 SELECT
                     SUM(CASE WHEN status IN ('open','answered') THEN 1 ELSE 0 END),
-                    SUM(CASE WHEN status != 'closed' AND unread_admin = 1 THEN 1 ELSE 0 END)
+                    SUM(CASE WHEN status != 'closed' AND unread_admin = 1 THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END)
                 FROM support_tickets
             """) as cur:
                 counts = await cur.fetchone()
@@ -103,6 +104,7 @@ def tickets_list():
             "has_more": offset + len(tickets) < total,
             "tickets_open": counts[0] or 0,
             "tickets_unread": counts[1] or 0,
+            "tickets_closed": counts[2] or 0,
         }
 
     try:
