@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[2]
 AVATAR_DIR = ROOT / "data" / "avatars"
-CHECK_TTL = 7 * 24 * 60 * 60
+# Проверяем фото раз в сутки, чтобы новое фото появлялось без ручного вмешательства.
+CHECK_TTL = 24 * 60 * 60
 AVATAR_SIZE = 96
 
 
