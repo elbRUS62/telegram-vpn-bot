@@ -1498,7 +1498,7 @@ document.addEventListener('visibilitychange', () => {
  });
 
  // ==================== АДМИН-ПАНЕЛЬ ====================
- let ADMIN = { loaded: false, view: 'overview', page: 1, q: '', status: 'all', sort: 'created_desc', busy: false, timer: null, selected: new Set() };
+ let ADMIN = { loaded: false, view: 'overview', page: 1, q: '', status: 'all', sort: 'created_desc', busy: false, timer: null, selected: new Set(), selectMode: false };
  let MONITOR_STATE = { index: 0, count: 0, touchX: null, touchY: null, heightTimer: null, hours: 24, requestId: 0 };
 
  async function adminCall(path, body = {}) {
@@ -1577,32 +1577,88 @@ document.addEventListener('visibilitychange', () => {
     return badges.join('');
 }
 
+ function adminInitials(name) {
+ const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+ if (!parts.length) return '#';
+ return parts.slice(0, 2).map(part => part[0]).join('').toUpperCase();
+ }
+
+ function adminAvatarColor(seed) {
+ let hash = 0;
+ for (const ch of String(seed || '')) hash = (hash * 31 + ch.codePointAt(0)) % 360;
+ return `linear-gradient(135deg, hsl(${hash} 52% 46%), hsl(${(hash + 28) % 360} 58% 38%))`;
+ }
+
  function adminUserRow(u) {
-    let daysLeft = null;
-    if (u.expires_at) {
-        const exp = new Date(String(u.expires_at).slice(0, 10) + 'T00:00:00');
-        if (!isNaN(exp)) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            daysLeft = Math.ceil((exp - today) / 86400000);
-        }
-    }
-    return `
-    <div class="admin-user" data-tg="${u.telegram_id}">
-        ${IS_SUPERADMIN ? `<input type="checkbox" class="admin-user-check" data-tg="${u.telegram_id}" ${ADMIN.selected && ADMIN.selected.has(String(u.telegram_id)) ? 'checked' : ''} onclick="event.stopPropagation(); toggleUserSelection(this)">` : ''}
-        <div class="admin-user-info">
-            <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}</div>
-            <div class="admin-user-badges">${adminUserBadges(u, daysLeft, u.plan_days)}</div>
-        </div>
-        <div class="admin-user-arrow">›</div>
-    </div>`;
+ const id = String(u.telegram_id || '');
+ const selected = !!(ADMIN.selected && ADMIN.selected.has(id));
+ const name = u.first_name || (u.username ? '@' + u.username : (u.source === 'web' ? 'Гость' : 'ID ' + id));
+ const role = u.is_superadmin
+   ? 'суперадмин'
+   : (u.is_admin ? 'админ' : (u.source === 'web' ? 'гость' : (u.invited_by ? 'реферал' : 'бот')));
+ const status = u.status === 'pending'
+   ? 'заявка'
+   : (u.status === 'blocked' ? 'заблокирован' : (u.status === 'rejected' ? 'отклонён' : ''));
+ const handle = u.username ? '@' + u.username : 'ID ' + id;
+ const secondary = [handle, role].filter(Boolean).join(' · ');
+
+ let daysLeft = null;
+ if (u.expires_at) {
+   const exp = new Date(String(u.expires_at).replace(' ', 'T'));
+   if (!isNaN(exp)) {
+     const diff = exp.getTime() - Date.now();
+     daysLeft = diff <= 0 ? Math.floor(diff / 86400000) : Math.ceil(diff / 86400000);
+   }
+ }
+ const suffix = u.status === 'active' && daysLeft !== null
+   ? (daysLeft > 0 ? `${daysLeft} дн.` : 'истёк')
+   : status;
+ const suffixClass = status === 'заявка'
+   ? ' is-pending'
+   : (status ? ' is-dead' : (u.status === 'active' && daysLeft !== null && daysLeft <= 3 ? ' is-warning' : ''));
+
+ return `
+ <div class="admin-user ${selected ? 'is-selected' : ''}" data-tg="${id}">
+   ${IS_SUPERADMIN && ADMIN.selectMode ? `<span class="admin-select-circle ${selected ? 'is-selected' : ''}" role="checkbox" aria-checked="${selected}" aria-label="Выбрать пользователя"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span>` : ''}
+   <div class="admin-avatar" style="background:${adminAvatarColor(id + name)}">
+     ${escapeHtml(adminInitials(name))}
+     ${u.vpn_online ? '<span class="admin-online-dot" aria-label="Онлайн"></span>' : ''}
+   </div>
+   <div class="admin-user-info">
+     <div class="admin-user-top">
+       <span class="admin-user-name">${escapeHtml(name)}</span>
+       ${suffix ? `<span class="admin-user-time${suffixClass}">${escapeHtml(suffix)}</span>` : ''}
+     </div>
+     <div class="admin-user-subtitle">${escapeHtml(secondary)}</div>
+   </div>
+   <div class="admin-user-arrow">›</div>
+ </div>`;
 }
 
- function toggleUserSelection(el) {
- const tgId = String(el.dataset.tg || '');
- if (!tgId) return;
- if (el.checked) ADMIN.selected.add(tgId);
- else ADMIN.selected.delete(tgId);
+ function toggleUserSelectionById(tgId) {
+ const id = String(tgId || '');
+ if (!id) return;
+ const selected = !ADMIN.selected.has(id);
+ if (selected) ADMIN.selected.add(id);
+ else ADMIN.selected.delete(id);
+ document.querySelectorAll('.admin-user').forEach(row => {
+   if (row.dataset.tg !== id) return;
+   row.classList.toggle('is-selected', selected);
+   const circle = row.querySelector('.admin-select-circle');
+   if (circle) {
+     circle.classList.toggle('is-selected', selected);
+     circle.setAttribute('aria-checked', String(selected));
+   }
+ });
+ updateBulkBar();
+ }
+
+ function toggleUserSelectMode() {
+ ADMIN.selectMode = !ADMIN.selectMode;
+ ADMIN.selected.clear();
+ const btn = document.getElementById('admin-select-toggle');
+ if (btn) btn.textContent = ADMIN.selectMode ? 'Отмена' : 'Выбрать';
+ loadAdminUsers();
  updateBulkBar();
  }
 
@@ -1611,13 +1667,20 @@ document.addEventListener('visibilitychange', () => {
  const count = document.getElementById('admin-bulk-count');
  if (!bar || !count) return;
  const size = ADMIN.selected ? ADMIN.selected.size : 0;
- bar.style.display = size ? 'flex' : 'none';
- count.textContent = `${size} выбрано`;
+ bar.style.display = ADMIN.selectMode ? 'flex' : 'none';
+ count.textContent = size ? `${size} выбрано` : 'Выберите пользователей';
+ bar.querySelectorAll('button[onclick^="bulkUserAction"]').forEach(btn => {
+   btn.disabled = !size;
+ });
  }
 
  function clearUserSelection() {
  if (ADMIN.selected) ADMIN.selected.clear();
- document.querySelectorAll('.admin-user-check').forEach(el => { el.checked = false; });
+ document.querySelectorAll('.admin-select-circle').forEach(circle => {
+   circle.classList.remove('is-selected');
+   circle.setAttribute('aria-checked', 'false');
+ });
+ document.querySelectorAll('.admin-user.is-selected').forEach(row => row.classList.remove('is-selected'));
  updateBulkBar();
  }
 
@@ -1667,6 +1730,7 @@ document.addEventListener('visibilitychange', () => {
    { key: 'pending', label: 'Заявки', count: r.pending },
    { key: 'expiring', label: 'Истекают', count: r.expiring_3d },
    { key: 'blocked', label: 'Заблокированные', count: r.blocked ?? 0 },
+   { key: 'rejected', label: 'Отклонённые', count: r.rejected ?? 0 },
  ];
  el.innerHTML = items.map(item => `
    <button class="tab ${ADMIN.status === item.key ? 'active' : ''}" data-filter="${item.key}" onclick="setAdminStatus('${item.key}')">
@@ -2238,6 +2302,10 @@ document.addEventListener('visibilitychange', () => {
  async function loadAdminUsers({ append = false } = {}) {
  if (ADMIN.busy) return;
  ADMIN.busy = true;
+ if (!append) {
+   ADMIN.selected.clear();
+   updateBulkBar();
+ }
  const box = document.getElementById('admin-users');
  if (!box) { ADMIN.busy = false; return; }
  if (!append) {
@@ -2499,6 +2567,13 @@ async function openAdminUserCard(tgId) {
 
  function switchAdminView(view) {
  ADMIN.view = view;
+ if (view !== 'users' && ADMIN.selectMode) {
+   ADMIN.selectMode = false;
+   ADMIN.selected.clear();
+   const toggle = document.getElementById('admin-select-toggle');
+   if (toggle) toggle.textContent = 'Выбрать';
+   updateBulkBar();
+ }
  document.querySelectorAll('#admin-subtabs .tab').forEach(tab => {
    tab.classList.toggle('active', tab.dataset.adminView === view);
  });
@@ -2745,9 +2820,15 @@ function closeReconcileClients() {
  </div>
 
  <div class="admin-view" id="admin-view-users" style="display:none;">
-   <div class="admin-users-summary" id="admin-users-summary"></div>
+   <div class="admin-users-head">
+     <div class="admin-users-summary" id="admin-users-summary"></div>
+     ${IS_SUPERADMIN ? '<button type="button" class="admin-select-toggle" id="admin-select-toggle" onclick="toggleUserSelectMode()">Выбрать</button>' : ''}
+   </div>
    <div class="admin-search">
-     <input id="admin-q" placeholder="Поиск: ID / @username / имя">
+     <div class="admin-search-field">
+       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+       <input id="admin-q" placeholder="Поиск: ID, @username или имя">
+     </div>
      <div class="admin-sort" id="admin-sort">
        <button type="button" class="admin-sort__btn" id="admin-sort-btn">Новые <span class="admin-sort__arrow">▼</span></button>
        <div class="admin-sort__list" id="admin-sort-list" hidden>
@@ -2765,21 +2846,13 @@ function closeReconcileClients() {
        </svg>
      </button>
    </div>
-   <div class="tabs" id="admin-filter-scroll">
-     <button class="tab active" data-filter="all" onclick="setAdminStatus('all')">Все</button>
-     <button class="tab" data-filter="active" onclick="setAdminStatus('active')">Активные</button>
-     <button class="tab" data-filter="pending" id="filter-pending-btn" onclick="setAdminStatus('pending')">Заявки <span class="badge pending" id="pending-count" style="display:none;">0</span></button>
-     <button class="tab" data-filter="expiring" onclick="setAdminStatus('expiring')">Истекают</button>
-     <button class="tab" data-filter="blocked" onclick="setAdminStatus('blocked')">Заблокированные</button>
-     <button class="tab" data-filter="rejected" onclick="setAdminStatus('rejected')">Отклонённые</button>
-   </div>
    <div class="admin-bulk-bar" id="admin-bulk-bar" style="display:none;">
      <span id="admin-bulk-count">0 выбрано</span>
      <button type="button" onclick="bulkUserAction('block')">Заблокировать</button>
      <button type="button" onclick="bulkUserAction('delete')">Удалить</button>
      <button type="button" onclick="clearUserSelection()">Сбросить</button>
    </div>
-   <div class="card" style="padding:0;" id="admin-users"></div>
+   <div class="admin-users-list" id="admin-users"></div>
    <button class="btn btn-secondary" id="admin-more" style="width:100%;display:none;margin-top:8px;">Показать ещё</button>
  </div>
 
@@ -2862,8 +2935,12 @@ function closeReconcileClients() {
  document.getElementById('admin-users').addEventListener('click', async (e) => {
  const row = e.target.closest('.admin-user');
  if (!row) return;
- const tgId = +row.dataset.tg;
- openAdminUserCard(tgId);
+ const tgId = row.dataset.tg;
+ if (ADMIN.selectMode) {
+   toggleUserSelectionById(tgId);
+   return;
+ }
+ openAdminUserCard(+tgId);
  });
 
  loadAdminStats();

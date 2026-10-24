@@ -1753,3 +1753,40 @@ button.tg-item:disabled { opacity: 0.5; cursor: default; }
 .reconcile-client-email { min-width: 0; overflow-wrap: anywhere; }
 .reconcile-client-panel { flex-shrink: 0; color: var(--hint-color); font-size: 11px; text-transform: uppercase; }
 .weekly-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* ===== Users tab, Telegram-like ===== */
+.admin-users-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+.admin-users-head .admin-users-summary { flex: 1; margin-bottom: 0; }
+.admin-select-toggle { flex-shrink: 0; padding: 7px 11px; border: 0; border-radius: 999px; background: var(--secondary-bg); color: var(--link-color); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.admin-select-toggle:active { opacity: .7; }
+.admin-search { align-items: center; }
+.admin-search-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; padding: 0 12px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--secondary-bg); color: var(--hint-color); }
+.admin-search-field svg { flex-shrink: 0; }
+.admin-search-field input { flex: 1; min-width: 0; padding: 10px 0; border: 0; outline: none; background: transparent; color: var(--text-color); font: inherit; font-size: 16px; }
+.admin-search-field input::placeholder { color: var(--hint-color); }
+.admin-users-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.admin-users-summary .tab { padding: 6px 10px; border: 0; border-radius: 999px; background: var(--secondary-bg); color: var(--hint-color); font: inherit; font-size: 13px; }
+.admin-users-summary .tab.active { background: var(--button-color); color: var(--button-text); }
+.admin-users-list { display: flex; flex-direction: column; }
+.admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border: 0; border-bottom: 1px solid var(--border-color); border-radius: 0; background: transparent; }
+.admin-user:last-child { border-bottom: 0; }
+.admin-user:hover { background: transparent; }
+.admin-user:active { background: color-mix(in srgb, var(--text-color) 6%, transparent); }
+.admin-user.is-selected { border-radius: 10px; background: color-mix(in srgb, var(--button-color) 10%, transparent); }
+.admin-select-circle { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex-shrink: 0; border: 2px solid var(--hint-color); border-radius: 50%; color: transparent; transition: background .12s, border-color .12s, color .12s; }
+.admin-select-circle svg { width: 15px; height: 15px; }
+.admin-select-circle.is-selected { border-color: var(--button-color); background: var(--button-color); color: var(--button-text); }
+.admin-avatar { position: relative; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; flex-shrink: 0; border-radius: 50%; color: #fff; font-size: 16px; font-weight: 600; letter-spacing: .2px; }
+.admin-online-dot { position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border: 2px solid var(--bg-color); border-radius: 50%; background: var(--success-color); }
+.admin-user-info { flex: 1; min-width: 0; }
+.admin-user-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.admin-user-name { min-width: 0; overflow: hidden; color: var(--text-color); font-size: 15px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user-time { flex-shrink: 0; color: var(--hint-color); font-size: 11px; }
+.admin-user-subtitle { margin-top: 2px; overflow: hidden; color: var(--hint-color); font-size: 13px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user-arrow { flex-shrink: 0; color: var(--hint-color); font-size: 18px; opacity: .45; }
+.admin-bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 8px; padding: 8px 10px; border: 0; border-radius: 12px; background: var(--secondary-bg); color: var(--hint-color); font-size: 12px; }
+.admin-bulk-bar button { padding: 6px 10px; border: 1px solid transparent; border-radius: 999px; background: var(--bg-color); color: var(--text-color); font: inherit; font-size: 12px; }
+.admin-bulk-bar button:disabled { opacity: .45; }
+.admin-user-time.is-pending { color: var(--warning-color); }
+.admin-user-time.is-dead { color: var(--danger-color); }
+.admin-user-time.is-warning { color: var(--warning-color); }
