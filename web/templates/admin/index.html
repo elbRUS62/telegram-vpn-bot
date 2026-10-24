@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Админка — SkrepNet</title>
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/webadmin.css?v=1">
+</head>
+<body>
+  <div class="wa-shell">
+    <aside class="wa-sidebar">
+      <div class="wa-brand">
+        <img src="/static/icon-192.png" alt="" class="wa-brand-icon">
+        <div>
+          <strong>SkrepNet</strong>
+          <span>Веб-админка</span>
+        </div>
+      </div>
+
+      <nav class="wa-nav" aria-label="Разделы админки">
+        <button type="button" class="wa-nav-item is-active" data-view="overview">Обзор</button>
+        <button type="button" class="wa-nav-item" data-view="users">Пользователи</button>
+        <button type="button" class="wa-nav-item" data-view="tickets">Тикеты</button>
+        {% if is_superadmin %}
+        <button type="button" class="wa-nav-item" data-view="admins">Админы</button>
+        {% endif %}
+        {% if is_superadmin %}
+        <button type="button" class="wa-nav-item" data-view="audit">Аудит</button>
+        {% endif %}
+      </nav>
+
+      <div class="wa-sidebar-footer">
+        <div class="wa-account">
+          <span class="wa-account-label">{{ "Суперадмин" if is_superadmin else "Админ" }}</span>
+          <code>{{ admin_id }}</code>
+          <span class="wa-muted">Сессия до {{ session_hours }} ч</span>
+        </div>
+        <form method="post" action="/admin/logout">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="wa-button wa-button-ghost wa-button-full">Выйти</button>
+        </form>
+      </div>
+    </aside>
+
+    <main class="wa-main">
+      <header class="wa-topbar">
+        <div>
+          <div class="wa-kicker">SkrepNet</div>
+          <h1 id="wa-title">Обзор</h1>
+        </div>
+        <div id="wa-toast" class="wa-toast" role="status" aria-live="polite"></div>
+      </header>
+
+      <section class="wa-view" id="view-overview">
+        <div class="wa-cards" id="wa-stats"></div>
+        <div class="wa-panel">
+          <div class="wa-panel-head"><h2>Требует внимания</h2></div>
+          <div id="wa-attention" class="wa-list"></div>
+        </div>
+        <div class="wa-panel">
+          <div class="wa-panel-head"><h2>Серверы</h2></div>
+          <div id="wa-monitor" class="wa-list"></div>
+        </div>
+      </section>
+
+      <section class="wa-view" id="view-users" hidden>
+        <div class="wa-toolbar">
+          <input id="wa-user-search" class="wa-input" type="search" placeholder="Поиск: ID, @username или имя">
+          <select id="wa-user-status" class="wa-select">
+            <option value="all">Все</option>
+            <option value="active">Активные</option>
+            <option value="pending">Заявки</option>
+            <option value="expiring">Истекают</option>
+            <option value="blocked">Заблокированные</option>
+            <option value="rejected">Отклонённые</option>
+          </select>
+          <button id="wa-user-refresh" type="button" class="wa-button wa-button-secondary">Обновить</button>
+        </div>
+        <div class="wa-panel wa-panel-table">
+          <div id="wa-users"></div>
+        </div>
+        <div class="wa-pager">
+          <button id="wa-users-prev" type="button" class="wa-button wa-button-ghost">Назад</button>
+          <span id="wa-users-page" class="wa-muted"></span>
+          <button id="wa-users-next" type="button" class="wa-button wa-button-ghost">Дальше</button>
+        </div>
+      </section>
+
+      <section class="wa-view" id="view-tickets" hidden>
+        <div class="wa-toolbar">
+          <select id="wa-ticket-status" class="wa-select">
+            <option value="active">Активные</option>
+            <option value="all">Все</option>
+            <option value="closed">Закрытые</option>
+          </select>
+          <button id="wa-ticket-refresh" type="button" class="wa-button wa-button-secondary">Обновить</button>
+        </div>
+        <div class="wa-panel wa-panel-table">
+          <div id="wa-tickets"></div>
+        </div>
+      </section>
+
+      {% if is_superadmin %}
+      <section class="wa-view" id="view-admins" hidden>
+        <div class="wa-panel">
+          <div class="wa-panel-head"><h2>Добавить администратора</h2></div>
+          <div class="wa-toolbar">
+            <input id="wa-admin-id" class="wa-input" inputmode="numeric" placeholder="Telegram ID">
+            <select id="wa-admin-role" class="wa-select">
+              <option value="admin">Админ</option>
+              <option value="superadmin">Суперадмин</option>
+            </select>
+            <button id="wa-admin-add" type="button" class="wa-button wa-button-primary">Добавить</button>
+          </div>
+          <p class="wa-note">Пользователь должен хотя бы раз открыть бота.</p>
+        </div>
+        <div class="wa-panel wa-panel-table">
+          <div id="wa-admins"></div>
+        </div>
+      </section>
+
+      <section class="wa-view" id="view-audit" hidden>
+        <div class="wa-panel wa-panel-table">
+          <div id="wa-audit"></div>
+        </div>
+      </section>
+      {% endif %}
+    </main>
+  </div>
+
+  <div class="wa-modal-backdrop" id="wa-modal" hidden>
+    <div class="wa-modal" role="dialog" aria-modal="true" aria-labelledby="wa-modal-title">
+      <div class="wa-modal-head">
+        <h2 id="wa-modal-title">Детали</h2>
+        <button type="button" class="wa-modal-close" id="wa-modal-close" aria-label="Закрыть">&times;</button>
+      </div>
+      <div id="wa-modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    window.WEBADMIN = {
+      csrf: {{ csrf_token|tojson }},
+      role: {{ admin_role|tojson }},
+      isSuperadmin: {{ is_superadmin|tojson }},
+      adminId: {{ admin_id|tojson }}
+    };
+  </script>
+  <script src="/static/webadmin.js?v=1"></script>
+</body>
+</html>

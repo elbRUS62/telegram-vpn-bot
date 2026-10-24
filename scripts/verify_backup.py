@@ -34,6 +34,7 @@ COUNT_TABLES = (
     "monitor_metrics",
     "admin_audit",
     "admins",
+    "admin_login_tokens",
 )
 
 

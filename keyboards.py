@@ -53,6 +53,9 @@ def admin_manage_keyboard(is_superadmin: bool = False):
         [
             InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_menu_users"),
         ],
+        [
+            InlineKeyboardButton(text="Веб-админка", callback_data="admin_web_login"),
+        ],
     ]
     if is_superadmin:
         rows.append([

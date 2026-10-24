@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Вход в админку — SkrepNet</title>
+  <link rel="icon" href="/static/favicon.ico">
+  <link rel="stylesheet" href="/static/webadmin.css?v=1">
+</head>
+<body class="wa-login-page">
+  <main class="wa-login-card">
+    <img src="/static/icon-192.png" alt="SkrepNet" class="wa-login-logo">
+    <div class="wa-kicker">SkrepNet</div>
+    <h1>Веб-админка</h1>
+    <p class="wa-muted">Доступ только для администраторов сервиса.</p>
+
+    {% if error %}
+      <div class="wa-alert wa-alert-error">{{ error }}</div>
+    {% endif %}
+
+    <div class="wa-login-steps">
+      <div><span>1</span> Открой бота <strong>@{{ bot_username }}</strong>.</div>
+      <div><span>2</span> Отправь <code>/admin</code>.</div>
+      <div><span>3</span> Нажми «Веб-админка» и перейди по ссылке.</div>
+    </div>
+
+    <a class="wa-button wa-button-primary" href="https://t.me/{{ bot_username }}?start=admin">
+      Открыть бота
+    </a>
+    <p class="wa-note">Ссылка одноразовая и действует несколько минут.</p>
+  </main>
+</body>
+</html>

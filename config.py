@@ -1,3 +1,4 @@
+import hashlib
 import os
 from dotenv import load_dotenv
 
@@ -19,6 +20,15 @@ if not SUPERADMIN_IDS and ADMIN_IDS:
     SUPERADMIN_IDS = ADMIN_IDS[:1]
 ADMIN_ID = SUPERADMIN_IDS[0] if SUPERADMIN_IDS else (ADMIN_IDS[0] if ADMIN_IDS else 0)
 BOT_USERNAME = os.getenv("BOT_USERNAME", "")
+
+# Web admin session
+WEB_SECRET_KEY = os.getenv("WEB_SECRET_KEY", "").strip()
+if not WEB_SECRET_KEY:
+    WEB_SECRET_KEY = hashlib.sha256(
+        f"{BOT_TOKEN or 'skrepnet-web'}:web-admin".encode()
+    ).hexdigest()
+WEB_ADMIN_SESSION_HOURS = int(os.getenv("WEB_ADMIN_SESSION_HOURS", "12"))
+WEB_ADMIN_LINK_TTL_MINUTES = int(os.getenv("WEB_ADMIN_LINK_TTL_MINUTES", "10"))
 
 # Branding
 BOT_NAME = os.getenv("BOT_NAME", "SkrepNet")
