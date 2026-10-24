@@ -548,8 +548,8 @@ body {
  }
  .modal-close-row {
  display: flex;
- justify-content: flex-end;
- margin: -12px -8px 2px 0;
+ justify-content: flex-start;
+ margin: -12px 0 2px 0;
  }
  .modal-close-top {
  width: 36px;
@@ -1028,6 +1028,11 @@ body {
     color: var(--hint-color);
     font-size: 20px;
     cursor: pointer;
+}
+#bcast-modal .modal-close,
+#tickets-modal .modal > div:first-child button,
+#audit-modal .modal > div:first-child button {
+    order: -1;
 }
 
 

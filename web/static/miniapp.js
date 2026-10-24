@@ -1110,7 +1110,6 @@ document.addEventListener('visibilitychange', () => {
  } catch (e) { content.innerHTML = `<div class="error"> Ошибка: ${e.message}</div>`; }
  }
 
- document.getElementById('docs-close').addEventListener('click', () => document.getElementById('docs-modal').classList.remove('show'));
 
  async function openRefModal() {
  const linkEl = document.getElementById('ref-link');
@@ -1124,10 +1123,8 @@ document.addEventListener('visibilitychange', () => {
  document.getElementById('ref-copy-btn').onclick = () => copyToClipboard(data.ref_link);
  } catch (e) { linkEl.textContent = 'Ошибка: ' + e.message; }
  }
- document.getElementById('ref-close-btn').addEventListener('click', () => document.getElementById('ref-modal').classList.remove('show'));
  document.getElementById('invite-no-tg-copy').addEventListener('click', () => copyToClipboard(INVITE_NO_TG_URL));
  document.getElementById('invite-no-tg-share').addEventListener('click', shareInviteNoTgLink);
- document.getElementById('invite-no-tg-close').addEventListener('click', () => document.getElementById('invite-no-tg-modal').classList.remove('show'));
 
  function detectPlatformKey() {
    const platform = String(tg.platform || '').toLowerCase();
@@ -1216,7 +1213,6 @@ document.addEventListener('visibilitychange', () => {
  });
  } catch (e) { content.innerHTML = `<div class="error">Ошибка: ${e.message}</div>`; }
  }
- document.getElementById('connect-close').addEventListener('click', () => document.getElementById('connect-modal').classList.remove('show'));
 
  async function openTermsModal() {
  document.getElementById('terms-checkbox').checked = false;
@@ -2161,7 +2157,6 @@ async function openAdminUserCard(tgId) {
  const diagBtn = container.querySelector('#admin-diag-run');
  if (diagBtn) diagBtn.addEventListener('click', () => runAdminDiagnostics(tgId));
 
- document.getElementById('admin-user-close').onclick = () => modal.classList.remove('show');
  modal.classList.add('show');
  } catch (e) {
  console.error('openAdminUserCard error:', e);
@@ -2555,7 +2550,8 @@ async function openAdminUserCard(tgId) {
  const button = document.createElement('button');
  button.type = 'button';
  button.className = 'modal-close-top';
- button.setAttribute('aria-label', 'Закрыть');
+ button.setAttribute('aria-label', 'Закрыть окно');
+ button.title = 'Закрыть окно';
  button.textContent = '\u00d7';
  button.addEventListener('click', (event) => {
  event.stopPropagation();
@@ -2588,13 +2584,6 @@ async function openAdminUserCard(tgId) {
  loadMain();
 
 
-
- // Делегирование: ловит #stars-close даже если элемент появился позже скрипта
- document.addEventListener('click', (e) => {
- if (e.target && e.target.closest && e.target.closest('#stars-close')) {
- document.getElementById('stars-modal').classList.remove('show');
- }
- });
 
  // Функция покупки звёзд
  async function buyStars(amount) {
