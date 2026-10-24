@@ -1734,3 +1734,7 @@ button.tg-item:disabled { opacity: 0.5; cursor: default; }
 .onboarding-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .onboarding-actions .btn { display: inline-flex; flex: 1 1 140px; align-items: center; justify-content: center; margin: 0; text-align: center; text-decoration: none; }
 .onboarding-card--connect { border-color: color-mix(in srgb, var(--link-color) 30%, transparent); }
+
+.user-card-comment-block { margin-top: 10px; }
+.user-card-comment-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; color: var(--hint-color); font-size: 12px; }
+.user-card-comment-edit { padding: 2px 0; border: 0; background: none; color: var(--link-color); font-size: 12px; font-weight: 600; cursor: pointer; }

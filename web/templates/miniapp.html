@@ -5,7 +5,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
  <title>Моя подписка — SkrepNet</title>
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
- <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-17">
+ <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-18">
 
 
     <!-- Favicon (SkrepNet) -->
@@ -87,6 +87,18 @@
  <div style="display:flex;gap:10px;margin-top:16px;">
  <button class="btn btn-secondary" id="reason-cancel" style="flex:1;">Отмена</button>
  <button class="btn btn-primary" id="reason-ok" style="flex:1;">Подтвердить</button>
+ </div>
+ </div>
+ </div>
+
+ <div class="modal-backdrop" id="comment-modal">
+ <div class="modal">
+ <h2 id="comment-title" style="margin-bottom:12px;">Комментарий</h2>
+ <p id="comment-text" style="margin-bottom:12px;color:var(--hint-color);font-size:15px;">Заметка видна только администраторам.</p>
+ <textarea id="comment-input" rows="3" maxlength="200" placeholder="Например: друг, оплатил до декабря" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-color);font-family:inherit;font-size:16px;resize:none;"></textarea>
+ <div style="display:flex;gap:10px;margin-top:16px;">
+ <button class="btn btn-secondary" id="comment-cancel" style="flex:1;">Отмена</button>
+ <button class="btn btn-primary" id="comment-save" style="flex:1;">Сохранить</button>
  </div>
  </div>
  </div>
@@ -194,7 +206,7 @@
 
  <div id="toast" class="toast" role="status" aria-live="polite">Скопировано!</div>
 
- <script src="/static/miniapp.js?v={{ bot_version }}-29"></script>
+ <script src="/static/miniapp.js?v={{ bot_version }}-30"></script>
 
  <!-- Модалка выбора суммы звёзд -->
  <div class="modal-backdrop" id="stars-modal">

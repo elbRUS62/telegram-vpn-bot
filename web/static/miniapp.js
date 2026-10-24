@@ -459,6 +459,44 @@ const tg = window.Telegram?.WebApp || {
  });
  }
 
+ // Редактор комментария в карточке пользователя
+ function showCommentEditor(current = '', title = 'Комментарий') {
+ return new Promise((resolve) => {
+ const modal = document.getElementById('comment-modal');
+ const input = document.getElementById('comment-input');
+ if (!modal || !input) { resolve(null); return; }
+
+ document.getElementById('comment-title').textContent = title;
+ input.value = current || '';
+
+ const saveBtn = document.getElementById('comment-save');
+ const cancelBtn = document.getElementById('comment-cancel');
+ let settled = false;
+ const observer = new MutationObserver(() => {
+ if (!modal.classList.contains('show')) finish(null);
+ });
+
+ const finish = (value) => {
+ if (settled) return;
+ settled = true;
+ observer.disconnect();
+ saveBtn.removeEventListener('click', onSave);
+ cancelBtn.removeEventListener('click', onCancel);
+ modal.classList.remove('show');
+ resolve(value);
+ };
+
+ const onSave = () => finish(input.value.trim().slice(0, 200));
+ const onCancel = () => finish(null);
+
+ saveBtn.addEventListener('click', onSave);
+ cancelBtn.addEventListener('click', onCancel);
+ observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+ modal.classList.add('show');
+ setTimeout(() => input.focus(), 50);
+ });
+ }
+
  
 // ==================== Slide-to-submit ====================
 function initSlideToSub() {
@@ -2274,9 +2312,15 @@ async function openAdminUserCard(tgId) {
  </div>`;
  }
 
- const commentHtml = u.comment
- ? `<div class="user-card-comment">${u.comment}</div>`
- : `<div class="user-card-comment" style="color:var(--hint-color);font-style:italic;">Нет комментария</div>`;
+ const commentValue = u.comment || '';
+ const commentHtml = `
+ <div class="user-card-comment-block">
+ <div class="user-card-comment-head">
+ <span>Комментарий</span>
+ <button type="button" class="user-card-comment-edit" data-act="edit_comment">Изменить</button>
+ </div>
+ <div class="user-card-comment" id="user-comment-text">${commentValue ? escapeHtml(commentValue) : '<span style="color:var(--hint-color);font-style:italic;">Нет комментария</span>'}</div>
+ </div>`;
 
  const trafficHtml = (u.traffic_up || u.traffic_down)
  ? `<div class="user-card-row"><span class="label">Трафик</span><span class="value">${u.traffic_down || '0 GB'} / ${u.traffic_up || '0 GB'}</span></div>`
@@ -2345,7 +2389,21 @@ async function openAdminUserCard(tgId) {
  const act = btn.dataset.act;
  const id = +btn.dataset.tg;
 
- if (act === 'approve') {
+ if (act === 'edit_comment') {
+ const value = await showCommentEditor(u.comment || '');
+ if (value === null) return;
+ const res = await adminCall('/comment', { tg_id: tgId, comment: value });
+ if (!res.success) { showToast(res.error || 'Не удалось обновить комментарий', true); return; }
+ u.comment = res.comment || '';
+ const view = document.getElementById('user-comment-text');
+ if (view) {
+ view.innerHTML = u.comment
+ ? escapeHtml(u.comment)
+ : '<span style="color:var(--hint-color);font-style:italic;">Нет комментария</span>';
+ }
+ showToast('Комментарий обновлён');
+ return;
+ } else if (act === 'approve') {
  if (!await showConfirm('Одобрить заявку?')) return;
  const res = await adminCall('/approve', { tg_id: id });
  if (res.success) { showToast('Одобрен'); modal.classList.remove('show'); loadAdminUsers(); loadAdminStats(); }

@@ -259,3 +259,41 @@ def unblock():
     except Exception as e:
         logger.error("admin/unblock failed")
         return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+
+
+@admin_api.route("/comment", methods=["POST"])
+@admin_required
+def update_comment():
+    data = request.json or {}
+    tg_id = int(data.get("tg_id", 0))
+    comment = clean_reason(data.get("comment"))
+
+    async def do():
+        from database import get_user
+        from xui_client import XUIClient
+
+        user = await get_user(tg_id)
+        if not user or not user["xui_email"]:
+            return {"error": "Пользователь не найден"}
+
+        async with XUIClient() as xui:
+            updated = await xui.update_comment(user["xui_email"], comment)
+        if not updated:
+            return {"error": "Не удалось обновить комментарий в 3x-ui"}
+
+        await _audit(
+            request.admin_user["id"],
+            "comment",
+            tg_id,
+            f"comment={comment}" if comment else "comment=",
+        )
+        return {"success": True, "comment": comment}
+
+    try:
+        r = run_async(do())
+    except Exception:
+        logger.error("admin/comment failed")
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+    if "error" in r:
+        return jsonify(r), 400
+    return jsonify(r)

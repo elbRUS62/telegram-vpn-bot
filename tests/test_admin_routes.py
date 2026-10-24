@@ -23,6 +23,7 @@ ADMIN_ENDPOINTS = (
     "/api/miniapp/admin/delete",
     "/api/miniapp/admin/block",
     "/api/miniapp/admin/unblock",
+    "/api/miniapp/admin/comment",
     "/api/miniapp/admin/broadcast",
     "/api/miniapp/admin/audit",
     "/api/miniapp/admin/tickets",
