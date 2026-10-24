@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 from config import WEB_ADMIN_SESSION_HOURS, WEB_SECRET_KEY
 from database import init_db
+from observability import init_sentry
 from permissions import seed_admins
 from web.routes.docs import docs_bp
 from web.routes.health import health_bp
@@ -21,6 +22,8 @@ from web.routes.webadmin import webadmin_bp
 from web.routes.api import api
 from web.routes.api.admin import admin_api
 from web.routes.api.support import support_api
+
+init_sentry("web")
 
 app = Flask(__name__, template_folder='web/templates', static_folder='web/static')
 app.secret_key = WEB_SECRET_KEY

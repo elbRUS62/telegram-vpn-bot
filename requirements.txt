@@ -9,3 +9,4 @@ websockets
 httpx
 flask
 gunicorn>=22.0
+sentry-sdk[flask]>=2.20,<3

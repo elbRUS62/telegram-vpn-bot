@@ -7,6 +7,15 @@ load_dotenv()
 # Version
 BOT_VERSION = os.getenv("BOT_VERSION", "3.6.0")
 
+# Sentry / GlitchTip (необязательно)
+SENTRY_DSN = os.getenv("SENTRY_DSN", "").strip()
+SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", "production").strip() or "production"
+try:
+    SENTRY_TRACES_RATE = float(os.getenv("SENTRY_TRACES_RATE", "0") or 0)
+except ValueError:
+    SENTRY_TRACES_RATE = 0.0
+SENTRY_TRACES_RATE = min(max(SENTRY_TRACES_RATE, 0.0), 1.0)
+
 # Telegram
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_ID", "").split(",") if x.strip()]
