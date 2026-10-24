@@ -63,6 +63,21 @@ journalctl -u skrepnet-monitor.service -n 20 --no-pager
 cat /var/lib/skrepnet-monitor/state.json
 ```
 
+## UptimeRobot
+
+Активный внешний монитор настроен через UptimeRobot API:
+
+- ID: `804404854`
+- Название: `SkrepNet GB health`
+- URL: `https://gb-skrepnet.duckdns.org:8443/health`
+- Тип: HTTP(s)
+- Интервал: 300 секунд (5 минут, бесплатный тариф)
+- Алерт: email аккаунта UptimeRobot
+
+`/health` возвращает `200` только при нормальном состоянии и `503` при деградации, поэтому keyword-проверка не нужна.
+
+API-ключ хранится в `/root/.config/uptimerobot/api.env` с правами `600`.
+
 ## Ограничение
 
 Это независимый монитор на двух серверах, но не полностью внешний сервис.
