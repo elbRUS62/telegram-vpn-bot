@@ -1,5 +1,6 @@
 import hashlib
 import json
+import secrets
 import aiohttp
 import logging
 from datetime import datetime, timedelta
@@ -70,7 +71,8 @@ class XUIClient:
         expires_ms = 0 if days == 0 else int((datetime.now() + timedelta(days=days)).timestamp() * 1000)
 
         # Генерируем subId из email — гарантированно уникальный
-        sub_id = hashlib.sha256(email.encode()).hexdigest()[:16]
+        # Случайный subId: email может быть переиспользован после переименования клиента.
+        sub_id = secrets.token_hex(8)
 
         payload = {
             "client": {
