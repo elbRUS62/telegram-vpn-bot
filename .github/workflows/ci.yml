@@ -34,5 +34,10 @@ jobs:
       - name: Установить зависимости
         run: pip install --disable-pip-version-check -r requirements.txt
 
+      - name: Аудит зависимостей
+        run: |
+          pip install --disable-pip-version-check pip-audit
+          pip-audit -r requirements.txt
+
       - name: Компиляция, тесты и проверка JS
         run: bash scripts/ci.sh
