@@ -68,7 +68,6 @@ const tg = window.Telegram?.WebApp || {
  linux: 'Linux',
  androidtv: 'Android TV',
  };
- const ACTIVE_TAB_KEY = 'skrepnet_active_tab';
  const HINTS_KEY = 'skrepnet_hints_dismissed';
 
  function isCacheablePath(path) {
@@ -646,7 +645,6 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const name = tab.dataset.tab;
  const previous = document.querySelector('.tab.active');
  if (previous) saveScroll(previous.dataset.tab);
- try { localStorage.setItem(ACTIVE_TAB_KEY, name); } catch (_) {}
  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
  tab.classList.add('active');
@@ -669,12 +667,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
 
 document.addEventListener('DOMContentLoaded', () => {
  initPullToRefresh();
- let saved = null;
- try { saved = localStorage.getItem(ACTIVE_TAB_KEY); } catch (_) {}
- if (saved && saved !== 'main' && saved !== 'admin') {
- const tab = document.querySelector(`.tab[data-tab="${saved}"]`);
- if (tab && tab.style.display !== 'none') setTimeout(() => switchTab(saved), 0);
- }
+ try { localStorage.removeItem('skrepnet_active_tab'); } catch (_) {}
 });
 
 window.addEventListener('scroll', () => {
