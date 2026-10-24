@@ -10,17 +10,20 @@ from permissions import get_admin_ids
 logger = logging.getLogger(__name__)
 
 
-def _send(chat_id, text: str) -> bool:
+def _send(chat_id, text: str, parse_mode=None) -> bool:
     if not BOT_TOKEN or not chat_id:
         return False
+    payload = {
+        "chat_id": chat_id,
+        "text": (text or "")[:3900],
+        "disable_web_page_preview": True,
+    }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     try:
         response = httpx.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={
-                "chat_id": chat_id,
-                "text": (text or "")[:3900],
-                "disable_web_page_preview": True,
-            },
+            json=payload,
             timeout=8,
         )
         if response.status_code != 200:
@@ -36,24 +39,30 @@ def _send(chat_id, text: str) -> bool:
         return False
 
 
-def _notify_admins(text: str):
+def _notify_admins(text: str, parse_mode=None):
     for admin_id in get_admin_ids():
-        _send(admin_id, text)
+        _send(admin_id, text, parse_mode)
 
 
-def notify_admins(text: str):
+def notify_admins(text: str, parse_mode=None):
     """Отправить уведомление всем администраторам в фоне."""
     if not get_admin_ids():
         return
     threading.Thread(
-        target=_notify_admins, args=(text,), daemon=True, name="tg-admins"
+        target=_notify_admins,
+        args=(text, parse_mode),
+        daemon=True,
+        name="tg-admins",
     ).start()
 
 
-def notify_user(chat_id, text: str):
+def notify_user(chat_id, text: str, parse_mode=None):
     """Отправить уведомление пользователю в фоне."""
     if not chat_id:
         return
     threading.Thread(
-        target=_send, args=(chat_id, text), daemon=True, name="tg-user"
+        target=_send,
+        args=(chat_id, text, parse_mode),
+        daemon=True,
+        name="tg-user",
     ).start()

@@ -1,5 +1,6 @@
 """Тикеты поддержки в Mini App: пользовательская часть."""
 import logging
+from html import escape as html_escape
 
 import aiosqlite
 from flask import Blueprint, jsonify, request
@@ -197,11 +198,12 @@ def ticket_create():
     who = f"@{user.get('username')}" if user.get("username") else (user.get("first_name") or f"ID {telegram_id}")
     notify_admins(
         f"<b>Новый тикет #{result['ticket_id']}</b>\n\n"
-        f"Пользователь: {who} ({telegram_id})\n"
-        f"Категория: {CATEGORIES[category]}\n"
-        f"Тема: {subject}\n\n"
-        f"{message[:1200]}\n\n"
-        "Открой Mini App → Админ → Тикеты."
+        f"Пользователь: {html_escape(who)} ({telegram_id})\n"
+        f"Категория: {html_escape(CATEGORIES[category])}\n"
+        f"Тема: {html_escape(subject)}\n\n"
+        f"{html_escape(message[:1200])}\n\n"
+        "Открой Mini App → Админ → Тикеты.",
+        parse_mode="HTML",
     )
     return jsonify(result)
 
