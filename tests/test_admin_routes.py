@@ -13,7 +13,6 @@ ADMIN_ENDPOINTS = (
     "/api/miniapp/admin/users/bulk",
     "/api/miniapp/admin/user",
     "/api/miniapp/admin/diagnostics",
-    "/api/miniapp/admin/diagnostics/stats",
     "/api/miniapp/admin/errors",
     "/api/miniapp/admin/requests",
     "/api/miniapp/admin/approve",

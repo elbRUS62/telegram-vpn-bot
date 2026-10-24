@@ -767,13 +767,6 @@ document.addEventListener('visibilitychange', () => {
    <a href="data:image/png;base64,${data.qr_base64}" download="skrepnet-qr.png" class="btn btn-secondary" style="text-decoration:none;">Сохранить QR</a>
  </div>
 
- <div class="tg-card" id="connection-check-card">
-   <div class="tg-card-title">Проверка подключения</div>
-   <p class="tg-note" style="margin-bottom:10px;padding:0;">Проверим сервер, клиента и ссылку подписки.</p>
-   <button class="btn btn-secondary" data-action="check_connection">Проверить подключение</button>
-   <div id="connection-check-result" class="tg-note" style="display:none;padding:10px 0 0;"></div>
- </div>
-
  <div class="tg-card">
    <button class="btn btn-secondary" data-action="renew_sub">Продлить бесплатно</button>
    <button class="btn btn-secondary" data-action="donate">❤️ Поддержать проект</button>
@@ -794,7 +787,6 @@ document.addEventListener('visibilitychange', () => {
  else if (btn.dataset.action === 'share_link') shareSubscription(data.sub_url);
  else if (btn.dataset.action === 'renew_sub') openRenewModal();
  else if (btn.dataset.action === 'donate') switchTab('donate');
- else if (btn.dataset.action === 'check_connection') runConnectionCheck(btn);
  });
  });
 
@@ -805,100 +797,7 @@ document.addEventListener('visibilitychange', () => {
  }
  }
 
-  async function timedFetch(url, options = {}, timeoutMs = 7000) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const started = performance.now();
-    try {
-      const response = await fetch(url, {
-        ...options,
-        cache: 'no-store',
-        signal: controller.signal,
-      });
-      return { ok: true, status: response.status, ms: Math.round(performance.now() - started) };
-    } catch (error) {
-      return {
-        ok: false,
-        status: 0,
-        ms: Math.round(performance.now() - started),
-        error: error?.name || 'network',
-      };
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
-  async function runConnectionCheck(button) {
-    const resultBox = document.getElementById('connection-check-result');
-    if (!resultBox) return;
-
-    const originalText = button.textContent;
-    button.disabled = true;
-    button.textContent = 'Проверяем...';
-    resultBox.style.display = 'block';
-    resultBox.innerHTML = 'Проверяем сервер и ссылку подписки.';
-
-    const health = await timedFetch('/health');
-    const subscription = CURRENT_SUB_URL
-      ? await timedFetch(CURRENT_SUB_URL, { mode: 'no-cors' })
-      : { ok: false, status: 0, ms: 0, error: 'no_sub_url' };
-
-    let diag = {};
-    try {
-      diag = await apiCall('/api/miniapp/diagnostics');
-    } catch (error) {
-      diag = { error: error?.message || 'diagnostics_failed' };
-    }
-
-    const healthOk = health.ok && health.status === 200;
-    const panelOk = !!diag.panel_ok;
-    const clientOk = !!diag.client_found;
-    const enabledOk = !!diag.enabled;
-    const linkOk = !!diag.sub_link_ok;
-    const overall = healthOk && subscription.ok && panelOk && clientOk && enabledOk && linkOk;
-
-    let stage = 'ok';
-    if (!healthOk) stage = 'health';
-    else if (!subscription.ok) stage = 'subscription_link';
-    else if (diag.error) stage = 'panel';
-    else if (!panelOk) stage = 'panel';
-    else if (!clientOk) stage = 'client';
-    else if (!enabledOk) stage = 'disabled';
-    else if (!linkOk) stage = 'subscription';
-
-    const row = (label, ok, value) => `
-      <div class="tg-item tg-item--static">
-        <span class="tg-item__label">${escapeHtml(label)}</span>
-        <span class="tg-item__value ${ok ? 'tg-value-ok' : 'tg-value-bad'}">${escapeHtml(value)}</span>
-      </div>`;
-
-    resultBox.innerHTML = `
-      <div class="tg-list">
-        ${row('Сервер GB', healthOk, healthOk ? 'Доступен' : 'Недоступен')}
-        ${row('Ссылка подписки', subscription.ok, subscription.ok ? 'Доступна' : 'Ошибка')}
-        ${row('Панель', panelOk, panelOk ? 'Доступна' : (diag.error || 'Ошибка'))}
-        ${row('Клиент', clientOk, clientOk ? 'Найден' : 'Не найден')}
-        ${row('Клиент включён', enabledOk, enabledOk ? 'Да' : 'Нет')}
-        ${row('VPN', !!diag.is_online, diag.is_online ? 'Онлайн' : 'Оффлайн')}
-      </div>
-      <div class="tg-note" style="padding:8px 0 0;">
-        ${overall ? 'Подключение выглядит рабочим.' : 'Есть проблема. Проверь приложение и при необходимости напиши в поддержку.'}
-      </div>`;
-
-    if (INIT_DATA) {
-      apiCall('/api/miniapp/diagnostics/report', {
-        ok: overall,
-        stage,
-        latency_ms: health.ms,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
-      }).catch(() => {});
-    }
-
-    button.disabled = false;
-    button.textContent = originalText;
-  }
-
-  function getProgressColor(daysLeft, totalDays) {
+ function getProgressColor(daysLeft, totalDays) {
  const days = Math.max(0, Math.min(daysLeft, totalDays));
  const percent = days / totalDays;
  let r, g, b;
@@ -2334,7 +2233,6 @@ async function openAdminUserCard(tgId) {
  });
  if (view === 'overview') loadAdminStats();
  else if (view === 'users') loadAdminUsers();
- else if (view === 'diagnostics') loadAdminDiagnostics();
  else if (view === 'admins') loadAdminAdmins();
  else if (view === 'system') {
    loadAdminMonitor().then(() => requestAnimationFrame(monitorResize));
@@ -2454,60 +2352,12 @@ async function openAdminUserCard(tgId) {
  loadAdminAdmins();
  }
 
- async function loadAdminDiagnostics() {
- const days = Number(document.getElementById('admin-diag-days')?.value || 7);
- const summary = document.getElementById('admin-diag-summary');
- const operators = document.getElementById('admin-diag-operators');
- const stages = document.getElementById('admin-diag-stages');
- const timezones = document.getElementById('admin-diag-timezones');
- if (!summary) return;
- summary.innerHTML = skeletonHtml(2);
- if (operators) operators.innerHTML = '<div class="tg-note" style="padding:14px;">Загрузка...</div>';
- const r = await adminCall('/diagnostics/stats', { days });
- if (r.error) {
-  summary.innerHTML = `<div class="tg-note" style="padding:14px;">${escapeHtml(r.error)}</div>`;
-  return;
- }
- const total = Number(r.summary?.total || 0);
- const success = Number(r.summary?.success_rate || 0);
- const failed = Number(r.summary?.fail_count || 0);
- summary.innerHTML = `
-  <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">Проверок за ${days} дн.</div></div>
-  <div class="stat-card"><div class="stat-num" style="color:var(--success-color);">${success}%</div><div class="stat-lbl">Успешность</div></div>
-  <div class="stat-card"><div class="stat-num" style="color:var(--danger-color);">${failed}</div><div class="stat-lbl">Ошибок</div></div>
-  <div class="stat-card"><div class="stat-num">${(r.by_operator || []).length}</div><div class="stat-lbl">Операторов</div></div>`;
-
- const row = (label, meta, value) => `
-  <div class="tg-item tg-item--static">
-   <span class="tg-item__label">${escapeHtml(label)}<span class="tg-note" style="display:block;padding:2px 0 0;">${escapeHtml(meta)}</span></span>
-   <span class="tg-item__value">${escapeHtml(value)}</span>
-  </div>`;
-
- if (operators) {
-  operators.innerHTML = (r.by_operator || []).map(item =>
-   row(item.operator || 'unknown', item.asn ? `ASN ${item.asn}` : 'ASN неизвестен', `${item.success_rate}% · ${item.total}`)
-  ).join('') || '<div class="tg-note" style="padding:14px;">Данных пока нет.</div>';
- }
- const stageLabels = { health: 'Сервер GB', subscription_link: 'Ссылка подписки', panel: 'Панель 3x-ui', client: 'Клиент', disabled: 'Клиент выключен', subscription: 'Подписка', unknown: 'Неизвестно' };
- if (stages) {
-  stages.innerHTML = (r.by_stage || []).map(item =>
-   row(stageLabels[item.stage] || item.stage, `${item.total} ошибок`, `${item.success_rate}%`)
-  ).join('') || '<div class="tg-note" style="padding:14px;">Ошибок нет.</div>';
- }
- if (timezones) {
-  timezones.innerHTML = (r.by_timezone || []).map(item =>
-   row(item.timezone || 'unknown', `${item.total} проверок`, `${item.success_rate}%`)
-  ).join('') || '<div class="tg-note" style="padding:14px;">Данных пока нет.</div>';
- }
- }
-
  function renderAdminScreen() {
  document.getElementById('admin-content').innerHTML = `
  <div class="admin-subtabs" id="admin-subtabs">
    <button class="tab active" data-admin-view="overview" onclick="switchAdminView('overview')">Обзор</button>
    <button class="tab" data-admin-view="users" onclick="showAllUsers()">Пользователи <span class="badge pending" id="admin-users-pending-badge" style="display:none;margin-left:4px;">0</span></button>
    <button class="tab" data-admin-view="system" onclick="switchAdminView('system')">Система <span class="badge pending" id="admin-system-tickets-badge" style="display:none;margin-left:4px;">0</span></button>
-   <button class="tab" data-admin-view="diagnostics" onclick="switchAdminView('diagnostics')">Диагностика</button>
    ${IS_SUPERADMIN ? '<button class="tab" data-admin-view="admins" onclick="switchAdminView(&#39;admins&#39;)">Админы</button>' : ''}
  </div>
 
@@ -2572,32 +2422,7 @@ async function openAdminUserCard(tgId) {
    <button class="btn btn-secondary" id="admin-more" style="width:100%;display:none;margin-top:8px;">Показать ещё</button>
  </div>
 
-  <div class="admin-view" id="admin-view-diagnostics" style="display:none;">
-    <div class="admin-search">
-      <select id="admin-diag-days" onchange="loadAdminDiagnostics()">
-        <option value="1">За сутки</option>
-        <option value="7" selected>За 7 дней</option>
-        <option value="30">За 30 дней</option>
-      </select>
-      <button class="admin-sync" type="button" onclick="loadAdminDiagnostics()" title="Обновить">↻</button>
-    </div>
-    <div class="stats-grid" id="admin-diag-summary"></div>
-    <div class="admin-section">
-      <div class="admin-section-title">По операторам</div>
-      <div class="tg-list" id="admin-diag-operators"></div>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-title">Этапы ошибок</div>
-      <div class="tg-list" id="admin-diag-stages"></div>
-    </div>
-    <div class="admin-section">
-      <div class="admin-section-title">Часовые пояса</div>
-      <div class="tg-list" id="admin-diag-timezones"></div>
-    </div>
-  </div>
-
   <div class="admin-view" id="admin-view-admins" style="display:none;">
-
     <div class="admin-section">
       <div class="admin-section-title">Добавить администратора</div>
       <div class="admin-search">

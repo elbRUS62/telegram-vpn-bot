@@ -89,12 +89,11 @@
     document.querySelectorAll(".wa-view").forEach((section) => {
       section.hidden = section.id !== "view-" + view;
     });
-    const titles = { overview: "Обзор", users: "Пользователи", tickets: "Тикеты", diagnostics: "Диагностика", admins: "Админы", audit: "Аудит" };
+    const titles = { overview: "Обзор", users: "Пользователи", tickets: "Тикеты", admins: "Админы", audit: "Аудит" };
     $("wa-title").textContent = titles[view] || "Админка";
     if (view === "overview") loadOverview();
     if (view === "users") loadUsers(1);
     if (view === "tickets") loadTickets();
-    if (view === "diagnostics") loadDiagnostics();
     if (view === "admins") loadAdmins();
     if (view === "audit") loadAudit();
   }
@@ -285,73 +284,6 @@
     }
   }
 
-  async function loadDiagnostics() {
-    const summary = $("wa-diagnostics-summary");
-    const operators = $("wa-diagnostics-operators");
-    const stages = $("wa-diagnostics-stages");
-    const timezones = $("wa-diagnostics-timezones");
-    const days = Number($("wa-diagnostics-days")?.value || 7);
-    summary.innerHTML = '<div class="wa-empty">Загрузка...</div>';
-    operators.innerHTML = '<div class="wa-empty">Загрузка...</div>';
-    stages.innerHTML = '<div class="wa-empty">Загрузка...</div>';
-    timezones.innerHTML = '<div class="wa-empty">Загрузка...</div>';
-
-    try {
-      const data = await api("/diagnostics/stats", { days });
-      const total = Number(data.summary?.total || 0);
-      const success = Number(data.summary?.success_rate || 0);
-      const failed = Number(data.summary?.fail_count || 0);
-      summary.innerHTML = `
-        <div class="wa-card"><div class="wa-card-label">Проверок</div><div class="wa-card-value">${total}</div><div class="wa-card-meta">за ${days} дн.</div></div>
-        <div class="wa-card"><div class="wa-card-label">Успешность</div><div class="wa-card-value">${success}%</div><div class="wa-card-meta">успешных проверок</div></div>
-        <div class="wa-card"><div class="wa-card-label">Ошибок</div><div class="wa-card-value">${failed}</div><div class="wa-card-meta">проблемных проверок</div></div>
-        <div class="wa-card"><div class="wa-card-label">Операторов</div><div class="wa-card-value">${(data.by_operator || []).length}</div><div class="wa-card-meta">определено по ASN</div></div>`;
-
-      operators.innerHTML = renderDiagnosticTable(
-        ["Оператор", "ASN", "Проверок", "Успешность"],
-        (data.by_operator || []).map((item) => [
-          esc(item.operator || "unknown"),
-          esc(item.asn ?? "—"),
-          esc(item.total),
-          `${esc(item.success_rate)}%`,
-        ]),
-      );
-      const stageLabels = {
-        health: "Сервер GB",
-        subscription_link: "Ссылка подписки",
-        panel: "Панель 3x-ui",
-        client: "Клиент в панели",
-        disabled: "Клиент выключен",
-        subscription: "Подписка",
-        unknown: "Неизвестно",
-      };
-      stages.innerHTML = renderDiagnosticTable(
-        ["Этап", "Ошибок", "Успешность"],
-        (data.by_stage || []).map((item) => [
-          esc(stageLabels[item.stage] || item.stage),
-          esc(item.total),
-          `${esc(item.success_rate)}%`,
-        ]),
-      );
-      timezones.innerHTML = renderDiagnosticTable(
-        ["Часовой пояс", "Проверок", "Успешность"],
-        (data.by_timezone || []).map((item) => [
-          esc(item.timezone || "unknown"),
-          esc(item.total),
-          `${esc(item.success_rate)}%`,
-        ]),
-      );
-    } catch (error) {
-      toast(error.message, "error");
-      summary.innerHTML = `<div class="wa-empty">${esc(error.message)}</div>`;
-    }
-  }
-
-  function renderDiagnosticTable(headers, rows) {
-    if (!rows.length) return '<div class="wa-empty">Данных пока нет.</div>';
-    return `<table class="wa-table"><thead><tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-  }
-
   async function loadAdmins() {
     if (!CONFIG.isSuperadmin) return;
     const target = $("wa-admins");
@@ -448,8 +380,6 @@
     loadTickets();
   });
   $("wa-ticket-refresh").addEventListener("click", loadTickets);
-  $("wa-diagnostics-days").addEventListener("change", loadDiagnostics);
-  $("wa-diagnostics-refresh").addEventListener("click", loadDiagnostics);
 
   const adminAdd = $("wa-admin-add");
   if (adminAdd) {
