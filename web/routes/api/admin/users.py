@@ -415,9 +415,17 @@ def user_card():
                             if down is not None:
                                 result["traffic_down"] = f"{down / (1024**3):.2f} GB"
 
-                        # Онлайн: через /clients/onlines (как в списке)
-                        result["is_online"] = False
-                        result["vpn_online"] = False
+                            last_online = traffic.get("lastOnline")
+                            if last_online:
+                                try:
+                                    last_dt = datetime.fromtimestamp(int(last_online) / 1000)
+                                    result["last_online"] = last_dt.strftime("%d.%m.%y %H:%M")
+                                    if (datetime.now() - last_dt).total_seconds() <= 120:
+                                        result["vpn_online"] = True
+                                        result["is_online"] = True
+                                except (TypeError, ValueError, OSError):
+                                    pass
+
             except Exception as e:
                 logger.warning(f"Ошибка получения данных 3x-ui для {u['xui_email']}")
 

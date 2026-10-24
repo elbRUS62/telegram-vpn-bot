@@ -2370,7 +2370,7 @@ async function openAdminUserCard(tgId) {
  ${daysBar}
  </div>
  <div class="user-card-row"><span class="label">Email</span><span class="value">${u.xui_email || '—'}</span></div>
- <div class="user-card-row"><span class="label">VPN</span><span class="value">${isOnline ? 'Онлайн' : 'Офлайн'}</span></div>
+ <div class="user-card-row"><span class="label">VPN</span><span class="value">${isOnline ? 'Онлайн' : (u.last_online ? 'Был в сети ' + escapeHtml(u.last_online) : 'Офлайн')}</span></div>
  <div class="user-card-row"><span class="label">Приглашено</span><span class="value">${u.invites_count || 0}</span></div>
  <div class="user-card-row"><span class="label">Продлений</span><span class="value">${u.renew_count || 0}</span></div>
  <div class="user-card-row"><span class="label">Последний визит</span><span class="value">${u.last_seen || '—'}</span></div>
