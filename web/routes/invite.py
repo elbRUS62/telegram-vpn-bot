@@ -189,7 +189,7 @@ def activate(token):
 
         try:
             async with XUIClient() as xui:
-                auto_comment = "Гость без Telegram"
+                auto_comment = "Гостевая подписка"
 
                 # B уже в 3x-ui?  продлить (+3 дня), отдать ссылку; иначе создать
                 try:
