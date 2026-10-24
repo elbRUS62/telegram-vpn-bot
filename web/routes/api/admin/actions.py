@@ -35,7 +35,7 @@ def approve():
 
         try:
             async with XUIClient() as xui:
-                sub_id = await xui.add_client(
+                sub_id = await xui.get_or_create_client(
                     user["xui_email"],
                     comment=comment,
                     tg_id=tg_id,

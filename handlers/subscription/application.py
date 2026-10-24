@@ -61,7 +61,7 @@ async def accept_terms(callback: CallbackQuery):
                 auto_comment = f"{user_part} | bot"
 
             async with XUIClient() as xui:
-                sub_id = await xui.add_client(
+                sub_id = await xui.get_or_create_client(
                     xui_email,
                     comment=auto_comment,
                     tg_id=callback.from_user.id,

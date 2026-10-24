@@ -1,5 +1,5 @@
+import hashlib
 import json
-import secrets
 import aiohttp
 import logging
 from datetime import datetime, timedelta
@@ -69,9 +69,8 @@ class XUIClient:
             days = SUBSCRIPTION_DAYS
         expires_ms = 0 if days == 0 else int((datetime.now() + timedelta(days=days)).timestamp() * 1000)
 
-        # Генерируем subId из email — гарантированно уникальный
-        # Случайный subId: email может быть переиспользован после переименования клиента.
-        sub_id = secrets.token_hex(8)
+        # subId детерминирован по email: повторная заявка получает ту же ссылку.
+        sub_id = hashlib.sha256(email.encode()).hexdigest()[:16]
 
         payload = {
             "client": {
@@ -102,6 +101,52 @@ class XUIClient:
             logger.warning("⚠️ Не удалось добавить %s в группу %s", email, BOT_NAME, exc_info=True)
 
         return sub_id
+
+    async def get_or_create_client(
+        self,
+        email: str,
+        comment: str = None,
+        tg_id: int = 0,
+        group: str = "",
+    ) -> str:
+        """Вернуть subId существующего клиента или создать нового.
+
+        Email детерминирован (username или user<id>), поэтому повторная
+        заявка должна переиспользовать уже созданного клиента, а не
+        создавать дубликат и не менять ссылку подписки.
+        """
+        try:
+            client = await self.get_client(email)
+        except Exception:
+            client = None
+
+        if client:
+            sub_id = (client.get("subId") or "").strip()
+            if not sub_id:
+                sub_id = hashlib.sha256(email.encode()).hexdigest()[:16]
+                payload = {
+                    "email": email,
+                    "expiryTime": client.get("expiryTime", 0),
+                    "limitIp": client.get("limitIp", LIMIT_IP),
+                    "enable": client.get("enable", True),
+                    "totalGB": client.get("totalGB", 0),
+                    "comment": client.get("comment", ""),
+                    "subId": sub_id,
+                    "group": client.get("group", ""),
+                    "tgId": tg_id or client.get("tgId", 0),
+                }
+                result = await self._post(f"/panel/api/clients/update/{email}", payload)
+                if not result.get("success"):
+                    raise Exception(f"Sub id update failed: {result}")
+            elif tg_id:
+                try:
+                    await self.update_tg_id(email, tg_id)
+                except Exception:
+                    logger.warning("Не удалось обновить tgId для %s", email, exc_info=True)
+            logger.info("Клиент %s уже существует, используем subId=%s", email, sub_id)
+            return sub_id
+
+        return await self.add_client(email, comment=comment, tg_id=tg_id, group=group)
 
     async def get_client(self, email: str) -> dict:
         """Получить данные клиента, включая subId.

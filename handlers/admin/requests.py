@@ -17,7 +17,6 @@ from database import (
 )
 from keyboards import (
     admin_manage_keyboard,
-    email_conflict_keyboard,
     subscription_keyboard,
 )
 from xui_client import XUIClient
@@ -255,29 +254,13 @@ async def _do_approve(bot, chat_id: int, telegram_id: int, custom_comment: str =
 
     try:
         async with XUIClient() as xui:
-            try:
-                sub_id = await xui.add_client(
-                    user["xui_email"],
-                    comment=comment,
-                    tg_id=telegram_id,
-                )
-                await approve_user(telegram_id, sub_id)
-                sub_url = xui.build_sub_url(sub_id)
-            except Exception as e:
-                if "email already in use" in str(e):
-                    base_email = user["xui_email"]
-                    await bot.send_message(
-                        chat_id,
-                        f"⚠️ <b>Email '{base_email}' уже занят в 3x-ui</b>\n\n"
-                        f"👤 {user['first_name']}\n"
-                        f"🆔 <code>{telegram_id}</code>\n\n"
-                        f"Выбери новое имя для клиента:",
-                        parse_mode="HTML",
-                        reply_markup=email_conflict_keyboard(telegram_id, base_email)
-                    )
-                    return
-                else:
-                    raise
+            sub_id = await xui.get_or_create_client(
+                user["xui_email"],
+                comment=comment,
+                tg_id=telegram_id,
+            )
+            await approve_user(telegram_id, sub_id)
+            sub_url = xui.build_sub_url(sub_id)
 
         await bot.send_message(
             chat_id,
