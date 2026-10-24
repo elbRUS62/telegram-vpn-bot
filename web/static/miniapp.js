@@ -767,6 +767,13 @@ document.addEventListener('visibilitychange', () => {
    <a href="data:image/png;base64,${data.qr_base64}" download="skrepnet-qr.png" class="btn btn-secondary" style="text-decoration:none;">Сохранить QR</a>
  </div>
 
+ <div class="tg-card" id="connection-check-card">
+   <div class="tg-card-title">Проверка подключения</div>
+   <p class="tg-note" style="margin-bottom:10px;padding:0;">Проверим сервер, клиента и ссылку подписки. В обезличенную статистику не попадают Telegram ID и IP.</p>
+   <button class="btn btn-secondary" data-action="check_connection">Проверить подключение</button>
+   <div id="connection-check-result" class="tg-note" style="display:none;padding:10px 0 0;"></div>
+ </div>
+
  <div class="tg-card">
    <button class="btn btn-secondary" data-action="renew_sub">Продлить бесплатно</button>
    <button class="btn btn-secondary" data-action="donate">❤️ Поддержать проект</button>
@@ -787,6 +794,7 @@ document.addEventListener('visibilitychange', () => {
  else if (btn.dataset.action === 'share_link') shareSubscription(data.sub_url);
  else if (btn.dataset.action === 'renew_sub') openRenewModal();
  else if (btn.dataset.action === 'donate') switchTab('donate');
+ else if (btn.dataset.action === 'check_connection') runConnectionCheck(btn);
  });
  });
 
@@ -797,7 +805,100 @@ document.addEventListener('visibilitychange', () => {
  }
  }
 
- function getProgressColor(daysLeft, totalDays) {
+  async function timedFetch(url, options = {}, timeoutMs = 7000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const started = performance.now();
+    try {
+      const response = await fetch(url, {
+        ...options,
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      return { ok: true, status: response.status, ms: Math.round(performance.now() - started) };
+    } catch (error) {
+      return {
+        ok: false,
+        status: 0,
+        ms: Math.round(performance.now() - started),
+        error: error?.name || 'network',
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function runConnectionCheck(button) {
+    const resultBox = document.getElementById('connection-check-result');
+    if (!resultBox) return;
+
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Проверяем...';
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = 'Проверяем сервер и ссылку подписки.';
+
+    const health = await timedFetch('/health');
+    const subscription = CURRENT_SUB_URL
+      ? await timedFetch(CURRENT_SUB_URL, { mode: 'no-cors' })
+      : { ok: false, status: 0, ms: 0, error: 'no_sub_url' };
+
+    let diag = {};
+    try {
+      diag = await apiCall('/api/miniapp/diagnostics');
+    } catch (error) {
+      diag = { error: error?.message || 'diagnostics_failed' };
+    }
+
+    const healthOk = health.ok && health.status === 200;
+    const panelOk = !!diag.panel_ok;
+    const clientOk = !!diag.client_found;
+    const enabledOk = !!diag.enabled;
+    const linkOk = !!diag.sub_link_ok;
+    const overall = healthOk && subscription.ok && panelOk && clientOk && enabledOk && linkOk;
+
+    let stage = 'ok';
+    if (!healthOk) stage = 'health';
+    else if (!subscription.ok) stage = 'subscription_link';
+    else if (diag.error) stage = 'panel';
+    else if (!panelOk) stage = 'panel';
+    else if (!clientOk) stage = 'client';
+    else if (!enabledOk) stage = 'disabled';
+    else if (!linkOk) stage = 'subscription';
+
+    const row = (label, ok, value) => `
+      <div class="tg-item tg-item--static">
+        <span class="tg-item__label">${escapeHtml(label)}</span>
+        <span class="tg-item__value ${ok ? 'tg-value-ok' : 'tg-value-bad'}">${escapeHtml(value)}</span>
+      </div>`;
+
+    resultBox.innerHTML = `
+      <div class="tg-list">
+        ${row('Сервер GB', healthOk, healthOk ? 'Доступен' : 'Недоступен')}
+        ${row('Ссылка подписки', subscription.ok, subscription.ok ? 'Доступна' : 'Ошибка')}
+        ${row('Панель', panelOk, panelOk ? 'Доступна' : (diag.error || 'Ошибка'))}
+        ${row('Клиент', clientOk, clientOk ? 'Найден' : 'Не найден')}
+        ${row('Клиент включён', enabledOk, enabledOk ? 'Да' : 'Нет')}
+        ${row('VPN', !!diag.is_online, diag.is_online ? 'Онлайн' : 'Оффлайн')}
+      </div>
+      <div class="tg-note" style="padding:8px 0 0;">
+        ${overall ? 'Подключение выглядит рабочим.' : 'Есть проблема. Проверь приложение и при необходимости напиши в поддержку.'}
+      </div>`;
+
+    if (INIT_DATA) {
+      apiCall('/api/miniapp/diagnostics/report', {
+        ok: overall,
+        stage,
+        latency_ms: health.ms,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+      }).catch(() => {});
+    }
+
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+
+  function getProgressColor(daysLeft, totalDays) {
  const days = Math.max(0, Math.min(daysLeft, totalDays));
  const percent = days / totalDays;
  let r, g, b;

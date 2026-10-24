@@ -1,7 +1,10 @@
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 
+import aiosqlite
 from flask import jsonify, request
 
+from config import DB_PATH
 from web.utils.async_helper import run_async
 from web.utils.auth import validate_init_data
 
@@ -74,6 +77,66 @@ def diagnostics():
     if 'error' in result:
         return jsonify(result), 400
     return jsonify(result)
+
+
+@api.route('/diagnostics/report', methods=['POST'])
+def diagnostics_report():
+    """Обезличенный агрегат проверки подключения.
+
+    Telegram ID и IP не сохраняются. В базу попадает только час,
+    часовой пояс, этап проверки, результат и грубая задержка.
+    """
+    data = request.json or {}
+    user = validate_init_data(data.get('init_data', ''))
+    if not user:
+        return jsonify({'error': 'Неверная авторизация'}), 401
+
+    allowed_stages = {
+        'ok', 'health', 'subscription_link', 'panel',
+        'client', 'disabled', 'subscription', 'unknown',
+    }
+    stage = str(data.get('stage') or 'unknown').strip()
+    if stage not in allowed_stages:
+        stage = 'unknown'
+
+    timezone_name = str(data.get('timezone') or '').strip()[:64]
+    if not re.fullmatch(r'[A-Za-z0-9_+./-]{1,64}', timezone_name):
+        timezone_name = 'unknown'
+
+    try:
+        latency_ms = max(0, min(60_000, int(data.get('latency_ms') or 0)))
+    except (TypeError, ValueError):
+        latency_ms = 0
+    if latency_ms < 300:
+        latency_bucket = '<300'
+    elif latency_ms < 1000:
+        latency_bucket = '<1000'
+    elif latency_ms < 3000:
+        latency_bucket = '<3000'
+    else:
+        latency_bucket = '>=3000'
+
+    bucket = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:00')
+    ok = 1 if data.get('ok') is True else 0
+
+    async def store():
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("""
+                INSERT INTO diagnostic_stats
+                    (bucket, timezone, stage, ok, latency_bucket, count)
+                VALUES (?, ?, ?, ?, ?, 1)
+                ON CONFLICT(bucket, timezone, stage, ok, latency_bucket)
+                DO UPDATE SET count = count + 1
+            """, (bucket, timezone_name, stage, ok, latency_bucket))
+            await db.commit()
+
+    try:
+        run_async(store())
+    except Exception:
+        logger.warning("diagnostics report store failed")
+        return jsonify({'success': False}), 500
+
+    return jsonify({'success': True})
 
 
 # ============================================================

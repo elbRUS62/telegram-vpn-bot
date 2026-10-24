@@ -153,6 +153,21 @@ async def init_db():
             )
         """)
         await db.execute("""
+            CREATE TABLE IF NOT EXISTS diagnostic_stats (
+                bucket TEXT NOT NULL,
+                timezone TEXT NOT NULL DEFAULT 'unknown',
+                stage TEXT NOT NULL,
+                ok INTEGER NOT NULL,
+                latency_bucket TEXT NOT NULL,
+                count INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (bucket, timezone, stage, ok, latency_bucket)
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_diagnostic_stats_bucket
+            ON diagnostic_stats(bucket)
+        """)
+        await db.execute("""
             CREATE INDEX IF NOT EXISTS idx_admin_login_tokens_expires
             ON admin_login_tokens(expires_at)
         """)
