@@ -100,9 +100,9 @@ async def _show_users_list(callback: CallbackQuery, action: str, page: int):
     users = users[start:end]
 
     titles = {
-        "extend": "🔄 Обновить подписку",
-        "delete": "🗑 Удалить пользователя",
-        "reset": "♻️ Сбросить заявку",
+        "extend": "Обновить подписку",
+        "delete": "Удалить пользователя",
+        "reset": "Сбросить заявку",
     }
     hints = {
         "extend": "Выбери пользователя, которому продлить подписку:",
@@ -113,10 +113,10 @@ async def _show_users_list(callback: CallbackQuery, action: str, page: int):
     if not users:
         await callback.message.edit_text(
             f"<b>{titles.get(action)}</b>\n\n"
-            f"❌ Нет пользователей с подходящим статусом.",
+            f"Нет пользователей с подходящим статусом.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_manage")]
+                [InlineKeyboardButton(text="Назад", callback_data="admin_manage")]
             ])
         )
         return
@@ -154,15 +154,15 @@ async def user_action_callback(callback: CallbackQuery, state: FSMContext):
     if action == "extend":
         await state.update_data(target_tg_id=telegram_id)
         await callback.message.edit_text(
-            f"🔄 <b>Продление подписки</b>\n\n"
-            f"👤 {user['first_name']}\n"
-            f"🆔 <code>{telegram_id}</code>\n"
-            f"📧 {user['xui_email']}\n\n"
-            f"На сколько <b>дней</b> продлить?\n\n"
+            f"<b>Продление подписки</b>\n\n"
+            f"Пользователь: {user['first_name']}\n"
+            f"ID: <code>{telegram_id}</code>\n"
+            f"Email: {user['xui_email']}\n\n"
+            f"На сколько дней продлить?\n\n"
             f"Введи число от 1 до 3650.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_extend_cancel")]
+                [InlineKeyboardButton(text="Отмена", callback_data="admin_extend_cancel")]
             ])
         )
         await state.set_state(AdminStates.waiting_extend_days)
@@ -183,13 +183,13 @@ async def user_action_callback(callback: CallbackQuery, state: FSMContext):
         await notify_next_in_queue(callback.bot)
 
         await callback.message.edit_text(
-            f"🗑 <b>Пользователь удалён</b>\n\n"
-            f"👤 {user['first_name']}\n"
-            f"🆔 <code>{telegram_id}</code>\n"
-            f"📧 {user['xui_email']}",
+            f"<b>Пользователь удалён</b>\n\n"
+            f"Пользователь: {user['first_name']}\n"
+            f"ID: <code>{telegram_id}</code>\n"
+            f"Email: {user['xui_email']}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ К списку", callback_data="admin_delete_user")]
+                [InlineKeyboardButton(text="К списку", callback_data="admin_delete_user")]
             ])
         )
         await callback.answer("Удалён")
@@ -199,13 +199,13 @@ async def user_action_callback(callback: CallbackQuery, state: FSMContext):
         await delete_user(telegram_id)
 
         await callback.message.edit_text(
-            f"♻️ <b>Заявка сброшена</b>\n\n"
-            f"👤 {user['first_name']}\n"
-            f"🆔 <code>{telegram_id}</code>\n\n"
+            f"<b>Заявка сброшена</b>\n\n"
+            f"Пользователь: {user['first_name']}\n"
+            f"ID: <code>{telegram_id}</code>\n\n"
             f"Пользователь может подать заявку заново.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ К списку", callback_data="admin_reset")]
+                [InlineKeyboardButton(text="К списку", callback_data="admin_reset")]
             ])
         )
         await callback.answer("Сброшено")
@@ -221,7 +221,7 @@ async def admin_extend_cancel(callback: CallbackQuery, state: FSMContext):
 
     await state.clear()
     await callback.message.edit_text(
-        "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
+        "<b>Управление ботом</b>\n\nВыбери действие:",
         reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )
@@ -239,9 +239,9 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
             raise ValueError
     except ValueError:
         await message.answer(
-            "❌ Введи число от 1 до 3650.",
+            "Введи число от 1 до 3650.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_extend_cancel")]
+                [InlineKeyboardButton(text="Отмена", callback_data="admin_extend_cancel")]
             ])
         )
         return
@@ -251,9 +251,9 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
 
     if not telegram_id:
         await message.answer(
-            "❌ Ошибка: не найден пользователь",
+            "Ошибка: не найден пользователь",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")]
+                [InlineKeyboardButton(text="В управление", callback_data="admin_manage")]
             ])
         )
         await state.clear()
@@ -262,9 +262,9 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
     user = await get_user(telegram_id)
     if not user:
         await message.answer(
-            f"❌ Пользователь {telegram_id} не найден",
+            f"Пользователь {telegram_id} не найден",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")]
+                [InlineKeyboardButton(text="В управление", callback_data="admin_manage")]
             ])
         )
         await state.clear()
@@ -284,43 +284,43 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
 
             try:
                 await xui.update_comment(user["xui_email"], comment)
-                logger.info(f"✅ Comment обновлён: {comment}")
+                logger.info(f"Comment обновлён: {comment}")
             except Exception as e:
-                logger.error("⚠️ Не удалось обновить comment: ")
+                logger.error("Не удалось обновить comment: ")
 
         await renew_user(telegram_id, new_expires=new_expiry)
 
         await message.answer(
-            f"✅ <b>Подписка продлена</b>\n\n"
-            f"👤 {user['first_name']}\n"
-            f"📅 Новая дата: {new_expiry.strftime('%d.%m.%Y')}\n"
-            f"⏱ +{days} дней",
+            f"<b>Подписка продлена</b>\n\n"
+            f"Пользователь: {user['first_name']}\n"
+            f"Новая дата: {new_expiry.strftime('%d.%m.%Y')}\n"
+            f"Добавлено: {days} дн.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")],
-                [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")],
+                [InlineKeyboardButton(text="В управление", callback_data="admin_manage")],
+                [InlineKeyboardButton(text="В главное меню", callback_data="back_to_main")],
             ])
         )
 
         try:
             await message.bot.send_message(
                 telegram_id,
-                f"🎁 <b>Админ продлил твою подписку!</b>\n\n"
-                f"📅 Новая дата: {new_expiry.strftime('%d.%m.%Y')}\n"
-                f"⏱ +{days} дней",
+                f"<b>Подписка продлена</b>\n\n"
+                f"Новая дата: {new_expiry.strftime('%d.%m.%Y')}\n"
+                f"Добавлено: {days} дн.",
                 parse_mode="HTML"
             )
         except Exception:
             pass
 
-        logger.info(f"✅ Продлено {user['xui_email']} на {days} дней")
+        logger.info(f"Продлено {user['xui_email']} на {days} дней")
 
     except Exception as e:
-        logger.error("❌ Ошибка продления: ")
+        logger.error("Ошибка продления: ")
         await message.answer(
-            f"❌ Ошибка",
+            "Не удалось продлить подписку. Проверь панель 3x-ui и повтори попытку.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")]
+                [InlineKeyboardButton(text="В управление", callback_data="admin_manage")]
             ])
         )
 

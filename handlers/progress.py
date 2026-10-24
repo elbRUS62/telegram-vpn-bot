@@ -13,18 +13,21 @@ MONTHS_GENITIVE = [
 
 
 def _next_month_name() -> str:
-    """Название СЛЕДУЮЩЕГО месяца в предложном падеже (в ноябре, в декабре...).
-    Сбор всегда идёт на следующий месяц (оплата сервера вперёд)."""
+    """Название следующего месяца в предложном падеже."""
     now = datetime.now()
-    next_month = now.month % 12  # 12 → 0, потом 0 → январь
+    next_month = now.month % 12
     return MONTHS_GENITIVE[next_month]
 
 
+def _money(value: float) -> str:
+    return f"{value:,.0f}".replace(",", " ")
+
+
 async def render_progress(short: bool = False) -> str:
-    """Отрисовать полоску прогресса сбора.
+    """Отрисовать прогресс сбора.
 
     Args:
-        short: если True — только строка для напоминаний
+        short: если True — короткий текст для напоминаний.
     """
     if SERVER_COST <= 0:
         return ""
@@ -32,26 +35,27 @@ async def render_progress(short: bool = False) -> str:
     donated = await get_donations_total(currency="RUB")
     percent = min(int(donated / SERVER_COST * 100), 100)
     filled = min(percent // 10, 10)
-    bar = "🟩" * filled + "⬜" * (10 - filled)
+    bar = "█" * filled + "░" * (10 - filled)
+    month = _next_month_name()
 
     if short:
         return (
-            f"📊 Собрано на работу сервера в {_next_month_name()}:\n"
-            f"\u00A0\n"
-            f"{bar} {percent}%\n"
-            f"❤️ Проект держится на донатах — помоги, если можешь."
+            f"Сбор на сервер в {month}: {_money(donated)} из {_money(SERVER_COST)} ₽ ({percent}%).\n"
+            f"{bar}\n"
+            f"Поддержать проект можно в разделе «Донат»."
         )
 
-    # Полный формат
     if percent >= 100:
         return (
-            f"📊 <b>Собрано на работу сервера в {_next_month_name()}</b>\n\n"
+            f"<b>Сбор на сервер в {month}</b>\n\n"
             f"{bar} <b>100%</b>\n\n"
-            f"🎉 Спасибо всем, кто помог!"
+            f"Собрано {_money(donated)} из {_money(SERVER_COST)} ₽. "
+            f"Спасибо всем, кто помог."
         )
 
     return (
-        f"📊 <b>Собрано на работу сервера в {_next_month_name()}</b>\n\n"
-        f"{bar} <b>{percent}%</b>\n\n"
-        f"❤️ Проект держится на донатах — помоги, если можешь."
+        f"<b>Сбор на сервер в {month}</b>\n\n"
+        f"Собрано {_money(donated)} из {_money(SERVER_COST)} ₽ ({percent}%).\n"
+        f"{bar}\n\n"
+        f"Деньги идут только на аренду сервера. Поддержать можно в разделе «Донат»."
     )

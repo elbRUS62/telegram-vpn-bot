@@ -68,8 +68,8 @@ def accept_terms():
             logger.info("Отправка заявки админам для %s", telegram_id)
             reply_markup = {
                 "inline_keyboard": [[
-                    {"text": "✅ Одобрить", "callback_data": f"approve:{telegram_id}"},
-                    {"text": "❌ Отклонить", "callback_data": f"reject:{telegram_id}"},
+                    {"text": "Одобрить", "callback_data": f"approve:{telegram_id}"},
+                    {"text": "Отклонить", "callback_data": f"reject:{telegram_id}"},
                 ]]
             }
             for admin_id in get_admin_ids():
@@ -78,10 +78,10 @@ def accept_terms():
                     "sendMessage",
                     chat_id=admin_id,
                     text=(
-                        f"🆕 <b>Новая заявка (Mini App)</b>\n\n"
-                        f"👤 {user.get('first_name')} @{user.get('username')}\n"
-                        f"🆔 <code>{telegram_id}</code>\n"
-                        f"📧 {xui_email}"
+                        f"<b>Новая заявка (Mini App)</b>\n\n"
+                        f"Пользователь: {user.get('first_name')} @{user.get('username')}\n"
+                        f"ID: <code>{telegram_id}</code>\n"
+                        f"Email: {xui_email}"
                     ),
                     parse_mode="HTML",
                     reply_markup=reply_markup,
@@ -89,7 +89,7 @@ def accept_terms():
                 if result is None:
                     logger.error(f"Ошибка отправки админу {admin_id}")
                 else:
-                    logger.info(f"✅ Уведомление отправлено админу {admin_id}")
+                    logger.info(f"Уведомление отправлено админу {admin_id}")
 
             return {'success': True, 'type': 'pending'}
 

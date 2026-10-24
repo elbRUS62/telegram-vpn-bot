@@ -222,7 +222,7 @@ async def save_metrics(statuses: list[dict], min_interval: int = 240) -> None:
                 panel_id = status.get("panel_id") or "panel"
                 async with db.execute(
                     "SELECT ts FROM monitor_metrics "
-                    "WHERE panel_id = ? ORDER BY ts DESC LIMIT 1",
+                    " WHERE panel_id = ? ORDER BY ts DESC LIMIT 1",
                     (panel_id,),
                 ) as cur:
                     row = await cur.fetchone()
@@ -232,7 +232,7 @@ async def save_metrics(statuses: list[dict], min_interval: int = 240) -> None:
                     "INSERT INTO monitor_metrics "
                     "(panel_id, ts, cpu_percent, mem_percent, disk_percent, "
                     "online_count, traffic_total) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    " VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
                         panel_id,
                         now,
@@ -333,8 +333,8 @@ async def _state_set(key: str, value):
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
                 "INSERT INTO monitor_state(key, value, updated_at) "
-                "VALUES(?, ?, CURRENT_TIMESTAMP) "
-                "ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
+                " VALUES(?, ?, CURRENT_TIMESTAMP) "
+                " ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
                 "updated_at=CURRENT_TIMESTAMP",
                 (key, str(value)),
             )
@@ -373,8 +373,9 @@ async def _check_panel_health(bot, status: dict):
         if fails >= API_FAIL_ALERT_AFTER and now - last_alert >= API_FAIL_COOLDOWN:
             await _notify_admins(
                 bot,
-                f"⚠️ 3x-ui [{label}] недоступна\n"
-                f"Подряд неудачных проверок: {fails}\n"
+                f"<b>Панель 3x-ui недоступна</b>\n\n"
+                f"Панель: {label}\n"
+                f"Неудачных проверок подряд: {fails}\n"
                 f"Ошибка: {status.get('error') or 'неизвестно'}\n\n"
                 "Проверь панель и сервис x-ui.",
             )
@@ -393,7 +394,8 @@ async def _check_panel_health(bot, status: dict):
     if previous_fails >= API_FAIL_ALERT_AFTER and last_down_alert:
         await _notify_admins(
             bot,
-            f"✅ 3x-ui [{label}] снова доступна. Мониторинг восстановлен.",
+            f"<b>Панель снова доступна</b>\n\n"
+            f"Панель: {label}. Мониторинг восстановлен.",
         )
         await _state_set(_state_key(panel_id, "api_down_alert_ts"), 0)
 
@@ -411,7 +413,9 @@ async def _check_panel_health(bot, status: dict):
             continue
         await _notify_admins(
             bot,
-            f"⚠️ 3x-ui [{label}]: {metric_label} {value}% (порог {threshold}%)\n"
+            f"<b>Высокая нагрузка на сервер</b>\n\n"
+            f"Панель: {label}\n"
+            f"{metric_label}: {value}% (порог {threshold}%).\n\n"
             "Проверь нагрузку на сервер.",
         )
         await _state_set(state_key, now)
@@ -423,8 +427,9 @@ async def _check_panel_health(bot, status: dict):
         if now - last >= XRAY_COOLDOWN:
             await _notify_admins(
                 bot,
-                f"⚠️ 3x-ui [{label}]: Xray не запущен "
-                f"(state={status.get('xray_state')}).",
+                f"<b>Xray не запущен</b>\n\n"
+                f"Панель: {label}\n"
+                f"Состояние: {status.get('xray_state')}.",
             )
             await _state_set(state_key, now)
 
@@ -435,8 +440,10 @@ async def _check_panel_health(bot, status: dict):
         if now - last >= CERT_COOLDOWN:
             await _notify_admins(
                 bot,
-                f"🔐 3x-ui [{label}]: сертификат истекает через {cert_days} дн.\n"
-                "Пора обновить сертификат.",
+                f"<b>Сертификат истекает</b>\n\n"
+                f"Панель: {label}\n"
+                f"Осталось дней: {cert_days}.\n\n"
+                "Обнови сертификат.",
             )
             await _state_set(state_key, now)
 

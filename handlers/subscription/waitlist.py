@@ -42,15 +42,15 @@ async def join_waitlist_callback(callback: CallbackQuery):
     position = await get_waitlist_position(user.id)
 
     await callback.message.edit_text(
-        f"✅ <b>Ты в листе ожидания</b>\n\n"
-        f"📋 Твоя позиция: <b>{position}</b>\n\n"
+        f"<b>Ты в листе ожидания</b>\n\n"
+        f"Твоя позиция: <b>{position}</b>\n\n"
         f"Мы напишем тебе, как только освободится место. "
         f"Обычно это занимает несколько дней.",
         parse_mode="HTML"
     )
     await callback.answer("Ты в очереди!")
 
-    logger.info(f"✅ {user.id} добавлен в лист ожидания (позиция {position})")
+    logger.info(f"{user.id} добавлен в лист ожидания (позиция {position})")
 
 # ============================================================
 # ОБРАБОТЧИК ДАННЫХ ОТ MINI APP

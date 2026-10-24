@@ -53,7 +53,7 @@ async def create_invite_link(telegram_id: int, friend_user_id: int = None,
             """, (existing_token,))
             await db.commit()
             logger.info(
-                "♻️ Переиспользована ссылка %s (created_by=%s, friend_id=%s, friend_username=%s)",
+                "Переиспользована ссылка %s (created_by=%s, friend_id=%s, friend_username=%s)",
                 existing_token, telegram_id, friend_user_id, friend_username,
             )
             return existing_token

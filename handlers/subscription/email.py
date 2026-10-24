@@ -2,7 +2,7 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 
-from config import DONATE_TEXT
+from config import SUPPORT_USERNAME
 from database import approve_user, get_user
 from keyboards import subscription_keyboard
 from permissions import is_admin_user
@@ -19,7 +19,7 @@ from .common import logger, router
 async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, custom_comment: str = None):
     user = await get_user(telegram_id)
     if not user:
-        await bot.send_message(chat_id, f"❌ Пользователь {telegram_id} не найден")
+        await bot.send_message(chat_id, f"Пользователь {telegram_id} не найден")
         return
 
     user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
@@ -41,10 +41,10 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
 
         await bot.send_message(
             chat_id,
-            f"✅ <b>Заявка одобрена</b>\n\n"
-            f"👤 {user['first_name']}\n"
-            f"📧 {user['xui_email']}\n"
-            f"📝 <code>{comment}</code>",
+            f"<b>Заявка одобрена</b>\n\n"
+            f"Пользователь: {user['first_name']}\n"
+            f"Email: {user['xui_email']}\n"
+            f"Комментарий: <code>{comment}</code>",
             parse_mode="HTML"
         )
 
@@ -52,23 +52,26 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
         try:
             await bot.send_message(
                 telegram_id,
-                f"🎉 <b>Твоя подписка готова!</b>\n\n"
-                f"🔗 Ссылка:\n<code>{sub_url}</code>\n\n"
-                f"📱 Лимит: 3 IP одновременно\n"
-                f"⏳ Срок: 30 дней. Продлить можно через «🔑 Моя подписка».\n\n"
-                f"{DONATE_TEXT}",
+                f"<b>Подписка активирована</b>\n\n"
+                f"Ссылка:\n<code>{sub_url}</code>\n\n"
+                f"Лимит: 3 IP одновременно.\n"
+                f"Срок: 30 дней. Продлить можно в разделе «Моя подписка».\n\n"
+                f"Поддержать проект можно в разделе «Донат».",
                 parse_mode="HTML",
                 reply_markup=subscription_keyboard()
             )
-            logger.info(f"✅ Сообщение отправлено пользователю {telegram_id}")
+            logger.info(f"Сообщение отправлено пользователю {telegram_id}")
         except Exception as e:
-            logger.error(f"❌ Не удалось отправить сообщение {telegram_id}: {e}")
+            logger.error(f"Не удалось отправить сообщение {telegram_id}: {e}")
 
-        logger.info(f"✅ Одобрен из уведомления {user['xui_email']} | comment={comment}")
+        logger.info(f"Одобрен из уведомления {user['xui_email']} | comment={comment}")
 
     except Exception:
         logger.exception("Ошибка при одобрении %s", user["xui_email"])
-        await bot.send_message(chat_id, "❌ Ошибка")
+        await bot.send_message(
+            chat_id,
+            f"Не удалось одобрить заявку. Проверь панель 3x-ui или напиши в поддержку: @{SUPPORT_USERNAME}."
+        )
 
 
 @router.callback_query(F.data.startswith("approve_skip_comment:"))

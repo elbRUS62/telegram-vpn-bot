@@ -2,7 +2,7 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import DONATE_TEXT, SUPPORT_USERNAME
+from config import SUPPORT_USERNAME
 from permissions import is_admin_user, get_admin_ids
 from database import (
     approve_user,
@@ -69,16 +69,15 @@ async def accept_terms(callback: CallbackQuery):
                 await approve_user(callback.from_user.id, sub_id)
                 sub_url = xui.build_sub_url(sub_id)
 
-            logger.info(f"✅ Реферал {xui_email} одобрен автоматически")
+            logger.info(f"Реферал {xui_email} одобрен автоматически")
 
             await callback.message.edit_text(
-                f"🎉 <b>Твоя подписка готова!</b>\n\n"
-                f"🔗 Ссылка:\n<code>{sub_url}</code>\n\n"
-                f"📱 Лимит: 3 IP одновременно\n"
-                f"⏳ Срок: 30 дней\n\n"
-                f"📖 Как подключиться — жми «📖 Как подключиться»\n"
-                f"📷 QR-код — жми «📷 QR-код»\n\n"
-                f"{DONATE_TEXT}",
+                f"<b>Подписка активирована</b>\n\n"
+                f"Ссылка:\n<code>{sub_url}</code>\n\n"
+                f"Лимит: 3 IP одновременно.\n"
+                f"Срок: 30 дней с момента активации.\n\n"
+                f"Подключение: «Как подключиться». QR-код: «QR-код».\n"
+                f"Поддержать проект можно в разделе «Донат».",
                 reply_markup=subscription_keyboard(),
                 parse_mode="HTML"
             )
@@ -95,11 +94,11 @@ async def accept_terms(callback: CallbackQuery):
                 try:
                     await callback.bot.send_message(
                         admin_id,
-                        f"🆕 <b>Новый пользователь (реферал)</b>\n\n"
-                        f"👤 {callback.from_user.full_name}\n"
-                        f"🆔 <code>{callback.from_user.id}</code>\n"
-                        f"📧 {xui_email}\n"
-                        f"👥 Пригласил: {inviter_name}",
+                        f"<b>Новый пользователь (реферал)</b>\n\n"
+                        f"Пользователь: {callback.from_user.full_name}\n"
+                        f"ID: <code>{callback.from_user.id}</code>\n"
+                        f"Email: {xui_email}\n"
+                        f"Пригласил: {inviter_name}",
                         parse_mode="HTML",
                         disable_notification=True
                     )
@@ -107,9 +106,9 @@ async def accept_terms(callback: CallbackQuery):
                     pass
 
         except Exception as e:
-            logger.error("❌ Ошибка при создании реферала: ")
+            logger.error("Ошибка при создании реферала: ")
             await callback.message.edit_text(
-                f"❌ Ошибка. Обратись в поддержку: @{SUPPORT_USERNAME}"
+                f"Ошибка. Обратись в поддержку: @{SUPPORT_USERNAME}"
             )
 
     else:
@@ -117,10 +116,10 @@ async def accept_terms(callback: CallbackQuery):
             try:
                 await callback.bot.send_message(
                     admin_id,
-                    f"🆕 <b>Новая заявка</b>\n\n"
-                    f"👤 {callback.from_user.full_name}\n"
-                    f"🆔 <code>{callback.from_user.id}</code>\n"
-                    f"📧 {xui_email}",
+                    f"<b>Новая заявка</b>\n\n"
+                    f"Пользователь: {callback.from_user.full_name}\n"
+                    f"ID: <code>{callback.from_user.id}</code>\n"
+                    f"Email: {xui_email}",
                     reply_markup=admin_approve_keyboard(callback.from_user.id),
                     parse_mode="HTML"
                 )
@@ -128,8 +127,9 @@ async def accept_terms(callback: CallbackQuery):
                 logger.exception("Ошибка уведомления админу %s", admin_id)
 
         await callback.message.edit_text(
-            "✅ Спасибо! Заявка отправлена.\n\n"
-            "Жди одобрения админа — обычно это занимает несколько минут."
+            "Заявка отправлена.\n\n"
+            "Администратор проверит её. Обычно это занимает несколько минут. "
+            "Статус можно посмотреть в приложении."
         )
 
     await callback.answer()
@@ -138,8 +138,8 @@ async def accept_terms(callback: CallbackQuery):
 @router.callback_query(F.data == "decline_terms")
 async def decline_terms(callback: CallbackQuery):
     await callback.message.edit_text(
-        "❌ Ты не принял условия. Подписка не может быть выдана.\n\n"
-        "Если передумаешь — нажми «📦 Получить подписку» снова."
+        "Условия не приняты, подписка не выдана.\n\n"
+        "Чтобы получить подписку, нажми «Получить подписку» и прими условия."
     )
     await callback.answer()
 
@@ -158,9 +158,9 @@ async def approve_callback(callback: CallbackQuery, state: FSMContext):
         return
 
     if user["status"] == "active":
-        await callback.answer("⚠️ Заявка уже одобрена", show_alert=True)
+        await callback.answer("Заявка уже одобрена", show_alert=True)
         await callback.message.edit_text(
-            f"⚠️ Заявка уже одобрена\n\n"
+            f"Заявка уже одобрена\n\n"
             f"Пользователь: {user['first_name']}\n"
             f"Email: {user['xui_email']}"
         )
@@ -176,20 +176,20 @@ async def approve_callback(callback: CallbackQuery, state: FSMContext):
     await state.update_data(approve_tg_id=telegram_id, from_notification=True)
 
     await callback.message.edit_text(
-        f"📝 <b>Комментарий для 3x-ui</b>\n\n"
-        f"👤 {user['first_name']}\n"
-        f"🆔 <code>{telegram_id}</code>\n\n"
-        f"Введи текст (например, «VIP клиент, друг Ильи»)\n"
-        f"или нажми «Пропустить» — тогда будет авто:\n"
+        f"<b>Комментарий для 3x-ui</b>\n\n"
+        f"Пользователь: {user['first_name']}\n"
+        f"ID: <code>{telegram_id}</code>\n\n"
+        f"Введи комментарий или нажми «Пропустить». "
+        f"Автоматический вариант:\n"
         f"<code>{auto_comment}</code>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text="⏭ Пропустить",
+                text="Пропустить",
                 callback_data=f"approve_skip_comment:{telegram_id}"
             )],
             [InlineKeyboardButton(
-                text="❌ Отмена",
+                text="Отмена",
                 callback_data="approve_comment_cancel"
             )]
         ])
@@ -207,11 +207,12 @@ async def approve_comment_cancel(callback: CallbackQuery, state: FSMContext):
 
     await state.clear()
     await callback.message.edit_text(
-        "❌ Одобрение отменено.\n\n"
-        "Заявка осталась в статусе <b>pending</b> — можно одобрить позже через «🛠 Управление → 📋 Список заявок».",
+        "Одобрение отменено.\n\n"
+        "Заявка осталась в статусе <b>pending</b>. Её можно одобрить позже "
+        "через «Управление → Список заявок».",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")]
+            [InlineKeyboardButton(text="В управление", callback_data="admin_manage")]
         ])
     )
     await callback.answer("Отменено")
@@ -225,7 +226,7 @@ async def reject_callback(callback: CallbackQuery):
 
     telegram_id = int(callback.data.split(":")[1])
     await reject_user(telegram_id)
-    await callback.message.edit_text("❌ Заявка отклонена")
+    await callback.message.edit_text("Заявка отклонена")
     await callback.answer("Отклонено")
 
 

@@ -109,7 +109,7 @@ def ticket_detail():
 
             async with db.execute(
                 "SELECT id, sender, text, created_at FROM support_messages "
-                "WHERE ticket_id = ? ORDER BY id",
+                " WHERE ticket_id = ? ORDER BY id",
                 (ticket_id,),
             ) as cur:
                 messages = [dict(r) for r in await cur.fetchall()]
@@ -151,7 +151,7 @@ def ticket_create():
 
             async with db.execute(
                 "SELECT COUNT(*) FROM support_tickets "
-                "WHERE telegram_id = ? AND status != 'closed'",
+                " WHERE telegram_id = ? AND status != 'closed'",
                 (telegram_id,),
             ) as cur:
                 open_count = (await cur.fetchone())[0]
@@ -161,7 +161,7 @@ def ticket_create():
 
             async with db.execute(
                 "SELECT COUNT(*) FROM support_tickets "
-                "WHERE telegram_id = ? AND created_at >= datetime('now', '-10 minutes')",
+                " WHERE telegram_id = ? AND created_at >= datetime('now', '-10 minutes')",
                 (telegram_id,),
             ) as cur:
                 recent = (await cur.fetchone())[0]
@@ -196,12 +196,12 @@ def ticket_create():
 
     who = f"@{user.get('username')}" if user.get("username") else (user.get("first_name") or f"ID {telegram_id}")
     notify_admins(
-        f"🎫 Новый тикет #{result['ticket_id']}\n"
-        f"👤 {who} ({telegram_id})\n"
-        f"📂 {CATEGORIES[category]}\n"
-        f"📝 {subject}\n\n"
+        f"<b>Новый тикет #{result['ticket_id']}</b>\n\n"
+        f"Пользователь: {who} ({telegram_id})\n"
+        f"Категория: {CATEGORIES[category]}\n"
+        f"Тема: {subject}\n\n"
         f"{message[:1200]}\n\n"
-        "Открой Mini App → Админ → 🎫 Тикеты."
+        "Открой Mini App → Админ → Тикеты."
     )
     return jsonify(result)
 
@@ -229,7 +229,7 @@ def ticket_reply():
             db.row_factory = aiosqlite.Row
             async with db.execute(
                 "SELECT id, status FROM support_tickets "
-                "WHERE id = ? AND telegram_id = ?",
+                " WHERE id = ? AND telegram_id = ?",
                 (ticket_id, telegram_id),
             ) as cur:
                 ticket = await cur.fetchone()
@@ -250,7 +250,7 @@ def ticket_reply():
 
             await db.execute(
                 "INSERT INTO support_messages(ticket_id, sender, text) "
-                "VALUES (?, 'user', ?)",
+                " VALUES (?, 'user', ?)",
                 (ticket_id, message),
             )
             await db.execute("""

@@ -86,12 +86,12 @@ def users_list():
             if q:
                 where.append(
                     "(LOWER(COALESCE(username,'')) LIKE ? "
-                    "OR LOWER(COALESCE(first_name,'')) LIKE ? "
-                    "OR CAST(telegram_id AS TEXT) LIKE ?)"
+                    " OR LOWER(COALESCE(first_name,'')) LIKE ? "
+                    " OR CAST(telegram_id AS TEXT) LIKE ?)"
                 )
                 like = f"%{q}%"
                 args += [like, like, like]
-            where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+            where_sql = (" WHERE "+ " AND ".join(where)) if where else ""
 
             async with db.execute(f"SELECT COUNT(*) FROM users {where_sql}", args) as cur:
                 total = (await cur.fetchone())[0]
@@ -194,12 +194,12 @@ def users_export():
             if q:
                 where.append(
                     "(LOWER(COALESCE(username,'')) LIKE ? "
-                    "OR LOWER(COALESCE(first_name,'')) LIKE ? "
-                    "OR CAST(telegram_id AS TEXT) LIKE ?)"
+                    " OR LOWER(COALESCE(first_name,'')) LIKE ? "
+                    " OR CAST(telegram_id AS TEXT) LIKE ?)"
                 )
                 like = f"%{q}%"
                 args += [like, like, like]
-            where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+            where_sql = (" WHERE "+ " AND ".join(where)) if where else ""
             async with db.execute(
                 f"""SELECT telegram_id, username, first_name, status, xui_email,
                            source, expires_at, invites_count, renew_count,
@@ -229,7 +229,7 @@ def users_export():
             row.get("last_seen") or "",
         ])
     return Response(
-        "\ufeff" + output.getvalue(),
+        "\ufeff"+ output.getvalue(),
         mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=skrepnet-users.csv"},
     )
@@ -335,7 +335,7 @@ def user_card():
         if not u:
             return {"error": "Пользователь не найден"}
 
-        u = dict(u)  # sqlite3.Row → dict (чтобы работал .get())
+        u = dict(u)  # sqlite3.Row  dict (чтобы работал .get())
         result = dict(u)
         from permissions import get_admin_role
 

@@ -157,7 +157,7 @@ async def remind_stale_tickets(bot: Bot):
             pass
         lines = [f"#{row['id']} · {escape(str(row['subject'] or '')[:80])}" for row in rows]
         text = (
-            f"⏰ <b>Тикеты без ответа больше 24 часов: {len(rows)}</b>\n\n"
+            f"<b>Тикеты без ответа больше 24 часов: {len(rows)}</b>\n\n"
             + "\n".join(lines)
         )
         for admin_id in get_admin_ids():
@@ -180,8 +180,8 @@ async def check_subscriptions(bot: Bot):
 
             await bot.send_message(
                 user["telegram_id"],
-                f"⏳ Твоя подписка истекает через 3 дня.\n"
-                f"Продли, чтобы не остаться без VPN.\n\n"
+                f"<b>Подписка истекает через 3 дня</b>\n"
+                f"Продли подписку, чтобы не потерять доступ к VPN.\n\n"
                 f"{progress_line}",
                 reply_markup=renew_keyboard(),
                 disable_notification=True
@@ -197,8 +197,9 @@ async def check_subscriptions(bot: Bot):
 
             await bot.send_message(
                 user["telegram_id"],
-                f"🔔 Сегодня последний день подписки!\n"
-                f"После полуночи доступ отключится.\n\n"
+                f"<b>Подписка истекает сегодня</b>\n\n"
+                f"После полуночи доступ к VPN отключится. "
+                f"Продли подписку, чтобы сохранить доступ.\n\n"
                 f"{progress_line}",
                 reply_markup=renew_keyboard(),
                 disable_notification=True
@@ -239,7 +240,7 @@ async def cleanup_inactive_users(bot: Bot):
         try:
             await bot.send_message(
                 ADMIN_ID,
-                f"🗑 Автоочистка: удалено {deleted} неактивных пользователей "
+                f"Автоочистка: удалено {deleted} неактивных пользователей "
                 f"(подписка истекла 30+ дней назад).",
                 disable_notification=True
             )
@@ -260,7 +261,7 @@ async def cleanup_abandoned_web_invites(bot: Bot):
     links = await get_abandoned_web_invites(days=30)
 
     if not links:
-        logger.info("🧹 Брошенных веб-выдач нет")
+        logger.info("Брошенных веб-выдач нет")
         return
 
     deleted = 0
@@ -282,7 +283,7 @@ async def cleanup_abandoned_web_invites(bot: Bot):
                 await db.commit()
 
             deleted += 1
-            logger.info(f"🗑 Удалена брошенная веб-выдача: {link['xui_email']}")
+            logger.info(f"Удалена брошенная веб-выдача: {link['xui_email']}")
         except Exception as e:
             logger.error(f"Ошибка удаления {link['xui_email']}")
 
@@ -290,7 +291,7 @@ async def cleanup_abandoned_web_invites(bot: Bot):
         try:
             await bot.send_message(
                 ADMIN_ID,
-                f"🧹 <b>Автоочистка веб-выдач</b>\n\n"
+                f"<b>Автоочистка веб-выдач</b>\n\n"
                 f"Удалено брошенных: <b>{deleted}</b>\n"
                 f"(активированы 30+ дней назад, но не привязаны к боту)",
                 parse_mode="HTML",
@@ -320,13 +321,13 @@ async def cleanup_expired_web_guests(bot: Bot):
 
             async with aiosqlite.connect(DB_PATH) as db:
                 await db.execute(
-                    "DELETE FROM users WHERE xui_email = ? AND source = 'web' "
-                    "AND (telegram_id IS NULL OR telegram_id = 0)",
+                    "DELETE FROM users WHERE xui_email = ? AND source = 'web'"
+                    " AND (telegram_id IS NULL OR telegram_id = 0)",
                     (email,),
                 )
                 await db.execute(
                     "DELETE FROM invite_links WHERE xui_email = ? "
-                    "AND bound_to_tg_id IS NULL",
+                    " AND bound_to_tg_id IS NULL",
                     (email,),
                 )
                 await db.commit()

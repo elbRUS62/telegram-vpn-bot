@@ -1,7 +1,7 @@
 from aiogram import F
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import DONATE_TEXT, SUB_BASE_URL, SUB_PATH
+from config import SUB_BASE_URL, SUB_PATH
 from database import get_user, increment_renew_count, renew_user
 from keyboards import donate_keyboard, subscription_keyboard
 from xui_client import XUIClient
@@ -34,16 +34,16 @@ async def show_qr_callback(callback: CallbackQuery):
         # Отправляем QR + только 2 кнопки
         await callback.message.answer_photo(
             photo=qr_file,
-            caption="📷 <b>QR-код для быстрого подключения</b>\n\n"
-                    "Открой Happ → «+» → «Сканировать QR»",
+            caption="<b>QR-код для быстрого подключения</b>\n\n"
+                    "Открой Happ → «+» → «Сканировать QR».",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
-                    text="📖 Как подключиться",
+                    text="Как подключиться",
                     callback_data="connect_help"
                 )],
                 [InlineKeyboardButton(
-                    text="🏠 В главное меню",
+                    text="В главное меню",
                     callback_data="back_to_main"
                 )],
             ])
@@ -76,18 +76,18 @@ async def renew_callback(callback: CallbackQuery):
 
             try:
                 await xui.update_comment(user["xui_email"], comment)
-                logger.info(f"✅ Comment обновлён: {comment}")
+                logger.info(f"Comment обновлён: {comment}")
             except Exception as e:
-                logger.error("⚠️ Не удалось обновить comment: ")
+                logger.error("Не удалось обновить comment: ")
 
         await renew_user(callback.from_user.id, new_expires=new_expiry)
         exp_date = new_expiry.strftime("%d.%m.%Y")
 
         await callback.message.edit_text(
-            f"✅ Подписка продлена!\n\n"
-            f"📅 Новая дата окончания: {exp_date}\n"
-            f"🔗 Ссылка та же.\n\n"
-            f"{DONATE_TEXT}",
+            f"<b>Подписка продлена</b>\n\n"
+            f"Новая дата окончания: {exp_date}.\n"
+            f"Ссылка не изменилась.\n\n"
+            f"Поддержать проект можно в разделе «Донат».",
             reply_markup=donate_keyboard()
         )
 

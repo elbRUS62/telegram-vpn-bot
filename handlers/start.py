@@ -55,16 +55,19 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
                 await message.answer("У тебя уже есть активная подписка.")
                 return
             if user and user["status"] == "pending":
-                await message.answer("⏳ Заявка уже отправлена. Жди одобрения админа.")
+                await message.answer(
+                    "Заявка уже отправлена. Администратор проверит её. "
+                    "Статус можно посмотреть в приложении."
+                )
                 return
             from keyboards import terms_keyboard
             await message.answer(
-                "📜 <b>Для получения подписки ознакомься с документами:</b>\n\n"
-                "1. 📜 Правила использования\n"
-                "2. 🔒 Политика конфиденциальности\n"
-                "3. 📋 Пользовательское соглашение\n\n"
-                "Нажимая «✅ Я согласен со всеми условиями», ты подтверждаешь, "
-                "что ознакомился со всеми документами.",
+                "<b>Перед получением подписки</b>\n\n"
+                "Ознакомься с документами:\n"
+                "1. Правила использования\n"
+                "2. Политика конфиденциальности\n"
+                "3. Пользовательское соглашение\n\n"
+                "Нажимая «Согласен с условиями», ты подтверждаешь, что прочитал их.",
                 reply_markup=terms_keyboard(),
                 parse_mode="HTML"
             )
@@ -79,10 +82,10 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
             invites = user["invites_count"] or 0
             ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{message.from_user.id}"
             await message.answer(
-                f"👥 <b>Пригласи друга</b>\n\n"
+                f"<b>Приглашение друга</b>\n\n"
                 f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
-                f"📊 Ты уже пригласил: {invites} чел.\n\n"
-                f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
+                f"Приглашено: {invites}.\n\n"
+                f"Отправь ссылку другу. После регистрации он получит бесплатную подписку.",
                 reply_markup=share_keyboard(BOT_USERNAME, message.from_user.id),
                 parse_mode="HTML"
             )
@@ -95,13 +98,11 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
             from keyboards import invite_contact_keyboard
             await message.answer(
                 "<b>Гостевая подписка</b>\n\n"
-                "<i>Работает без Telegram.</i>\n\n"
-                "Если у друга нет доступа к Telegram. Ты можешь отправить ему ссылку через WhatsApp, VK или SMS.\n\n"
-                "<b>Как это работает:</b>\n"
-                "1️⃣ Нажми <b>«👤 Выбрать из контактов»</b> ниже.\n"
-                "2️⃣ Выбери друга из списка.\n"
-                "3️⃣ Отправь ему полученную ссылку любым удобным способом (WhatsApp, VK, SMS).\n\n"
-                "Если передумал — нажми <b>«❌ Отмена»</b>.",
+                "Подписка работает без Telegram. Ссылку можно передать через WhatsApp, VK или SMS.\n\n"
+                "1. Нажми «Выбрать из контактов».\n"
+                "2. Выбери друга.\n"
+                "3. Отправь ему ссылку.\n\n"
+                "Если передумал, нажми «Отмена».",
                 parse_mode="HTML",
                 reply_markup=invite_contact_keyboard()
             )
@@ -110,7 +111,7 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
         if action == "donate":
             from keyboards import donate_keyboard
             from config import DONATE_TEXT, DONATE_URL
-            text = DONATE_TEXT or "❤️ Поддержать проект"
+            text = DONATE_TEXT or "Поддержать проект"
             if DONATE_URL:
                 text += f"\n\nСсылка для доната: {DONATE_URL}"
             await message.answer(text, reply_markup=donate_keyboard())
@@ -166,9 +167,9 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
         try:
             await message.bot.send_message(
                 invited_by,
-                f"🎉 По твоей ссылке пришёл новый пользователь: "
-                f"{message.from_user.full_name}!\n\n"
-                f"Спасибо, что помогаешь проекту расти ❤️"
+                f"По твоей ссылке пришёл новый пользователь: "
+                f"{message.from_user.full_name}.\n\n"
+                f"Спасибо за помощь проекту."
             )
         except Exception:
             logger.warning("Не удалось уведомить пригласившего %s", invited_by, exc_info=True)

@@ -16,7 +16,7 @@ async def admin_manage_callback(callback: CallbackQuery):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
     await callback.message.edit_text(
-        "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
+        "<b>Управление ботом</b>\n\nВыбери действие:",
         reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )
@@ -47,7 +47,7 @@ async def admin_menu_users_callback(callback: CallbackQuery):
     if not is_admin_user(callback.from_user.id):
         return
     await callback.message.edit_text(
-        "👥 <b>Управление пользователями</b>\n\nВыбери действие:",
+        "<b>Управление пользователями</b>\n\nВыбери действие:",
         reply_markup=admin_submenu_users(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )

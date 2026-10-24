@@ -60,11 +60,11 @@ def tickets_list():
         if q:
             where.append(
                 "(LOWER(t.subject) LIKE ? OR LOWER(t.username) LIKE ? "
-                "OR LOWER(t.first_name) LIKE ? OR CAST(t.telegram_id AS TEXT) LIKE ?)"
+                " OR LOWER(t.first_name) LIKE ? OR CAST(t.telegram_id AS TEXT) LIKE ?)"
             )
             args.extend([f"%{q}%"] * 4)
 
-        where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+        where_sql = (" WHERE "+ " AND ".join(where)) if where else ""
 
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -149,7 +149,7 @@ def tickets_export():
             row.get("closed_at") or "", (row.get("last_text") or "")[:500],
         ])
     return Response(
-        "\ufeff" + output.getvalue(),
+        "\ufeff"+ output.getvalue(),
         mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=skrepnet-tickets.csv"},
     )
@@ -182,7 +182,7 @@ def ticket_detail():
 
             async with db.execute(
                 "SELECT id, sender, admin_id, text, created_at "
-                "FROM support_messages WHERE ticket_id = ? ORDER BY id",
+                " FROM support_messages WHERE ticket_id = ? ORDER BY id",
                 (ticket_id,),
             ) as cur:
                 messages = [dict(r) for r in await cur.fetchall()]
@@ -227,7 +227,7 @@ def ticket_reply():
 
             await db.execute(
                 "INSERT INTO support_messages(ticket_id, sender, admin_id, text) "
-                "VALUES (?, 'admin', ?, ?)",
+                " VALUES (?, 'admin', ?, ?)",
                 (ticket_id, admin_id, text),
             )
             await db.execute("""
@@ -248,7 +248,7 @@ def ticket_reply():
         from web.utils.telegram import notify_user
         notify_user(
             result.get("telegram_id"),
-            f"💬 Ответ по обращению #{ticket_id}\n\n{text[:1200]}\n\n"
+            f"Ответ по обращению #{ticket_id}\n\n{text[:1200]}\n\n"
             "Открой Mini App → Техподдержка, чтобы ответить.",
         )
         return jsonify({"success": True})
@@ -297,8 +297,8 @@ def ticket_close():
         from web.utils.telegram import notify_user
         notify_user(
             result.get("telegram_id"),
-            f"✅ Обращение #{ticket_id} закрыто.\n\n"
-            "Если проблема осталась — создай новое обращение в "
+            f"Обращение #{ticket_id} закрыто.\n\n"
+            "Если проблема осталась, создай новое обращение в "
             "Mini App → Техподдержка.",
         )
         return jsonify({"success": True})

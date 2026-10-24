@@ -17,7 +17,7 @@ async def admin_panel_link(callback: CallbackQuery):
         return
 
     await callback.message.edit_text(
-        "🔐 <b>Вход в панель 3x-ui</b>\n\n"
+        "<b>Вход в панель 3x-ui</b>\n\n"
         "Нажми кнопку ниже — браузер откроет страницу входа.\n"
         "Пароль подставит менеджер паролей, если он у тебя есть.",
         reply_markup=admin_panel_keyboard(),

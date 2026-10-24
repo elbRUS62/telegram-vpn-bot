@@ -26,8 +26,8 @@ def create_invoice():
         return await tg_call(
             BOT_TOKEN,
             "createInvoiceLink",
-            title=f"Поддержка {BOT_NAME} · {amount} ⭐",
-            description=f"Донат {amount} ⭐ на оплату сервера и развитие проекта. Спасибо за поддержку!",
+            title=f"Поддержка {BOT_NAME}: {amount} звёзд",
+            description=f"Донат {amount} звёзд на оплату сервера и развитие проекта.",
             payload=f"donate_miniapp_{user.get('id')}_{amount}",
             provider_token="",
             currency="XTR",

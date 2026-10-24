@@ -80,19 +80,18 @@ class DonationAlertsCentrifugo:
                     currency=currency,
                     message=message or None
                 )
-                logger.info(f"✅ Донат записан в БД: {username} - {amount} {currency}")
+                logger.info(f"Донат записан в БД: {username} - {amount} {currency}")
             except Exception as e:
-                logger.error("❌ Ошибка записи доната в БД: ")
+                logger.error("Ошибка записи доната в БД: ")
 
             text = (
-                f"💰 <b>Новый донат!</b>\n"
-                f"━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"👤 <b>От:</b> {username}\n"
-                f"💵 <b>Сумма:</b> <code>{amount} {currency_emoji}</code>\n"
+                f"<b>Новый донат</b>\n\n"
+                f"От: {username}\n"
+                f"Сумма: <code>{amount} {currency_emoji}</code>"
             )
 
             if message:
-                text += f"\n💬 <b>Сообщение:</b>\n<i>{message}</i>"
+                text += f"\n\nСообщение:\n<i>{message}</i>"
 
             for admin_id in self.admin_ids:
                 try:
@@ -102,7 +101,7 @@ class DonationAlertsCentrifugo:
                         parse_mode="HTML",
                         disable_notification=True
                     )
-                    logger.info(f"✅ Отправлено админу {admin_id}: message_id={result.message_id}")
+                    logger.info(f"Отправлено админу {admin_id}: message_id={result.message_id}")
                 except Exception:
                     logger.exception("Ошибка отправки админу %s", admin_id)
 
@@ -131,7 +130,7 @@ class DonationAlertsCentrifugo:
 
             async for message in ws:
                 try:
-                    # Centrifugo может присылать несколько JSON через \n
+                    # Centrifugo может присылать несколько JSON через\n
                     for line in message.strip().split("\n"):
                         if not line.strip():
                             continue
@@ -182,7 +181,7 @@ async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
     while True:
         attempt += 1
         try:
-            logger.info(f"🔄 Centrifugo: попытка #{attempt}")
+            logger.info(f"Centrifugo: попытка #{attempt}")
             await client.start(bot, admin_ids)
 
             # Сюда попадаем, если start() завершился без исключения
@@ -193,7 +192,7 @@ async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
                 if not first_attempt:
                     await _notify_admins(
                         bot, admin_ids,
-                        "✅ <b>Centrifugo DonationAlerts восстановлен</b>\n\n"
+                        "<b>Centrifugo DonationAlerts восстановлен</b>\n\n"
                         "Подключение к WebSocket восстановлено. "
                         "Уведомления о донатах снова работают."
                     )
@@ -201,13 +200,13 @@ async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
 
         except Exception as e:
             err_msg = "Внутренняя ошибка"
-            logger.error(f"❌ Ошибка Centrifugo: {err_msg}")
+            logger.error(f"Ошибка Centrifugo: {err_msg}")
 
             if was_connected:
                 was_connected = False
                 await _notify_admins(
                     bot, admin_ids,
-                    "⚠️ <b>Centrifugo DonationAlerts недоступен</b>\n\n"
+                    "<b>Centrifugo DonationAlerts недоступен</b>\n\n"
                     f"<code>{err_msg}</code>\n\n"
                     "Уведомления о донатах временно не работают. "
                     "Донаты через Telegram Stars продолжают работать.\n\n"
@@ -215,7 +214,7 @@ async def start_donation_socket(bot: Bot, admin_ids: list, token: str):
                 )
             elif first_attempt:
                 logger.warning(
-                    "⚠️ Centrifugo недоступен при старте бота — "
+                    "Centrifugo недоступен при старте бота — "
                     "уведомление админам не отправлено"
                 )
 

@@ -43,11 +43,11 @@ async def notify_admin_new_web_user(friend_username, telegram_id, inviter_id, su
     from telegram_api import call as tg_call
 
     text = (
-        f"🆕 <b>Новый пользователь (веб-выдача)</b>\n\n"
-        f"👤 @{friend_username or 'без username'}\n"
-        f"🆔 <code>{telegram_id}</code>\n"
-        f"👥 Пригласил: <code>{inviter_id}</code>\n\n"
-        f"🔗 {sub_url}"
+        f"<b>Новый пользователь (веб-выдача)</b>\n\n"
+        f"@{friend_username or 'без username'}\n"
+        f"<code>{telegram_id}</code>\n"
+        f"Пригласил: <code>{inviter_id}</code>\n\n"
+        f"{sub_url}"
     )
     for admin_id in get_admin_ids():
         result = await tg_call(
@@ -196,9 +196,9 @@ def activate(token):
                     if inviter and inviter['username']:
                         inviter_part = f"@{inviter['username']}"
 
-                auto_comment = f"{user_part} | web → bot | от: {inviter_part}"
+                auto_comment = f"{user_part} | web  bot | от: {inviter_part}"
 
-                # B уже в 3x-ui? → продлить (+3 дня), отдать ссылку; иначе создать
+                # B уже в 3x-ui?  продлить (+3 дня), отдать ссылку; иначе создать
                 try:
                     existing = await xui.get_client(xui_email)
                     has_client = True
@@ -271,8 +271,8 @@ def activate(token):
         if existing:
             async with aiosqlite.connect(DB_PATH) as db:
                 await db.execute(
-                    "UPDATE users SET expires_at = ?, status = 'active' "
-                    "WHERE xui_email = ?",
+                    "UPDATE users SET expires_at = ?, status = 'active'"
+                    " WHERE xui_email = ?",
                     (expires_at_db.strftime("%Y-%m-%d %H:%M:%S"), xui_email),
                 )
                 await db.commit()
@@ -302,7 +302,7 @@ def activate(token):
                 ))
                 await db.commit()
             logger.info(
-                f"✅ Создан пользователь в БД: tg_id={tg_id_for_db}, "
+                f"Создан пользователь в БД: tg_id={tg_id_for_db}, "
                 f"first_name={first_name_for_db!r} ({xui_email}) source=web"
             )
 

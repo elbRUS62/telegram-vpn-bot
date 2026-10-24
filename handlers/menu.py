@@ -1,13 +1,14 @@
 """Обработчики главного inline-меню."""
 
 import logging
+import math
 from pathlib import Path
 
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram.filters import Command
 
-from config import BOT_NAME, DONATE_TEXT
+from config import BOT_NAME
 from permissions import is_admin_user, is_superadmin
 from database import get_user, is_in_waitlist, get_waitlist_position
 from keyboards import main_inline_menu, admin_manage_keyboard, support_keyboard
@@ -24,16 +25,16 @@ async def show_main_menu(message: Message, with_photo: bool = False):
 
     if user and user["status"] == "active":
         text = (
-            f"👋 С возвращением, {message.from_user.first_name}!\n\n"
-            f"У тебя активная подписка. Управление — в приложении."
+            f"С возвращением, {message.from_user.first_name}.\n\n"
+            f"Подписка активна. Управление подпиской и подключением — в приложении."
         )
     elif user and user["status"] == "pending":
-        text = "⏳ Твоя заявка на рассмотрении. Скоро админ её одобрит."
+        text = "Заявка на рассмотрении. Администратор проверит её. Статус — в приложении."
     else:
         text = (
-            f"👋 Привет, {message.from_user.first_name}!\n\n"
-            f"Это бот для выдачи бесплатных подписок {BOT_NAME}.\n\n"
-            f"Нажми «Открыть приложение», чтобы начать."
+            f"Привет, {message.from_user.first_name}.\n\n"
+            f"Это бот бесплатных подписок {BOT_NAME}.\n\n"
+            f"Открой приложение, чтобы получить подписку и подключиться."
         )
 
     keyboard = main_inline_menu(is_admin)
@@ -75,7 +76,7 @@ async def cmd_admin(message: Message):
         return
     
     await message.answer(
-        "🛠 <b>Панель администратора</b>\n\nВыбери действие:",
+        "<b>Панель администратора</b>\n\nВыбери действие:",
         parse_mode="HTML",
         reply_markup=admin_manage_keyboard(is_superadmin(message.from_user.id))
     )
@@ -87,7 +88,7 @@ async def back_to_main(callback: CallbackQuery):
     is_admin = is_admin_user(callback.from_user.id)
 
     await callback.message.edit_text(
-        "🏠 <b>Главное меню</b>\n\nВыбери действие:",
+        "<b>Главное меню</b>\n\nВыбери действие:",
         parse_mode="HTML",
         reply_markup=main_inline_menu(is_admin)
     )
@@ -118,10 +119,10 @@ async def menu_invite_no_tg(callback: CallbackQuery):
 async def menu_support(callback: CallbackQuery):
     from config import SUPPORT_USERNAME
     await callback.message.edit_text(
-        f"🆘 <b>Техподдержка {BOT_NAME}</b>\n\n"
+        f"<b>Техподдержка {BOT_NAME}</b>\n\n"
         "Если у тебя возникли вопросы, проблемы с подключением "
         "или ты хочешь сообщить о сбое — напиши нам.\n\n"
-        f"📢 Канал техподдержки: @{SUPPORT_USERNAME}",
+        f"Канал техподдержки: @{SUPPORT_USERNAME}",
         parse_mode="HTML",
         reply_markup=support_keyboard()
     )
@@ -133,14 +134,14 @@ async def menu_docs(callback: CallbackQuery):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     from docs_config import DOCS
     await callback.message.edit_text(
-        f"📚 <b>Документы {BOT_NAME}</b>\n\n"
+        f"<b>Документы {BOT_NAME}</b>\n\n"
         "Выбери документ для просмотра:",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text=DOCS["rules"]["title"], url=DOCS["rules"]["url"])],
             [InlineKeyboardButton(text=DOCS["privacy"]["title"], url=DOCS["privacy"]["url"])],
             [InlineKeyboardButton(text=DOCS["terms"]["title"], url=DOCS["terms"]["url"])],
-            [InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_to_main")]
+            [InlineKeyboardButton(text="В главное меню", callback_data="back_to_main")]
         ])
     )
     await callback.answer()
@@ -174,15 +175,15 @@ async def _handle_get_sub(callback: CallbackQuery):
         return
 
     if user and user["status"] == "pending":
-        await callback.answer("⏳ Заявка уже отправлена", show_alert=True)
+        await callback.answer("Заявка уже отправлена. Администратор проверит её.", show_alert=True)
         return
 
     if await is_limit_reached(MAX_USERS):
         if await is_in_waitlist(callback.from_user.id):
             position = await get_waitlist_position(callback.from_user.id)
             await callback.message.edit_text(
-                f"⏳ <b>Ты в листе ожидания</b>\n\n"
-                f"📋 Твоя позиция: <b>{position}</b>\n\n"
+                f"<b>Ты в листе ожидания</b>\n\n"
+                f"Позиция: <b>{position}</b>.\n\n"
                 f"Мы напишем, когда освободится место.",
                 parse_mode="HTML",
                 reply_markup=waitlist_keyboard()
@@ -192,10 +193,9 @@ async def _handle_get_sub(callback: CallbackQuery):
 
         active = await count_active_users()
         await callback.message.edit_text(
-            f"⚠️ <b>Свободных мест нет</b>\n\n"
-            f"📊 Занято: {active} из {MAX_USERS}\n\n"
-            f"Ты можешь встать в лист ожидания — мы напишем тебе, "
-            f"как только освободится место.",
+            f"<b>Свободных мест нет</b>\n\n"
+            f"Занято: {active} из {MAX_USERS}.\n\n"
+            f"Можно встать в лист ожидания — мы напишем, когда появится место.",
             parse_mode="HTML",
             reply_markup=waitlist_keyboard()
         )
@@ -203,12 +203,12 @@ async def _handle_get_sub(callback: CallbackQuery):
         return
 
     await callback.message.edit_text(
-        "📜 <b>Для получения подписки ознакомься с документами:</b>\n\n"
-        "1. 📜 Правила использования\n"
-        "2. 🔒 Политика конфиденциальности\n"
-        "3. 📋 Пользовательское соглашение\n\n"
-        "Нажимая «✅ Я согласен со всеми условиями», ты подтверждаешь, "
-        "что ознакомился со всеми документами.",
+        "<b>Перед получением подписки</b>\n\n"
+        "Ознакомься с документами:\n"
+        "1. Правила использования\n"
+        "2. Политика конфиденциальности\n"
+        "3. Пользовательское соглашение\n\n"
+        "Нажимая «Согласен с условиями», ты подтверждаешь, что прочитал их.",
         reply_markup=terms_keyboard(),
         parse_mode="HTML"
     )
@@ -234,26 +234,31 @@ async def _handle_my_sub(callback: CallbackQuery):
         if expiry > 0:
             exp_dt = datetime.fromtimestamp(expiry / 1000)
             exp_date = exp_dt.strftime("%d.%m.%Y")
-            days_left = (exp_dt - datetime.now()).days
+            remaining = (exp_dt - datetime.now()).total_seconds()
+            days_left = (
+                math.ceil(remaining / 86400)
+                if remaining > 0
+                else math.floor(remaining / 86400)
+            )
             if days_left < 0:
-                status_line = f"⚠️ Истекла {exp_date}"
+                status_line = f"Истекла {exp_date}."
             elif days_left <= 3:
-                status_line = f"⏳ Истекает через {days_left} дн. ({exp_date})"
+                status_line = f"Истекает {exp_date}. Осталось {days_left} дн."
             else:
-                status_line = f"📅 До {exp_date} ({days_left} дн.)"
+                status_line = f"Активна до {exp_date}. Осталось {days_left} дн."
         else:
-            status_line = "📅 Бессрочно"
+            status_line = "Бессрочная."
 
         traffic_up = client.get("up", 0) / (1024**3)
         traffic_down = client.get("down", 0) / (1024**3)
 
     await callback.message.edit_text(
-        f"🔑 <b>Твоя подписка</b>\n\n"
-        f"🔗 Ссылка:\n<code>{sub_url}</code>\n\n"
+        f"<b>Твоя подписка</b>\n\n"
+        f"Ссылка:\n<code>{sub_url}</code>\n\n"
         f"{status_line}\n"
-        f"📱 Лимит: 3 IP одновременно\n"
-        f"📊 Трафик: ↓{traffic_down:.2f} GB / ↑{traffic_up:.2f} GB\n\n"
-        f"{DONATE_TEXT}",
+        f"Лимит: 3 IP одновременно.\n"
+        f"Трафик: получено {traffic_down:.2f} ГБ, отправлено {traffic_up:.2f} ГБ.\n\n"
+        f"Поддержать проект можно в разделе «Донат».",
         reply_markup=subscription_keyboard(),
         parse_mode="HTML"
     )
@@ -274,10 +279,10 @@ async def _handle_invite(callback: CallbackQuery):
     ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{callback.from_user.id}"
 
     await callback.message.edit_text(
-        f"👥 <b>Пригласи друга</b>\n\n"
+        f"<b>Приглашение друга</b>\n\n"
         f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
-        f"📊 Ты уже пригласил: {invites} чел.\n\n"
-        f"💡 Отправь ссылку друзьям — они получат бесплатный VPN.",
+        f"Приглашено: {invites}.\n\n"
+        f"Отправь ссылку другу. После регистрации он получит бесплатную подписку.",
         reply_markup=share_keyboard(BOT_USERNAME, callback.from_user.id),
         parse_mode="HTML"
     )
@@ -296,12 +301,9 @@ async def _handle_invite_no_tg(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(
         "<b>Гостевая подписка</b>\n\n"
-        "<i>Работает без Telegram.</i>\n\n"
-        "Выбери способ:\n"
-        "• Выбрать из контактов Telegram\n"
-        "• Или ввести @username / ID вручную\n\n"
-        "После этого я создам ссылку на сайт, "
-        "которую ты передашь любым способом.",
+        "Подписка работает без Telegram. Ссылку можно передать через WhatsApp, VK или SMS.\n\n"
+        "Выбери друга из контактов или введи @username / ID. "
+        "После этого я создам ссылку, которую можно передать любым способом.",
         reply_markup=invite_contact_keyboard(),
         parse_mode="HTML"
     )

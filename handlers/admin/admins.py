@@ -26,7 +26,7 @@ def _admin_label(admin: dict) -> str:
 async def _render_admin_list(callback: CallbackQuery):
     admins = list_admins()
     await callback.message.edit_text(
-        "🛡 <b>Администраторы</b>\n\n"
+        "<b>Администраторы</b>\n\n"
         "Суперадмин управляет доступами. Админ видит заявки, пользователей, "
         "тикеты и статистику, но не может менять других админов, делать рассылку "
         "и открывать панель 3x-ui.",
@@ -61,7 +61,7 @@ async def admin_admin_info(callback: CallbackQuery):
         return
 
     await callback.message.edit_text(
-        f"🛡 <b>Администратор</b>\n\n"
+        f"<b>Администратор</b>\n\n"
         f"{_admin_label(admin)}\n"
         f"<code>{telegram_id}</code>\n\n"
         f"Добавлен: {admin.get('added_at') or '—'}",
@@ -79,12 +79,12 @@ async def admin_admins_add(callback: CallbackQuery, state: FSMContext):
 
     await state.set_state(AdminStates.waiting_admin_id)
     await callback.message.edit_text(
-        "➕ <b>Новый администратор</b>\n\n"
+        "<b>Новый администратор</b>\n\n"
         "Отправь Telegram ID или @username пользователя. "
         "Он должен хотя бы раз открыть бота.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_admins")]
+            [InlineKeyboardButton(text="Отмена", callback_data="admin_admins")]
         ]),
     )
     await callback.answer()
@@ -128,7 +128,7 @@ async def admin_admins_add_process(message: Message, state: FSMContext):
         await message.answer(
             "Не удалось разобрать ID. Отправь число или @username.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_admins")]
+                [InlineKeyboardButton(text="Отмена", callback_data="admin_admins")]
             ]),
         )
         return
@@ -137,7 +137,7 @@ async def admin_admins_add_process(message: Message, state: FSMContext):
         await message.answer(
             "Не удалось добавить. Проверь ID и попробуй ещё раз.",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_admins")]
+                [InlineKeyboardButton(text="Отмена", callback_data="admin_admins")]
             ]),
         )
         return
@@ -154,7 +154,7 @@ async def admin_admins_add_process(message: Message, state: FSMContext):
         logger.warning("Не удалось уведомить нового админа %s", telegram_id)
 
     await message.answer(
-        f"✅ Админ добавлен: <code>{telegram_id}</code>",
+        f"Админ добавлен: <code>{telegram_id}</code>",
         parse_mode="HTML",
         reply_markup=admin_admins_keyboard(list_admins(), message.from_user.id),
     )

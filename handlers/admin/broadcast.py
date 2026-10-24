@@ -22,12 +22,12 @@ async def admin_broadcast_start(callback: CallbackQuery, state: FSMContext):
         return
 
     await callback.message.edit_text(
-        "📢 <b>Рассылка</b>\n\n"
+        "<b>Рассылка</b>\n\n"
         "Отправь текст сообщения, которое уйдёт всем активным пользователям.\n\n"
         "Поддерживается HTML: <b>жирный</b>, <i>курсив</i>, <code>код</code>.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="⬅️ Отмена", callback_data="admin_broadcast_cancel")]
+            [InlineKeyboardButton(text="Отмена", callback_data="admin_broadcast_cancel")]
         ])
     )
     await state.set_state(AdminStates.waiting_broadcast_text)
@@ -43,7 +43,7 @@ async def admin_broadcast_cancel(callback: CallbackQuery, state: FSMContext):
 
     await state.clear()
     await callback.message.edit_text(
-        "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
+        "<b>Управление ботом</b>\n\nВыбери действие:",
         reply_markup=admin_manage_keyboard(True),
         parse_mode="HTML"
     )
@@ -76,13 +76,13 @@ async def admin_broadcast_process(message: Message, state: FSMContext):
         await asyncio.sleep(0.05)
 
     await message.answer(
-        f"📢 <b>Рассылка завершена</b>\n\n"
-        f"✅ Отправлено: {sent}\n"
-        f"❌ Не доставлено: {failed}",
+        f"<b>Рассылка завершена</b>\n\n"
+        f"Отправлено: {sent}\n"
+        f"Не доставлено: {failed}",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")],
-            [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")],
+            [InlineKeyboardButton(text="В управление", callback_data="admin_manage")],
+            [InlineKeyboardButton(text="В главное меню", callback_data="back_to_main")],
         ])
     )
     await state.clear()

@@ -24,10 +24,10 @@ async def handle_web_link(message: Message, token: str):
     """Обработка /start link_<token>.
 
     Логика:
-      1. Если B уже в users → ошибка
-      2. Найти invite_link по токену → не найден → ошибка
-      3. Если не активирован (is_used=0) → ошибка
-      4. Если уже привязан к другому TG → ошибка
+      1. Если B уже в users  ошибка
+      2. Найти invite_link по токену  не найден  ошибка
+      3. Если не активирован (is_used=0)  ошибка
+      4. Если уже привязан к другому TG  ошибка
       5. Привязать (создать users + пометить invite_links.bound_to_tg_id)
       6. Уведомить A и админов
       7. Показать B главное меню
@@ -38,9 +38,9 @@ async def handle_web_link(message: Message, token: str):
     existing = await get_user(tg_id)
     if existing:
         await message.answer(
-            "⚠️ <b>У тебя уже есть подписка</b>\n\n"
+            "<b>У тебя уже есть подписка</b>\n\n"
             "Эту ссылку использовать нельзя — она одноразовая.\n\n"
-            "Нажми «🔑 Моя подписка», чтобы посмотреть свои данные.",
+            "Нажми «Моя подписка», чтобы посмотреть свои данные.",
             parse_mode="HTML"
         )
         await show_main_menu(message)
@@ -50,7 +50,7 @@ async def handle_web_link(message: Message, token: str):
     link = await get_invite_link_any(token)
     if not link:
         await message.answer(
-            "❌ <b>Ссылка недействительна</b>\n\n"
+            "<b>Ссылка недействительна</b>\n\n"
             "Возможно, она была удалена или не существует.",
             parse_mode="HTML"
         )
@@ -60,7 +60,7 @@ async def handle_web_link(message: Message, token: str):
     # 3. Проверить, что ссылка активирована на сайте
     if not link["is_used"]:
         await message.answer(
-            "⏳ <b>Ссылка ещё не активирована</b>\n\n"
+            "<b>Ссылка ещё не активирована</b>\n\n"
             "Сначала открой её в браузере и получи подписку на сайте, "
             "а потом возвращайся в бота.",
             parse_mode="HTML"
@@ -71,7 +71,7 @@ async def handle_web_link(message: Message, token: str):
     # 4. Проверить, что ссылка не привязана к другому TG
     if link["bound_to_tg_id"] is not None:
         await message.answer(
-            "⚠️ <b>Ссылка уже привязана</b>\n\n"
+            "<b>Ссылка уже привязана</b>\n\n"
             "Кто-то другой уже использовал её для входа в бота.\n"
             "Ссылка одноразовая.",
             parse_mode="HTML"
@@ -82,11 +82,11 @@ async def handle_web_link(message: Message, token: str):
     # 4.5. ЖЁСТКАЯ ПРОВЕРКА: если A указал friend_user_id — должен совпасть
     if link["friend_user_id"] is not None and link["friend_user_id"] != tg_id:
         logger.warning(
-            f"⚠️ Попытка привязки по чужой ссылке: "
+            f"Попытка привязки по чужой ссылке: "
             f"token={token}, ожидается TG={link['friend_user_id']}, пришёл TG={tg_id}"
         )
         await message.answer(
-            "⚠️ <b>Эта ссылка не для тебя</b>\n\n"
+            "<b>Эта ссылка не для тебя</b>\n\n"
             "Она создана для другого пользователя.\n"
             "Попроси у пригласившего новую.",
             parse_mode="HTML"
@@ -105,7 +105,7 @@ async def handle_web_link(message: Message, token: str):
     if bound_id is None:
         # Гонка: между проверками кто-то успел привязать
         await message.answer(
-            "⚠️ <b>Не удалось привязать</b>\n\n"
+            "<b>Не удалось привязать</b>\n\n"
             "Ссылка уже кем-то использована. Попроси новую.",
             parse_mode="HTML"
         )
@@ -117,9 +117,9 @@ async def handle_web_link(message: Message, token: str):
     try:
         await message.bot.send_message(
             inviter_id,
-            f"🎉 <b>Пользователь @{message.from_user.username or message.from_user.first_name} "
-            f"активировал подписку по твоей ссылке!</b>\n\n"
-            f"Спасибо, что помогаешь проекту расти ❤️",
+            f"<b>Пользователь @{message.from_user.username or message.from_user.first_name} "
+            f"активировал подписку по твоей ссылке.</b>\n\n"
+            f"Спасибо за помощь проекту.",
             parse_mode="HTML",
             disable_notification=True,
         )
@@ -128,11 +128,11 @@ async def handle_web_link(message: Message, token: str):
 
     # 7. Уведомить админов
     admin_text = (
-        f"🆕 <b>Веб-пользователь привязался к боту</b>\n\n"
-        f"👤 {message.from_user.full_name}\n"
-        f"🆔 <code>{tg_id}</code>\n"
-        f"📧 {link['xui_email']}\n"
-        f"👥 Пригласил: <code>{inviter_id}</code>"
+        f"<b>Веб-пользователь привязался к боту</b>\n\n"
+        f"Пользователь: {message.from_user.full_name}\n"
+        f"ID: <code>{tg_id}</code>\n"
+        f"Email: {link['xui_email']}\n"
+        f"Пригласил: <code>{inviter_id}</code>"
     )
     for admin_id in get_admin_ids():
         try:
@@ -145,13 +145,13 @@ async def handle_web_link(message: Message, token: str):
         except Exception:
             logger.exception("Ошибка отправки админу %s", admin_id)
 
-    logger.info(f"✅ Веб-пользователь {tg_id} привязан к боту (token={token})")
+    logger.info(f"Веб-пользователь {tg_id} привязан к боту (token={token})")
 
     # 8. Показать B приветствие + главное меню
     await message.answer(
-        f"🎉 <b>Добро пожаловать в {BOT_NAME}!</b>\n\n"
-        f"Твоя подписка привязана к этому Telegram-аккаунту.\n"
-        f"Теперь её можно продлевать через бота.",
+        f"<b>Добро пожаловать в {BOT_NAME}</b>\n\n"
+        f"Подписка привязана к этому Telegram-аккаунту. "
+        f"Продлевать её можно через бота.",
         parse_mode="HTML"
     )
     await show_main_menu(message)
@@ -168,7 +168,7 @@ async def bind_by_tg_id(message: Message, link):
     existing = await get_user(tg_id)
     if existing:
         # Уже в users — просто меню
-        logger.info(f"ℹ️ TG={tg_id} уже в users, автопривязка не нужна")
+        logger.info(f"ℹ TG={tg_id} уже в users, автопривязка не нужна")
         await show_main_menu(message)
         return
 
@@ -182,7 +182,7 @@ async def bind_by_tg_id(message: Message, link):
     )
 
     if bound_id is None:
-        logger.warning(f"⚠️ Автопривязка не удалась: token={link['token']}, tg={tg_id}")
+        logger.warning(f"Автопривязка не удалась: token={link['token']}, tg={tg_id}")
         await show_main_menu(message)
         return
 
@@ -191,9 +191,9 @@ async def bind_by_tg_id(message: Message, link):
     try:
         await message.bot.send_message(
             inviter_id,
-            f"🎉 <b>Пользователь @{message.from_user.username or message.from_user.first_name} "
-            f"активировал подписку по твоей ссылке!</b>\n\n"
-            f"Спасибо, что помогаешь проекту расти ❤️",
+            f"<b>Пользователь @{message.from_user.username or message.from_user.first_name} "
+            f"активировал подписку по твоей ссылке.</b>\n\n"
+            f"Спасибо за помощь проекту.",
             parse_mode="HTML",
             disable_notification=True,
         )
@@ -202,11 +202,11 @@ async def bind_by_tg_id(message: Message, link):
 
     # Уведомить админов
     admin_text = (
-        f"🆕 <b>Веб-пользователь привязался к боту (авто)</b>\n\n"
-        f"👤 {message.from_user.full_name}\n"
-        f"🆔 <code>{tg_id}</code>\n"
-        f"📧 {link['xui_email']}\n"
-        f"👥 Пригласил: <code>{inviter_id}</code>"
+        f"<b>Веб-пользователь привязался к боту (авто)</b>\n\n"
+        f"Пользователь: {message.from_user.full_name}\n"
+        f"ID: <code>{tg_id}</code>\n"
+        f"Email: {link['xui_email']}\n"
+        f"Пригласил: <code>{inviter_id}</code>"
     )
     for admin_id in get_admin_ids():
         try:
@@ -219,13 +219,13 @@ async def bind_by_tg_id(message: Message, link):
         except Exception:
             logger.exception("Ошибка отправки админу %s", admin_id)
 
-    logger.info(f"✅ Автопривязка: TG={tg_id} → token={link['token']}")
+    logger.info(f"Автопривязка: TG={tg_id}  token={link['token']}")
 
     # Приветствие + меню
     await message.answer(
-        f"🎉 <b>Добро пожаловать в {BOT_NAME}!</b>\n\n"
-        f"Твоя подписка привязана к этому Telegram-аккаунту.\n"
-        f"Теперь её можно продлевать через бота.",
+        f"<b>Добро пожаловать в {BOT_NAME}</b>\n\n"
+        f"Подписка привязана к этому Telegram-аккаунту. "
+        f"Продлевать её можно через бота.",
         parse_mode="HTML"
     )
     await show_main_menu(message)

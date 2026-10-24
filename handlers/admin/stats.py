@@ -55,22 +55,22 @@ async def admin_stats_callback(callback: CallbackQuery):
     free_slots = max(MAX_USERS - active, 0)
 
     text = (
-        f"📊 <b>Статистика {BOT_NAME}</b>\n\n"
-        f"👥 <b>Пользователи:</b>\n"
+        f"<b>Статистика {BOT_NAME}</b>\n\n"
+        f"<b>Пользователи:</b>\n"
         f"• Всего: {total}\n"
         f"• Активных: {active}\n"
         f"• Ожидают одобрения: {pending}\n"
         f"• В листе ожидания: {waitlist_count}\n"
         f"• Свободно мест: {free_slots} из {MAX_USERS}\n"
         f"• Истекают через 3 дня: {expiring}\n\n"
-        f"📢 <b>Приглашения:</b>\n"
+        f"<b>Приглашения:</b>\n"
         f"• По реферальным: {invites_stats['ref']}\n"
         f"• Без Telegram: {invites_stats['no_tg']}\n"
         f"• Всего: {invites_stats['total']}\n\n"
     )
 
     if top_inviters:
-        text += "🏆 <b>Топ-5 приглашающих:</b>\n"
+        text += "<b>Топ-5 приглашающих:</b>\n"
         for i, inviter in enumerate(top_inviters, 1):
             user_data = await get_user(inviter["inviter_id"])
             if user_data and user_data["username"]:
@@ -87,13 +87,13 @@ async def admin_stats_callback(callback: CallbackQuery):
                 f"   └ всего: {inviter['total']}\n"
             )
     else:
-        text += "🏆 Пока нет приглашений."
+        text += "Пока нет приглашений."
 
     await callback.message.edit_text(
         text,
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_to_main")]
+            [InlineKeyboardButton(text="В главное меню", callback_data="back_to_main")]
         ])
     )
     await callback.answer()
@@ -119,6 +119,6 @@ async def cmd_stats(message: Message):
             active = (await cur.fetchone())["c"]
 
     await message.answer(
-        f"📊 Всего: {total}\n✅ Активных: {active}",
+        f"Всего пользователей: {total}\nАктивных: {active}",
         parse_mode="HTML"
     )

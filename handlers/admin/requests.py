@@ -3,7 +3,7 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from config import DB_PATH, DONATE_TEXT
+from config import DB_PATH
 from permissions import is_admin_user, is_superadmin
 from database import (
     approve_user,
@@ -41,21 +41,20 @@ async def _show_requests_list(callback: CallbackQuery):
 
     if not requests:
         await callback.message.edit_text(
-            "📋 <b>Заявок нет</b>\n\nВсе заявки обработаны.",
+            "<b>Заявок нет</b>\n\nВсе заявки обработаны.",
             parse_mode="HTML",
             reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id))
         )
         return
 
-    text = f"📋 <b>Заявки ({len(requests)})</b>\n\n"
+    text = f"<b>Заявки ({len(requests)})</b>\n\n"
     text += "Нажми на пользователя, чтобы открыть карточку:\n"
 
     buttons = []
     for req in requests:
-        status_emoji = "⏳" if req["status"] == "pending" else "❌"
         name = req["first_name"] or "Без имени"
         short_name = name[:20] + "…" if len(name) > 20 else name
-        label = f"{status_emoji} {short_name} — {req['telegram_id']}"
+        label = f"{short_name} — {req['telegram_id']}"
 
         buttons.append([InlineKeyboardButton(
             text=label[:64],
@@ -63,7 +62,7 @@ async def _show_requests_list(callback: CallbackQuery):
         )])
 
     buttons.append([InlineKeyboardButton(
-        text="⬅️ Назад",
+        text="Назад",
         callback_data="admin_manage"
     )])
 
@@ -88,46 +87,46 @@ async def request_view_callback(callback: CallbackQuery):
         return
 
     status_ru = {
-        "pending": "⏳ Ожидает одобрения",
-        "rejected": "❌ Отклонена",
-        "active": "✅ Активна",
-        "new": "🆕 Новая",
+        "pending": "Ожидает одобрения",
+        "rejected": "Отклонена",
+        "active": "Активна",
+        "new": "Новая",
     }.get(user["status"], user["status"])
 
     username = f"@{user['username']}" if user["username"] else "—"
 
     text = (
-        f"👤 <b>{user['first_name'] or 'Без имени'}</b>\n\n"
-        f"🆔 <code>{user['telegram_id']}</code>\n"
-        f"📧 <code>{user['xui_email']}</code>\n"
-        f"👤 {username}\n"
-        f"📊 {status_ru}\n"
+        f"<b>{user['first_name'] or 'Без имени'}</b>\n\n"
+        f"ID: <code>{user['telegram_id']}</code>\n"
+        f"Email: <code>{user['xui_email']}</code>\n"
+        f"Username: {username}\n"
+        f"Статус: {status_ru}\n"
     )
 
     if user["created_at"]:
-        text += f"📅 Создана: {user['created_at']}\n"
+        text += f"Создана: {user['created_at']}\n"
 
     buttons = []
 
     if user["status"] in ("pending", "rejected", "new"):
         buttons.append([
             InlineKeyboardButton(
-                text="✅ Одобрить",
+                text="Одобрить",
                 callback_data=f"req_approve:{telegram_id}"
             ),
             InlineKeyboardButton(
-                text="❌ Отклонить",
+                text="Отклонить",
                 callback_data=f"req_reject:{telegram_id}"
             ),
         ])
 
     buttons.append([InlineKeyboardButton(
-        text="🗑 Удалить из БД",
+        text="Удалить из БД",
         callback_data=f"req_delete:{telegram_id}"
     )])
 
     buttons.append([InlineKeyboardButton(
-        text="⬅️ К списку",
+        text="К списку",
         callback_data="admin_list_requests"
     )])
 
@@ -153,7 +152,7 @@ async def request_approve_callback(callback: CallbackQuery, state: FSMContext):
         return
 
     if user["status"] == "active":
-        await callback.answer("⚠️ Уже активна", show_alert=True)
+        await callback.answer("Уже активна", show_alert=True)
         return
 
     user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
@@ -162,20 +161,20 @@ async def request_approve_callback(callback: CallbackQuery, state: FSMContext):
     await state.update_data(approve_tg_id=telegram_id)
 
     await callback.message.edit_text(
-        f"📝 <b>Комментарий для 3x-ui</b>\n\n"
-        f"👤 {user['first_name']}\n"
-        f"🆔 <code>{telegram_id}</code>\n\n"
-        f"Введи текст (например, «VIP клиент, друг Ильи»)\n"
-        f"или нажми «Пропустить» — тогда будет авто:\n"
+        f"<b>Комментарий для 3x-ui</b>\n\n"
+        f"Пользователь: {user['first_name']}\n"
+        f"ID: <code>{telegram_id}</code>\n\n"
+        f"Введи комментарий или нажми «Пропустить». "
+        f"Автоматический вариант:\n"
         f"<code>{auto_comment}</code>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text="⏭ Пропустить",
+                text="Пропустить",
                 callback_data=f"req_skip_comment:{telegram_id}"
             )],
             [InlineKeyboardButton(
-                text="❌ Отмена",
+                text="Отмена",
                 callback_data="admin_comment_cancel"
             )]
         ])
@@ -193,7 +192,7 @@ async def admin_comment_cancel(callback: CallbackQuery, state: FSMContext):
 
     await state.clear()
     await callback.message.edit_text(
-        "🛠 <b>Управление ботом</b>\n\nВыбери действие:",
+        "<b>Управление ботом</b>\n\nВыбери действие:",
         reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
     )
@@ -215,7 +214,7 @@ async def request_reject_callback(callback: CallbackQuery):
         )
         await db.commit()
 
-    await callback.answer("❌ Отклонено", show_alert=True)
+    await callback.answer("Отклонено", show_alert=True)
     await _show_requests_list(callback)
 
 
@@ -228,7 +227,7 @@ async def request_delete_callback(callback: CallbackQuery):
     telegram_id = int(callback.data.split(":")[1])
 
     await delete_user(telegram_id)
-    await callback.answer("🗑 Удалён", show_alert=True)
+    await callback.answer("Удалён", show_alert=True)
 
     await notify_next_in_queue(callback.bot)
     await _show_requests_list(callback)
@@ -242,7 +241,7 @@ async def request_delete_callback(callback: CallbackQuery):
 async def _do_approve(bot, chat_id: int, telegram_id: int, custom_comment: str = None):
     user = await get_user(telegram_id)
     if not user:
-        await bot.send_message(chat_id, f"❌ Пользователь {telegram_id} не найден")
+        await bot.send_message(chat_id, f"Пользователь {telegram_id} не найден")
         return
 
     user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
@@ -264,32 +263,35 @@ async def _do_approve(bot, chat_id: int, telegram_id: int, custom_comment: str =
 
         await bot.send_message(
             chat_id,
-            f"✅ <b>Заявка одобрена</b>\n\n"
-            f"👤 {user['first_name']}\n"
-            f"📧 {user['xui_email']}\n"
-            f"📝 <code>{comment}</code>",
+            f"<b>Заявка одобрена</b>\n\n"
+            f"Пользователь: {user['first_name']}\n"
+            f"Email: {user['xui_email']}\n"
+            f"Комментарий: <code>{comment}</code>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ К списку", callback_data="admin_list_requests")]
+                [InlineKeyboardButton(text="К списку", callback_data="admin_list_requests")]
             ])
         )
 
         await bot.send_message(
             telegram_id,
-            f"🎉 <b>Твоя подписка готова!</b>\n\n"
-            f"🔗 Ссылка:\n<code>{sub_url}</code>\n\n"
-            f"📱 Лимит: 3 IP одновременно\n"
-            f"⏳ Срок: 30 дней. Продлить можно через «🔑 Моя подписка».\n\n"
-            f"{DONATE_TEXT}",
+            f"<b>Подписка активирована</b>\n\n"
+            f"Ссылка:\n<code>{sub_url}</code>\n\n"
+            f"Лимит: 3 IP одновременно.\n"
+            f"Срок: 30 дней. Продлить можно в разделе «Моя подписка».\n\n"
+            f"Поддержать проект можно в разделе «Донат».",
             parse_mode="HTML",
             reply_markup=subscription_keyboard()
         )
 
-        logger.info(f"✅ Одобрен {user['xui_email']} | comment={comment}")
+        logger.info(f"Одобрен {user['xui_email']} | comment={comment}")
 
     except Exception as e:
         logger.error(f"Ошибка при одобрении {user['xui_email']}")
-        await bot.send_message(chat_id, "❌ Ошибка")
+        await bot.send_message(
+            chat_id,
+            "Не удалось одобрить заявку. Проверь панель 3x-ui и повтори попытку."
+        )
 
 
 @router.message(AdminStates.waiting_comment)
@@ -302,9 +304,9 @@ async def comment_input_process(message: Message, state: FSMContext):
 
     if not telegram_id:
         await message.answer(
-            "❌ Ошибка: не найден пользователь",
+            "Ошибка: не найден пользователь",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🛠 В управление", callback_data="admin_manage")]
+                [InlineKeyboardButton(text="В управление", callback_data="admin_manage")]
             ])
         )
         await state.clear()
