@@ -769,7 +769,7 @@ document.addEventListener('visibilitychange', () => {
 
  <div class="tg-card" id="connection-check-card">
    <div class="tg-card-title">Проверка подключения</div>
-   <p class="tg-note" style="margin-bottom:10px;padding:0;">Проверим сервер, клиента и ссылку подписки. В обезличенную статистику не попадают Telegram ID и IP.</p>
+   <p class="tg-note" style="margin-bottom:10px;padding:0;">Проверим сервер, клиента и ссылку подписки.</p>
    <button class="btn btn-secondary" data-action="check_connection">Проверить подключение</button>
    <div id="connection-check-result" class="tg-note" style="display:none;padding:10px 0 0;"></div>
  </div>
