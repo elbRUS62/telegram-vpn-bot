@@ -1,0 +1,17 @@
+[Unit]
+Description=SkrepNet external health monitor
+Documentation=https://github.com/elbRUS62/telegram-vpn-bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/etc/skrepnet-monitor.env
+ExecStart=/usr/bin/flock -n /var/lib/skrepnet-monitor/monitor.lock /usr/local/sbin/skrepnet-monitor.py
+Nice=10
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=/var/lib/skrepnet-monitor
