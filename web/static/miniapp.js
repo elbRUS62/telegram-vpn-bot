@@ -807,7 +807,21 @@ document.addEventListener('visibilitychange', () => {
    <button type="button" class="onboarding-dismiss" onclick="dismissConnectOnboarding()">Позже</button>
  </div>` : '';
 
+ const donationPercent = Math.min(100, Math.max(0, Number(data.progress_percent) || 0));
+ const donatedRub = Number(data.donated) || 0;
+ const serverCostRub = Number(data.server_cost) || 0;
+ const donationHtml = serverCostRub > 0 ? `
+ <button type="button" class="home-donate" data-action="open_donate" aria-label="Открыть раздел поддержки">
+   <span class="home-donate__top">
+     <span class="home-donate__title">Сбор в ${escapeHtml(data.next_month || 'этом месяце')}</span>
+     <span class="home-donate__percent">${donationPercent}%</span>
+   </span>
+   <span class="home-donate__bar"><span style="width:${donationPercent}%"></span></span>
+   <span class="home-donate__sum">${formatRub(donatedRub)} ₽ из ${formatRub(serverCostRub)} ₽</span>
+ </button>` : '';
+
  content.innerHTML = `
+ ${donationHtml}
  <div class="tg-hero tg-card">
    <div class="tg-kicker">${data.bot_name || 'SkrepNet'}</div>
    <h1 class="tg-title">${heroTitle}</h1>
@@ -847,6 +861,7 @@ document.addEventListener('visibilitychange', () => {
  btn.addEventListener('click', async () => {
  const action = btn.dataset.action;
  if (action === 'switch_sub') switchTab('sub');
+ else if (action === 'open_donate') switchTab('donate');
  else if (action === 'get_sub') openTermsModal();
  else if (action === 'invite_friend') {
  if (!data.has_subscription) { showToast('Сначала получите подписку'); return; }
@@ -1806,6 +1821,10 @@ document.addEventListener('visibilitychange', () => {
  let i = 0;
  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
  return `${v >= 100 ? v.toFixed(0) : v.toFixed(1)} ${units[i]}`;
+ }
+
+ function formatRub(value) {
+ return Number(value || 0).toLocaleString('ru-RU');
  }
 
  function fmtUptime(sec) {

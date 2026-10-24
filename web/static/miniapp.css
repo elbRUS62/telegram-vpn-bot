@@ -2118,3 +2118,35 @@ body { padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
 .profile-diag .tg-list--flush { margin: 0; }
 .profile-diag .tg-item { padding: 7px 0; font-size: 13px; }
 .profile-diag .tg-note { padding: 6px 0 0; }
+
+/* ===== Home donation summary ===== */
+.home-donate {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 9px 12px 10px;
+  border: 1px solid rgba(127, 127, 127, 0.16);
+  border-radius: 12px;
+  background: var(--secondary-bg);
+  background: color-mix(in srgb, var(--text-color) 6%, var(--secondary-bg));
+  color: var(--text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.home-donate:active { opacity: 0.8; }
+.home-donate__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.home-donate__title { color: var(--hint-color); font-size: 12px; font-weight: 600; }
+.home-donate__percent { color: var(--text-color); font-size: 12px; font-weight: 650; }
+.home-donate__bar {
+  display: block;
+  height: 5px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.18);
+  overflow: hidden;
+}
+.home-donate__bar span { display: block; height: 100%; border-radius: inherit; background: var(--link-color); }
+.home-donate__sum { color: var(--hint-color); font-size: 11px; }

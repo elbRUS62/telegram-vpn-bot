@@ -57,6 +57,8 @@ def main():
             'is_superadmin': admin["is_superadmin"],
             'admin_role': admin["role"],
             'progress_percent': percent,
+            'donated': int(donated),
+            'server_cost': SERVER_COST,
             'bot_name': BOT_NAME,
             'next_month': next_month_name,
             'support_unread': support_unread,
