@@ -8,5 +8,5 @@ qrcode[pil]
 websockets
 httpx
 flask
-gunicorn>=22.0
+gunicorn>=26.2.0
 sentry-sdk[flask]>=2.20,<3
