@@ -1136,7 +1136,7 @@ body {
 .ticket-subtle { color:var(--hint-color); font-size:12px; line-height:1.5; }
 .ticket-toolbar { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
 .ticket-toolbar .tab { flex:0 0 auto; padding:6px 10px; font-size:12px; }
-#confirm-modal { z-index: 200; }
+#confirm-modal, #reason-modal, #comment-modal { z-index: 200; }
 
 /* ============================================================
    Telegram-native UI
