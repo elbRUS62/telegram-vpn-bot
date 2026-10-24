@@ -1870,12 +1870,16 @@ body { padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
 .tab[data-tab="donate"].active .tab-icon { filter: drop-shadow(0 0 8px rgba(255, 59, 48, .55)); }
 .tab[data-tab="sub"] .tab-icon { stroke-width: 2.1; }
 @keyframes donate-heart-pulse {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 59, 48, .30)); }
-  50% { transform: scale(1.12); filter: drop-shadow(0 0 10px rgba(255, 59, 48, .60)); }
+  0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 59, 48, .30)); }
+  6% { transform: scale(1.18); filter: drop-shadow(0 0 12px rgba(255, 59, 48, .70)); }
+  12% { transform: scale(.98); filter: drop-shadow(0 0 6px rgba(255, 59, 48, .35)); }
+  18% { transform: scale(1.12); filter: drop-shadow(0 0 10px rgba(255, 59, 48, .60)); }
+  24%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 59, 48, .30)); }
 }
 .tab[data-tab="donate"] .tab-icon {
   transform-origin: 50% 55%;
-  animation: donate-heart-pulse 2.8s ease-in-out infinite;
+  animation: donate-heart-pulse 2.4s ease-in-out infinite;
+  will-change: transform, filter;
 }
 @media (prefers-reduced-motion: reduce) {
   .tab[data-tab="donate"] .tab-icon { animation: none; }
