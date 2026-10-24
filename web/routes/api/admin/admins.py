@@ -2,6 +2,8 @@ from flask import jsonify, request
 
 from config import BOT_TOKEN
 from permissions import (
+    ADMIN_ERROR_MESSAGES,
+    AdminActionError,
     deactivate_admin,
     list_admins,
     save_admin,
@@ -26,6 +28,15 @@ def _user_profile(user):
 
 def _audit_async(admin_id, action, target_id=None, meta=""):
     run_async(_audit(admin_id, action, target_id, meta))
+
+
+def _admin_error(error):
+    """Безопасный ответ на ошибку действия: только известные коды."""
+    message = ADMIN_ERROR_MESSAGES.get(error.code)
+    if not message:
+        logger.warning("Неизвестная ошибка действия с админом: %s", error)
+        message = "Не удалось выполнить действие"
+    return jsonify({"error": message}), 400
 
 
 @admin_api.route("/admins", methods=["POST"])
@@ -81,8 +92,8 @@ def admins_add():
             role=data.get("role") or "admin",
             added_by=request.admin_user["id"],
         )
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+    except AdminActionError as error:
+        return _admin_error(error)
 
     _audit_async(
         request.admin_user["id"],
@@ -119,8 +130,8 @@ def admins_role():
             role,
             actor_id=request.admin_user["id"],
         )
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+    except AdminActionError as error:
+        return _admin_error(error)
 
     _audit_async(
         request.admin_user["id"],
@@ -152,8 +163,8 @@ def admins_remove():
 
     try:
         deactivate_admin(telegram_id, actor_id=request.admin_user["id"])
-    except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+    except AdminActionError as error:
+        return _admin_error(error)
 
     _audit_async(
         request.admin_user["id"],

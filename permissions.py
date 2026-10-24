@@ -16,6 +16,27 @@ ROLE_ADMIN = "admin"
 ROLE_SUPERADMIN = "superadmin"
 VALID_ROLES = {ROLE_ADMIN, ROLE_SUPERADMIN}
 
+ADMIN_ERROR_MESSAGES = {
+    "invalid_id": "Некорректный Telegram ID",
+    "unknown_role": "Неизвестная роль",
+    "env_superadmin_demote": "Нельзя понизить суперадмина из окружения",
+    "env_superadmin_remove": "Нельзя удалить суперадмина из окружения",
+    "not_found": "Админ не найден",
+    "no_superadmin": "Нельзя оставить сервис без суперадмина",
+    "last_superadmin": "Нельзя удалить последнего суперадмина",
+}
+
+
+class AdminActionError(ValueError):
+    """Ошибка действия с администратором с безопасным кодом."""
+
+    def __init__(self, code: str):
+        self.code = code
+        super().__init__(
+            ADMIN_ERROR_MESSAGES.get(code, "Не удалось выполнить действие")
+        )
+
+
 _SCHEMA_READY = False
 
 
@@ -258,11 +279,11 @@ def save_admin(telegram_id, username="", first_name="", role=ROLE_ADMIN,
     try:
         telegram_id = int(telegram_id)
     except (TypeError, ValueError):
-        raise ValueError("Некорректный Telegram ID")
+        raise AdminActionError("invalid_id")
     if telegram_id <= 0:
-        raise ValueError("Некорректный Telegram ID")
+        raise AdminActionError("invalid_id")
     if role not in VALID_ROLES:
-        raise ValueError("Неизвестная роль")
+        raise AdminActionError("unknown_role")
 
     if telegram_id in SUPERADMIN_IDS:
         role = ROLE_SUPERADMIN
@@ -283,11 +304,14 @@ def save_admin(telegram_id, username="", first_name="", role=ROLE_ADMIN,
 def set_admin_role(telegram_id, role, actor_id=None):
     ensure_admin_schema()
     if role not in VALID_ROLES:
-        raise ValueError("Неизвестная роль")
-    telegram_id = int(telegram_id)
+        raise AdminActionError("unknown_role")
+    try:
+        telegram_id = int(telegram_id)
+    except (TypeError, ValueError):
+        raise AdminActionError("invalid_id")
 
     if telegram_id in SUPERADMIN_IDS and role != ROLE_SUPERADMIN:
-        raise ValueError("Нельзя понизить суперадмина из окружения")
+        raise AdminActionError("env_superadmin_demote")
 
     with _db() as connection:
         row = connection.execute(
@@ -295,7 +319,7 @@ def set_admin_role(telegram_id, role, actor_id=None):
             (telegram_id,),
         ).fetchone()
         if not row:
-            raise ValueError("Админ не найден")
+            raise AdminActionError("not_found")
 
         if row["role"] == ROLE_SUPERADMIN and role != ROLE_SUPERADMIN:
             count = connection.execute(
@@ -303,7 +327,7 @@ def set_admin_role(telegram_id, role, actor_id=None):
                 "WHERE role = 'superadmin' AND is_active = 1"
             ).fetchone()[0]
             if count <= 1:
-                raise ValueError("Нельзя оставить сервис без суперадмина")
+                raise AdminActionError("no_superadmin")
 
         connection.execute(
             "UPDATE admins SET role = ?, is_active = 1, "
@@ -317,10 +341,13 @@ def set_admin_role(telegram_id, role, actor_id=None):
 
 def deactivate_admin(telegram_id, actor_id=None):
     ensure_admin_schema()
-    telegram_id = int(telegram_id)
+    try:
+        telegram_id = int(telegram_id)
+    except (TypeError, ValueError):
+        raise AdminActionError("invalid_id")
 
     if telegram_id in SUPERADMIN_IDS:
-        raise ValueError("Нельзя удалить суперадмина из окружения")
+        raise AdminActionError("env_superadmin_remove")
 
     with _db() as connection:
         row = connection.execute(
@@ -328,7 +355,7 @@ def deactivate_admin(telegram_id, actor_id=None):
             (telegram_id,),
         ).fetchone()
         if not row:
-            raise ValueError("Админ не найден")
+            raise AdminActionError("not_found")
 
         if row["role"] == ROLE_SUPERADMIN:
             count = connection.execute(
@@ -336,7 +363,7 @@ def deactivate_admin(telegram_id, actor_id=None):
                 "WHERE role = 'superadmin' AND is_active = 1"
             ).fetchone()[0]
             if count <= 1:
-                raise ValueError("Нельзя удалить последнего суперадмина")
+                raise AdminActionError("last_superadmin")
 
         connection.execute(
             "UPDATE admins SET is_active = 0, "

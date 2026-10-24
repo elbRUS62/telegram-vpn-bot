@@ -58,6 +58,12 @@ class PermissionsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             permissions.set_admin_role(1, "admin")
 
+    def test_admin_error_exposes_only_safe_code(self):
+        with self.assertRaises(permissions.AdminActionError) as ctx:
+            permissions.deactivate_admin(1)
+        self.assertEqual(ctx.exception.code, "env_superadmin_remove")
+        self.assertIn(ctx.exception.code, permissions.ADMIN_ERROR_MESSAGES)
+
     def test_cannot_remove_last_superadmin(self):
         permissions.deactivate_admin(2)
         with self.assertRaises(ValueError):
