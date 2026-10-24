@@ -250,24 +250,88 @@ const tg = window.Telegram.WebApp;
  function showConfirm(text, title = 'Подтверждение') {
  return new Promise((resolve) => {
  const modal = document.getElementById('confirm-modal');
+ if (!modal) { resolve(false); return; }
  document.getElementById('confirm-title').textContent = title;
  document.getElementById('confirm-text').textContent = text;
- modal.classList.add('show');
- 
+
  const okBtn = document.getElementById('confirm-ok');
  const cancelBtn = document.getElementById('confirm-cancel');
- 
- const cleanup = () => {
- modal.classList.remove('show');
+ let settled = false;
+ const observer = new MutationObserver(() => {
+ if (!modal.classList.contains('show')) finish(false);
+ });
+
+ const finish = (value) => {
+ if (settled) return;
+ settled = true;
+ observer.disconnect();
  okBtn.removeEventListener('click', onOk);
  cancelBtn.removeEventListener('click', onCancel);
+ modal.classList.remove('show');
+ resolve(value);
  };
- 
- const onOk = () => { cleanup(); resolve(true); };
- const onCancel = () => { cleanup(); resolve(false); };
- 
+
+ const onOk = () => finish(true);
+ const onCancel = () => finish(false);
+
  okBtn.addEventListener('click', onOk);
  cancelBtn.addEventListener('click', onCancel);
+ observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+ modal.classList.add('show');
+ });
+ }
+
+ // Окно с причиной действия для журнала аудита
+ function showReason(text, title = 'Причина', required = true) {
+ return new Promise((resolve) => {
+ const modal = document.getElementById('reason-modal');
+ const input = document.getElementById('reason-input');
+ const error = document.getElementById('reason-error');
+ if (!modal || !input) { resolve(null); return; }
+
+ document.getElementById('reason-title').textContent = title;
+ document.getElementById('reason-text').textContent = text;
+ input.value = '';
+ error.style.display = 'none';
+
+ const okBtn = document.getElementById('reason-ok');
+ const cancelBtn = document.getElementById('reason-cancel');
+ let settled = false;
+ const observer = new MutationObserver(() => {
+ if (!modal.classList.contains('show')) finish(null);
+ });
+
+ const finish = (value) => {
+ if (settled) return;
+ settled = true;
+ observer.disconnect();
+ okBtn.removeEventListener('click', onOk);
+ cancelBtn.removeEventListener('click', onCancel);
+ input.removeEventListener('input', onInput);
+ modal.classList.remove('show');
+ resolve(value);
+ };
+
+ const onInput = () => {
+ if (input.value.trim().length >= 3) error.style.display = 'none';
+ };
+ const onOk = () => {
+ const value = input.value.trim();
+ if (required && value.length < 3) {
+ error.style.display = 'block';
+ input.focus();
+ return;
+ }
+ finish(value);
+ };
+ const onCancel = () => finish(null);
+
+ okBtn.addEventListener('click', onOk);
+ cancelBtn.addEventListener('click', onCancel);
+ input.addEventListener('input', onInput);
+ observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+ modal.classList.add('show');
+ setTimeout(() => input.focus(), 50);
  });
  }
 
@@ -1376,9 +1440,10 @@ document.addEventListener('visibilitychange', () => {
  const ids = Array.from(ADMIN.selected).map(Number).filter(Boolean);
  if (!ids.length) return;
  const label = action === 'delete' ? 'удалить' : 'заблокировать';
- const ok = await showConfirm(`Вы уверены, что хотите ${label} ${ids.length} пользователей?`, 'Массовое действие');
- if (!ok) return;
- const r = await adminCall('/users/bulk', { ids, action });
+ const title = action === 'delete' ? 'Массовое удаление' : 'Массовая блокировка';
+ const reason = await showReason(`Вы уверены, что хотите ${label} ${ids.length} пользователей?`, title, true);
+ if (reason === null) return;
+ const r = await adminCall('/users/bulk', { ids, action, reason });
  if (r.error) { showToast(r.error, true); return; }
  showToast(`Готово: ${r.updated || 0}, ошибок: ${r.errors || 0}`);
  clearUserSelection();
@@ -2139,12 +2204,14 @@ async function openAdminUserCard(tgId) {
  const res = await adminCall('/extend', { tg_id: id, days: 30 });
  if (res.success) { showToast('Продлён'); modal.classList.remove('show'); loadAdminUsers(); loadAdminStats(); }
  } else if (act === 'delete') {
- if (!await showConfirm('Удалить пользователя?')) return;
- const res = await adminCall('/delete', { tg_id: id });
+ const reason = await showReason('Удалить пользователя? Действие необратимо.', 'Удаление пользователя', true);
+ if (reason === null) return;
+ const res = await adminCall('/delete', { tg_id: id, reason });
  if (res.success) { showToast('Удалён'); modal.classList.remove('show'); loadAdminUsers(); loadAdminStats(); }
  } else if (act === 'block') {
- if (!await showConfirm('Заблокировать пользователя?')) return;
- const res = await adminCall('/block', { tg_id: id });
+ const reason = await showReason('Заблокировать пользователя? Клиент будет выключен в панели.', 'Блокировка пользователя', true);
+ if (reason === null) return;
+ const res = await adminCall('/block', { tg_id: id, reason });
  if (res.success) { showToast('Заблокирован'); modal.classList.remove('show'); loadAdminUsers(); loadAdminStats(); }
  } else if (act === 'unblock') {
  if (!await showConfirm('Разблокировать пользователя?')) return;

@@ -4,7 +4,15 @@ from flask import jsonify, request
 from config import DB_PATH
 from web.utils.async_helper import run_async
 
-from .common import VALID_DAYS, _audit, admin_api, admin_required, superadmin_required, logger
+from .common import (
+    VALID_DAYS,
+    _audit,
+    admin_api,
+    admin_required,
+    clean_reason,
+    logger,
+    superadmin_required,
+)
 
 @admin_api.route("/approve", methods=["POST"])
 @admin_required
@@ -124,7 +132,9 @@ def extend():
 @admin_api.route("/delete", methods=["POST"])
 @superadmin_required
 def delete():
-    tg_id = int((request.json or {}).get("tg_id", 0))
+    data = request.json or {}
+    tg_id = int(data.get("tg_id", 0))
+    reason = clean_reason(data.get("reason"))
 
     async def do():
         from database import get_user, delete_user
@@ -138,7 +148,12 @@ def delete():
             except Exception as e:
                 logger.warning("xui delete failed for %s: %s", user["xui_email"], e)
         await delete_user(tg_id)
-        await _audit(request.admin_user["id"], "delete", tg_id)
+        await _audit(
+            request.admin_user["id"],
+            "delete",
+            tg_id,
+            f"reason={reason}" if reason else "",
+        )
         return {"success": True}
 
     try:
@@ -150,7 +165,9 @@ def delete():
 @admin_api.route("/block", methods=["POST"])
 @admin_required
 def block():
-    tg_id = int((request.json or {}).get("tg_id", 0))
+    data = request.json or {}
+    tg_id = int(data.get("tg_id", 0))
+    reason = clean_reason(data.get("reason"))
 
     async def do():
         from database import get_user
@@ -179,7 +196,12 @@ def block():
                 async with aiosqlite.connect(DB_PATH) as db:
                     await db.execute("UPDATE users SET status = 'blocked' WHERE telegram_id = ?", (tg_id,))
                     await db.commit()
-                await _audit(request.admin_user["id"], "block", tg_id)
+                await _audit(
+                    request.admin_user["id"],
+                    "block",
+                    tg_id,
+                    f"reason={reason}" if reason else "",
+                )
                 return {"success": True}
             return {"error": "Ошибка 3x-ui"}
 

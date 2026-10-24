@@ -107,3 +107,11 @@ async def _audit(admin_id, action, target_id=None, meta=""):
             await db.commit()
     except Exception as e:
         logger.warning("audit insert failed: %s", e)
+
+
+def clean_reason(value, limit: int = 200) -> str:
+    """Нормализует причину действия для журнала аудита."""
+    if value is None:
+        return ""
+    text = " ".join(str(value).split())
+    return text[:limit]

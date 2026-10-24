@@ -1719,3 +1719,9 @@ button.tg-item:disabled { opacity: 0.5; cursor: default; }
   background: var(--secondary-bg);
   background: color-mix(in srgb, var(--text-color) 6%, var(--secondary-bg));
 }
+
+.audit-filters { display: flex; gap: 8px; margin-bottom: 8px; }
+.audit-filters select { flex: 1; min-width: 0; padding: 9px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--secondary-bg); color: var(--text-color); font-size: 16px; }
+.audit-search { width: 100%; padding: 9px 10px; margin-bottom: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--secondary-bg); color: var(--text-color); font-size: 16px; }
+.audit-summary { min-height: 16px; margin-bottom: 4px; color: var(--hint-color); font-size: 12px; }
+.audit-list { max-height: 58vh; overflow-y: auto; overflow-x: hidden; font-size: 13px; word-break: break-word; overflow-wrap: anywhere; }

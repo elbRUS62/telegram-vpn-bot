@@ -5,7 +5,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
  <title>Моя подписка — SkrepNet</title>
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
- <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-15">
+ <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-16">
 
 
     <!-- Favicon (SkrepNet) -->
@@ -69,6 +69,19 @@
  <div style="display:flex;gap:10px;">
  <button class="btn btn-secondary" id="confirm-cancel" style="flex:1;">Отмена</button>
  <button class="btn btn-primary" id="confirm-ok" style="flex:1;">ОК</button>
+ </div>
+ </div>
+ </div>
+
+ <div class="modal-backdrop" id="reason-modal">
+ <div class="modal">
+ <h2 id="reason-title" style="margin-bottom:12px;">Причина</h2>
+ <p id="reason-text" style="margin-bottom:12px;color:var(--hint-color);font-size:15px;">Укажите причину действия.</p>
+ <textarea id="reason-input" rows="3" maxlength="200" placeholder="Например: нарушение правил, неоплата" style="width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-color);font-family:inherit;font-size:16px;resize:none;"></textarea>
+ <div id="reason-error" style="display:none;margin-top:6px;color:var(--danger-color);font-size:13px;">Укажите причину, минимум 3 символа.</div>
+ <div style="display:flex;gap:10px;margin-top:16px;">
+ <button class="btn btn-secondary" id="reason-cancel" style="flex:1;">Отмена</button>
+ <button class="btn btn-primary" id="reason-ok" style="flex:1;">Подтвердить</button>
  </div>
  </div>
  </div>
@@ -176,7 +189,7 @@
 
  <div id="toast" class="toast" role="status" aria-live="polite">Скопировано!</div>
 
- <script src="/static/miniapp.js?v={{ bot_version }}-26"></script>
+ <script src="/static/miniapp.js?v={{ bot_version }}-27"></script>
 
  <!-- Модалка выбора суммы звёзд -->
  <div class="modal-backdrop" id="stars-modal">
@@ -241,6 +254,9 @@ let bcastSilent = false;
 
 
 // ===== Audit log =====
+const AUDIT_PAGE_SIZE = 50;
+window._auditState = { offset: 0, total: 0, loading: false };
+
 function formatAuditAction(action) {
     const map = {
         'approve': 'Одобрил',
@@ -249,8 +265,17 @@ function formatAuditAction(action) {
         'delete': 'Удалил',
         'block': 'Заблокировал',
         'unblock': 'Разблокировал',
+        'bulk_block': 'Массовая блокировка',
+        'bulk_delete': 'Массовое удаление',
         'broadcast': 'Рассылка',
-        'sync_xui': 'Синхронизация',
+        'sync_xui': 'Синхронизация с 3x-ui',
+        'reconcile_xui': 'Сверка с 3x-ui',
+        'ticket_reply': 'Ответ в тикете',
+        'ticket_close': 'Закрытие тикета',
+        'webadmin_login': 'Вход в веб-админку',
+        'admin_role': 'Смена роли админа',
+        'admin_remove': 'Удаление админа',
+        'admin_add': 'Добавление админа',
     };
     return map[action] || action;
 }
@@ -269,46 +294,45 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-async function loadAdminAudit() {
-    const el = document.getElementById('audit-list');
-    if (!el) return;
-    el.innerHTML = 'Загрузка...';
-    const payload = { limit: 100, offset: 0 };
-    if (window._auditTargetId) payload.target_id = window._auditTargetId;
-    const r = await adminCall('/audit', payload);
-    if (r.error) { el.innerHTML = '<div style="color:#f85149;">' + r.error + '</div>'; return; }
+function auditFilterValue(id, fallback = '') {
+    const el = document.getElementById(id);
+    return el ? el.value : fallback;
+}
 
-    const items = r.items || [];
-    const invites = r.invites || [];
-    let html = '';
+function resetAuditFilters() {
+    const action = document.getElementById('audit-action');
+    const days = document.getElementById('audit-days');
+    const q = document.getElementById('audit-q');
+    if (action) action.value = '';
+    if (days) days.value = '0';
+    if (q) q.value = '';
+}
 
-    // Блок 1: Действия
-    if (items.length) {
-        html += '<div style="font-weight:600;margin-bottom:8px;color:var(--text-color);">Действия</div>';
-        html += items.map(a => {
-            const adminName = a.admin_username ? '@' + a.admin_username : (a.admin_first_name || ('ID ' + a.admin_id));
-            const targetName = a.target_id
-                ? (a.target_username ? '@' + a.target_username : (a.target_first_name || ('ID ' + a.target_id)))
-                : '';
-            const meta = a.meta ? ' <span style="color:var(--hint-color);">(' + escapeHtml(a.meta) + ')</span>' : '';
-            return `
-                <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
-                    <div style="display:flex;justify-content:space-between;gap:8px;">
-                        <span style="color:var(--text-color);">${formatAuditAction(a.action)}</span>
-                        <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(a.created_at)}</span>
-                    </div>
-                    <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
-                        ${adminName}${targetName ? ' → ' + targetName : ''}${meta}
-                    </div>
-                </div>
-            `;
-        }).join('');
+function initAuditFilters() {
+    if (window._auditFiltersReady) return;
+    window._auditFiltersReady = true;
+    const action = document.getElementById('audit-action');
+    const days = document.getElementById('audit-days');
+    const q = document.getElementById('audit-q');
+    if (action) action.addEventListener('change', () => loadAdminAudit(true));
+    if (days) days.addEventListener('change', () => loadAdminAudit(true));
+    if (q) {
+        let timer = null;
+        q.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => loadAdminAudit(true), 350);
+        });
     }
+    const more = document.getElementById('audit-more');
+    if (more) more.addEventListener('click', () => loadAdminAudit(false));
+}
 
-    // Блок 2: Приглашения
-    if (invites.length) {
-        html += '<div style="font-weight:600;margin:16px 0 8px 0;color:var(--text-color);">Приглашения</div>';
-        html += invites.map(i => {
+function renderAuditInvites(invites) {
+    const el = document.getElementById('audit-invites');
+    if (!el) return;
+    if (!invites || !invites.length) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="font-weight:600;margin:16px 0 8px 0;color:var(--text-color);">Приглашения</div>' +
+        invites.map(i => {
             const name = i.invited_username_full ? '@' + i.invited_username_full :
                          (i.invited_username ? '@' + i.invited_username :
                          (i.invited_first_name_full || i.invited_first_name || ('ID ' + i.invited_user_id)));
@@ -317,32 +341,105 @@ async function loadAdminAudit() {
             return `
                 <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
                     <div style="display:flex;justify-content:space-between;gap:8px;">
-                        <span style="color:var(--text-color);">${name}</span>
+                        <span style="color:var(--text-color);">${escapeHtml(name)}</span>
                         <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(i.created_at)}</span>
                     </div>
                     <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
-                        <span style="color:${typeColor};font-weight:500;">${typeLabel}</span>
+                        <span style="color:${typeColor};font-weight:500;">${escapeHtml(typeLabel)}</span>
                     </div>
                 </div>
             `;
         }).join('');
+}
+
+function auditItemHtml(a) {
+    const adminName = a.admin_username ? '@' + a.admin_username : (a.admin_first_name || ('ID ' + a.admin_id));
+    const targetName = a.target_id
+        ? (a.target_username ? '@' + a.target_username : (a.target_first_name || ('ID ' + a.target_id)))
+        : '';
+    const metaText = a.meta ? String(a.meta).replace(/(^|, )reason=/, '$1причина: ') : '';
+    const meta = metaText ? ' <span style="color:var(--hint-color);">(' + escapeHtml(metaText) + ')</span>' : '';
+    return `
+        <div style="padding:10px 0;border-bottom:1px solid var(--border-color);">
+            <div style="display:flex;justify-content:space-between;gap:8px;">
+                <span style="color:var(--text-color);">${escapeHtml(formatAuditAction(a.action))}</span>
+                <span style="color:var(--hint-color);font-size:11px;flex-shrink:0;">${formatAuditTime(a.created_at)}</span>
+            </div>
+            <div style="color:var(--hint-color);font-size:12px;margin-top:4px;">
+                ${escapeHtml(adminName)}${targetName ? ' → ' + escapeHtml(targetName) : ''}${meta}
+            </div>
+        </div>
+    `;
+}
+
+async function loadAdminAudit(reset = true) {
+    const el = document.getElementById('audit-list');
+    if (!el) return;
+    const state = window._auditState;
+    if (state.loading) return;
+    if (reset) {
+        state.offset = 0;
+        state.total = 0;
+        el.innerHTML = '<div style="color:var(--hint-color);text-align:center;padding:20px;">Загрузка...</div>';
+        renderAuditInvites([]);
+    }
+    state.loading = true;
+    const payload = {
+        limit: AUDIT_PAGE_SIZE,
+        offset: state.offset,
+        action: auditFilterValue('audit-action'),
+        days: auditFilterValue('audit-days', '0'),
+        q: auditFilterValue('audit-q').trim(),
+    };
+    if (window._auditTargetId) payload.target_id = window._auditTargetId;
+
+    let r;
+    try {
+        r = await adminCall('/audit', payload);
+    } catch (e) {
+        r = { error: 'Нет связи с сервером' };
+    }
+    state.loading = false;
+
+    if (r.error) {
+        if (reset) el.innerHTML = '';
+        showToast(r.error, true);
+        return;
     }
 
-    if (!html) {
-        html = '<div style="color:var(--hint-color);text-align:center;padding:20px;">Пока пусто</div>';
+    const items = r.items || [];
+    state.total = Number(r.total) || 0;
+    state.offset += items.length;
+    const html = items.map(auditItemHtml).join('');
+    if (reset) {
+        el.innerHTML = html || '<div style="color:var(--hint-color);text-align:center;padding:20px;">Ничего не найдено</div>';
+        renderAuditInvites(r.invites || []);
+    } else if (html) {
+        el.insertAdjacentHTML('beforeend', html);
     }
-    el.innerHTML = html;
+
+    const summary = document.getElementById('audit-summary');
+    if (summary) {
+        const shown = Math.min(state.offset, state.total);
+        summary.textContent = state.total ? `Показано ${shown} из ${state.total}` : '';
+    }
+    const more = document.getElementById('audit-more');
+    if (more) more.style.display = state.offset < state.total ? 'block' : 'none';
 }
 
 function openAudit() {
-    document.getElementById('audit-modal').classList.add('show');
     window._auditTargetId = null;
-    loadAdminAudit();
+    resetAuditFilters();
+    initAuditFilters();
+    document.getElementById('audit-modal').classList.add('show');
+    loadAdminAudit(true);
 }
 function openAuditForUser(tgId) {
     window._auditTargetId = tgId;
+    resetAuditFilters();
+    initAuditFilters();
     document.getElementById('audit-modal').classList.add('show');
-    loadAdminAudit();
+    loadAdminAudit(true);
 }
 function closeAudit() {
     document.getElementById('audit-modal').classList.remove('show');
@@ -413,12 +510,43 @@ async function submitBcast() {
 
 <!-- Модалка журнала действий -->
 <div id="audit-modal" class="modal-backdrop">
-  <div class="modal" style="max-width: min(500px, 92vw); width: 100%;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+  <div class="modal" style="max-width: min(560px, 94vw); width: 100%;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h3 style="margin:0; font-size:18px;">История действий</h3>
       <button onclick="closeAudit()" style="background:none; border:none; color:var(--hint-color); font-size:20px; cursor:pointer;">×</button>
     </div>
-    <div id="audit-list" style="font-size: 13px; max-height: 70vh; overflow-y: auto; overflow-x: hidden; word-break: break-word; overflow-wrap: anywhere;">Загрузка...</div>
+    <div class="audit-filters">
+      <select id="audit-action">
+        <option value="">Все действия</option>
+        <option value="block">Блокировки</option>
+        <option value="unblock">Разблокировки</option>
+        <option value="delete">Удаления</option>
+        <option value="extend">Продления</option>
+        <option value="approve">Одобрения</option>
+        <option value="reject">Отклонения</option>
+        <option value="bulk_block">Массовые блокировки</option>
+        <option value="bulk_delete">Массовые удаления</option>
+        <option value="reconcile_xui">Сверка с 3x-ui</option>
+        <option value="sync_xui">Синхронизация с 3x-ui</option>
+        <option value="broadcast">Рассылки</option>
+        <option value="ticket_reply">Ответы в тикетах</option>
+        <option value="ticket_close">Закрытия тикетов</option>
+        <option value="webadmin_login">Входы в веб-админку</option>
+        <option value="admin_role">Роли админов</option>
+        <option value="admin_remove">Удаления админов</option>
+      </select>
+      <select id="audit-days">
+        <option value="0">Всё время</option>
+        <option value="7">7 дней</option>
+        <option value="30">30 дней</option>
+        <option value="90">90 дней</option>
+      </select>
+    </div>
+    <input id="audit-q" type="search" class="audit-search" placeholder="Поиск: админ, пользователь, причина">
+    <div id="audit-summary" class="audit-summary"></div>
+    <div id="audit-invites"></div>
+    <div id="audit-list" class="audit-list">Загрузка...</div>
+    <button id="audit-more" class="btn btn-secondary" style="display:none;width:100%;margin-top:8px;">Показать ещё</button>
   </div>
 </div>
 

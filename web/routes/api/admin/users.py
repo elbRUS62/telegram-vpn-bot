@@ -7,7 +7,14 @@ from flask import Response, jsonify, request
 from config import DB_PATH, XUI_PANELS
 from web.utils.async_helper import run_async
 
-from .common import _audit, admin_api, admin_required, superadmin_required, logger
+from .common import (
+    _audit,
+    admin_api,
+    admin_required,
+    clean_reason,
+    logger,
+    superadmin_required,
+)
 
 @admin_api.route("/sync", methods=["POST"])
 @admin_required
@@ -233,6 +240,7 @@ def users_bulk():
     action = data.get("action")
     if action not in ("block", "delete"):
         return jsonify({"error": "Недопустимое действие"}), 400
+    reason = clean_reason(data.get("reason"))
     ids = []
     for value in (data.get("ids") or [])[:100]:
         try:
@@ -299,7 +307,8 @@ def users_bulk():
             request.admin_user["id"],
             f"bulk_{action}",
             None,
-            f"updated={updated}, errors={errors}",
+            f"updated={updated}, errors={errors}"
+            + (f", reason={reason}" if reason else ""),
         )
         return {"success": True, "updated": updated, "errors": errors}
 
