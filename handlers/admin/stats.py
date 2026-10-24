@@ -1,5 +1,6 @@
 import aiosqlite
 from aiogram import F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
@@ -22,6 +23,16 @@ from .common import logger, router
 
 # СТАТИСТИКА
 # ============================================================
+
+
+async def _edit_or_send(callback: CallbackQuery, text: str, **kwargs):
+    try:
+        await callback.message.edit_text(text, **kwargs)
+    except TelegramBadRequest as error:
+        if "no text in the message to edit" not in str(error):
+            raise
+        await callback.message.answer(text, **kwargs)
+
 
 @router.callback_query(F.data == "admin_stats")
 async def admin_stats_callback(callback: CallbackQuery):
@@ -89,7 +100,8 @@ async def admin_stats_callback(callback: CallbackQuery):
     else:
         text += "Пока нет приглашений."
 
-    await callback.message.edit_text(
+    await _edit_or_send(
+        callback,
         text,
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[

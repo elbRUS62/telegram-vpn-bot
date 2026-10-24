@@ -189,14 +189,7 @@ def activate(token):
 
         try:
             async with XUIClient() as xui:
-                user_part = f"@{invite['friend_username']}" if invite["friend_username"] else "guest"
-                inviter_part = str(invite['created_by'])
-                if invite['created_by']:
-                    inviter = await get_user(invite['created_by'])
-                    if inviter and inviter['username']:
-                        inviter_part = f"@{inviter['username']}"
-
-                auto_comment = f"{user_part} | web  bot | от: {inviter_part}"
+                auto_comment = "Гость без Telegram"
 
                 # B уже в 3x-ui?  продлить (+3 дня), отдать ссылку; иначе создать
                 try:
@@ -220,7 +213,7 @@ def activate(token):
                             "limitIp": existing.get("limitIp", 3),
                             "enable": True,
                             "totalGB": 0,
-                            "comment": auto_comment,
+                            "comment": existing.get("comment", "") or auto_comment,
                             "subId": existing.get("subId", ""),
                             "group": existing.get("group", ""),
                             "tgId": existing.get("tgId", 0)

@@ -1,11 +1,21 @@
 from permissions import is_admin_user, is_superadmin
 from aiogram import F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery
 
 
 from keyboards import admin_manage_keyboard, admin_submenu_users
 
 from .common import router
+
+
+async def _edit_or_send(callback: CallbackQuery, text: str, **kwargs):
+    try:
+        await callback.message.edit_text(text, **kwargs)
+    except TelegramBadRequest as error:
+        if "no text in the message to edit" not in str(error):
+            raise
+        await callback.message.answer(text, **kwargs)
 
 # МЕНЮ УПРАВЛЕНИЯ
 # ============================================================
@@ -15,7 +25,7 @@ async def admin_manage_callback(callback: CallbackQuery):
     if not is_admin_user(callback.from_user.id):
         await callback.answer("Не твоя кнопка", show_alert=True)
         return
-    await callback.message.edit_text(
+    await _edit_or_send(callback,
         "<b>Управление ботом</b>\n\nВыбери действие:",
         reply_markup=admin_manage_keyboard(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"
@@ -46,7 +56,7 @@ async def admin_close(callback: CallbackQuery):
 async def admin_menu_users_callback(callback: CallbackQuery):
     if not is_admin_user(callback.from_user.id):
         return
-    await callback.message.edit_text(
+    await _edit_or_send(callback,
         "<b>Управление пользователями</b>\n\nВыбери действие:",
         reply_markup=admin_submenu_users(is_superadmin(callback.from_user.id)),
         parse_mode="HTML"

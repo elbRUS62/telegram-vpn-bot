@@ -5,17 +5,28 @@ import math
 from pathlib import Path
 
 from aiogram import Router, F
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery, Message, FSInputFile
 from aiogram.filters import Command
 
 from config import BOT_NAME
-from permissions import is_admin_user, is_superadmin
+from permissions import is_admin_user
 from database import get_user, is_in_waitlist, get_waitlist_position
-from keyboards import main_inline_menu, admin_manage_keyboard, support_keyboard
+from keyboards import main_inline_menu, support_keyboard
 from handlers.progress import render_progress
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+
+async def _edit_message(callback: CallbackQuery, text: str, **kwargs):
+    """Редактирует текст, а для сообщений с фото отправляет новое."""
+    try:
+        await callback.message.edit_text(text, **kwargs)
+    except TelegramBadRequest as error:
+        if "no text in the message to edit" not in str(error):
+            raise
+        await callback.message.answer(text, **kwargs)
 
 
 async def show_main_menu(message: Message, with_photo: bool = False):
@@ -71,14 +82,13 @@ async def show_main_menu(message: Message, with_photo: bool = False):
 
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
-    """Секретная команда для админа — открывает панель управления."""
+    """Для админа: все функции доступны в приложении."""
     if not is_admin_user(message.from_user.id):
         return
-    
+
     await message.answer(
-        "<b>Панель администратора</b>\n\nВыбери действие:",
-        parse_mode="HTML",
-        reply_markup=admin_manage_keyboard(is_superadmin(message.from_user.id))
+        "Все функции администратора доступны в приложении.",
+        reply_markup=main_inline_menu(True)
     )
 
 
@@ -87,7 +97,7 @@ async def back_to_main(callback: CallbackQuery):
     """Возврат в главное меню."""
     is_admin = is_admin_user(callback.from_user.id)
 
-    await callback.message.edit_text(
+    await _edit_message(callback,
         "<b>Главное меню</b>\n\nВыбери действие:",
         parse_mode="HTML",
         reply_markup=main_inline_menu(is_admin)
@@ -118,7 +128,7 @@ async def menu_invite_no_tg(callback: CallbackQuery):
 @router.callback_query(F.data == "menu_support")
 async def menu_support(callback: CallbackQuery):
     from config import SUPPORT_USERNAME
-    await callback.message.edit_text(
+    await _edit_message(callback,
         f"<b>Техподдержка {BOT_NAME}</b>\n\n"
         "Если у тебя возникли вопросы, проблемы с подключением "
         "или ты хочешь сообщить о сбое — напиши нам.\n\n"
@@ -133,7 +143,7 @@ async def menu_support(callback: CallbackQuery):
 async def menu_docs(callback: CallbackQuery):
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     from docs_config import DOCS
-    await callback.message.edit_text(
+    await _edit_message(callback,
         f"<b>Документы {BOT_NAME}</b>\n\n"
         "Выбери документ для просмотра:",
         parse_mode="HTML",
@@ -151,7 +161,7 @@ async def menu_docs(callback: CallbackQuery):
 async def menu_progress(callback: CallbackQuery):
     progress = await render_progress(short=False)
     from keyboards import donate_keyboard
-    await callback.message.edit_text(
+    await _edit_message(callback,
         progress,
         parse_mode="HTML",
         reply_markup=donate_keyboard()
@@ -181,7 +191,7 @@ async def _handle_get_sub(callback: CallbackQuery):
     if await is_limit_reached(MAX_USERS):
         if await is_in_waitlist(callback.from_user.id):
             position = await get_waitlist_position(callback.from_user.id)
-            await callback.message.edit_text(
+            await _edit_message(callback,
                 f"<b>Ты в листе ожидания</b>\n\n"
                 f"Позиция: <b>{position}</b>.\n\n"
                 f"Мы напишем, когда освободится место.",
@@ -192,7 +202,7 @@ async def _handle_get_sub(callback: CallbackQuery):
             return
 
         active = await count_active_users()
-        await callback.message.edit_text(
+        await _edit_message(callback,
             f"<b>Свободных мест нет</b>\n\n"
             f"Занято: {active} из {MAX_USERS}.\n\n"
             f"Можно встать в лист ожидания — мы напишем, когда появится место.",
@@ -202,7 +212,7 @@ async def _handle_get_sub(callback: CallbackQuery):
         await callback.answer()
         return
 
-    await callback.message.edit_text(
+    await _edit_message(callback,
         "<b>Перед получением подписки</b>\n\n"
         "Ознакомься с документами:\n"
         "1. Правила использования\n"
@@ -252,7 +262,7 @@ async def _handle_my_sub(callback: CallbackQuery):
         traffic_up = client.get("up", 0) / (1024**3)
         traffic_down = client.get("down", 0) / (1024**3)
 
-    await callback.message.edit_text(
+    await _edit_message(callback,
         f"<b>Твоя подписка</b>\n\n"
         f"Ссылка:\n<code>{sub_url}</code>\n\n"
         f"{status_line}\n"
@@ -278,7 +288,7 @@ async def _handle_invite(callback: CallbackQuery):
     invites = user["invites_count"] if user["invites_count"] else 0
     ref_link = f"https://t.me/{BOT_USERNAME}?start=ref_{callback.from_user.id}"
 
-    await callback.message.edit_text(
+    await _edit_message(callback,
         f"<b>Приглашение друга</b>\n\n"
         f"Твоя ссылка:\n<code>{ref_link}</code>\n\n"
         f"Приглашено: {invites}.\n\n"

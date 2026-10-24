@@ -48,17 +48,7 @@ def renew():
                 
                 # Продлеваем ровно на столько дней, чтобы достичь max_allowed
                 new_expiry = await xui.update_expiry(db_user["xui_email"], days=days_to_add)
-                new_count = await increment_renew_count(telegram_id)
-                date_str = new_expiry.strftime("%d.%m.%Y")
-
-                user_part = f"@{db_user['username']}" if db_user["username"] else str(telegram_id)
-                base_comment = f"{user_part} | бот"
-                comment = f"{base_comment} | продлён ×{new_count} ({date_str})"
-
-                try:
-                    await xui.update_comment(db_user["xui_email"], comment)
-                except Exception:
-                    pass
+                await increment_renew_count(telegram_id)
 
             await renew_user(telegram_id, new_expires=new_expiry)
 

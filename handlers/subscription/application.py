@@ -48,22 +48,9 @@ async def accept_terms(callback: CallbackQuery):
 
     if is_referral:
         try:
-            user_part = f"@{callback.from_user.username}" if callback.from_user.username else str(callback.from_user.id)
-
-            if invited_by:
-                inviter = await get_user(invited_by)
-                if inviter and inviter["username"]:
-                    inviter_part = f"@{inviter['username']} ({invited_by})"
-                else:
-                    inviter_part = str(invited_by)
-                auto_comment = f"{user_part} | реф от: {inviter_part}"
-            else:
-                auto_comment = f"{user_part} | bot"
-
             async with XUIClient() as xui:
                 sub_id = await xui.get_or_create_client(
                     xui_email,
-                    comment=auto_comment,
                     tg_id=callback.from_user.id,
                 )
                 await approve_user(callback.from_user.id, sub_id)
@@ -170,18 +157,13 @@ async def approve_callback(callback: CallbackQuery, state: FSMContext):
         await callback.answer(f"Неверный статус: {user['status']}", show_alert=True)
         return
 
-    user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
-    auto_comment = f"{user_part} | bot"
-
     await state.update_data(approve_tg_id=telegram_id, from_notification=True)
 
     await callback.message.edit_text(
         f"<b>Комментарий для 3x-ui</b>\n\n"
         f"Пользователь: {user['first_name']}\n"
         f"ID: <code>{telegram_id}</code>\n\n"
-        f"Введи комментарий или нажми «Пропустить». "
-        f"Автоматический вариант:\n"
-        f"<code>{auto_comment}</code>",
+        f"Введи комментарий или нажми «Пропустить» — поле останется пустым.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(

@@ -30,8 +30,7 @@ def approve():
         if user["status"] == "active":
             return {"error": "Уже активен"}
 
-        user_part = f"@{user['username']}" if user["username"] else str(tg_id)
-        comment = f"{user_part} | {custom_comment}" if custom_comment else f"{user_part} | bot"
+        comment = (custom_comment or "").strip()
 
         try:
             async with XUIClient() as xui:
@@ -99,16 +98,7 @@ def extend():
 
         async with XUIClient() as xui:
             new_expiry = await xui.update_expiry(user["xui_email"], days=days)
-            try:
-                new_count = await increment_renew_count(tg_id)
-                user_part = f"@{user['username']}" if user["username"] else str(tg_id)
-                date_str  = new_expiry.strftime("%d.%m.%Y")
-                await xui.update_comment(
-                    user["xui_email"],
-                    f"{user_part} | бот | продлён ×{new_count} ({date_str})",
-                )
-            except Exception as e:
-                logger.warning("comment update failed for %s: %s", user["xui_email"], e)
+            await increment_renew_count(tg_id)
 
         await renew_user(tg_id, new_expires=new_expiry)
         await _audit(request.admin_user["id"], "extend", tg_id, f"days={days}")

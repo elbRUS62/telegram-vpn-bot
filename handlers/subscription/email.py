@@ -22,12 +22,7 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
         await bot.send_message(chat_id, f"Пользователь {telegram_id} не найден")
         return
 
-    user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
-
-    if custom_comment:
-        comment = f"{user_part} | {custom_comment}"
-    else:
-        comment = f"{user_part} | bot"
+    comment = (custom_comment or "").strip()
 
     try:
         async with XUIClient() as xui:
@@ -44,7 +39,7 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
             f"<b>Заявка одобрена</b>\n\n"
             f"Пользователь: {user['first_name']}\n"
             f"Email: {user['xui_email']}\n"
-            f"Комментарий: <code>{comment}</code>",
+            f"Комментарий: {comment or '—'}",
             parse_mode="HTML"
         )
 

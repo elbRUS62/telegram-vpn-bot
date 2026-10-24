@@ -66,19 +66,7 @@ async def renew_callback(callback: CallbackQuery):
         async with XUIClient() as xui:
             new_expiry = await xui.update_expiry(user["xui_email"])
 
-            new_count = await increment_renew_count(callback.from_user.id)
-            date_str = new_expiry.strftime("%d.%m.%Y")
-
-            user_part = f"@{user['username']}" if user["username"] else str(callback.from_user.id)
-            base_comment = f"{user_part} | бот"
-
-            comment = f"{base_comment} | продлён ×{new_count} ({date_str})"
-
-            try:
-                await xui.update_comment(user["xui_email"], comment)
-                logger.info(f"Comment обновлён: {comment}")
-            except Exception as e:
-                logger.error("Не удалось обновить comment: ")
+            await increment_renew_count(callback.from_user.id)
 
         await renew_user(callback.from_user.id, new_expires=new_expiry)
         exp_date = new_expiry.strftime("%d.%m.%Y")

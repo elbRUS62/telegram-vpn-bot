@@ -274,19 +274,7 @@ async def admin_extend_days_process(message: Message, state: FSMContext):
         async with XUIClient() as xui:
             new_expiry = await xui.update_expiry(user["xui_email"], days=days)
 
-            new_count = await increment_renew_count(telegram_id)
-            date_str = new_expiry.strftime("%d.%m.%Y")
-
-            user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
-            base_comment = f"{user_part} | бот"
-
-            comment = f"{base_comment} | продлён ×{new_count} ({date_str})"
-
-            try:
-                await xui.update_comment(user["xui_email"], comment)
-                logger.info(f"Comment обновлён: {comment}")
-            except Exception as e:
-                logger.error("Не удалось обновить comment: ")
+            await increment_renew_count(telegram_id)
 
         await renew_user(telegram_id, new_expires=new_expiry)
 

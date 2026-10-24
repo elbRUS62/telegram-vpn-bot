@@ -53,8 +53,7 @@ def accept_terms():
             # Автоодобрение для рефералов
             try:
                 async with XUIClient() as xui:
-                    auto_comment = f"@{user.get('username')} | ref: {invited_by}" if user.get('username') else f"ID {telegram_id} | ref: {invited_by}"
-                    sub_id = await xui.get_or_create_client(xui_email, comment=auto_comment)
+                    sub_id = await xui.get_or_create_client(xui_email)
                     await approve_user(telegram_id, sub_id)
                     sub_url = xui.build_sub_url(sub_id)
                     

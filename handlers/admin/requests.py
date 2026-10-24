@@ -155,18 +155,13 @@ async def request_approve_callback(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Уже активна", show_alert=True)
         return
 
-    user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
-    auto_comment = f"{user_part} | bot"
-
     await state.update_data(approve_tg_id=telegram_id)
 
     await callback.message.edit_text(
         f"<b>Комментарий для 3x-ui</b>\n\n"
         f"Пользователь: {user['first_name']}\n"
         f"ID: <code>{telegram_id}</code>\n\n"
-        f"Введи комментарий или нажми «Пропустить». "
-        f"Автоматический вариант:\n"
-        f"<code>{auto_comment}</code>",
+        f"Введи комментарий или нажми «Пропустить» — поле останется пустым.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
@@ -244,12 +239,7 @@ async def _do_approve(bot, chat_id: int, telegram_id: int, custom_comment: str =
         await bot.send_message(chat_id, f"Пользователь {telegram_id} не найден")
         return
 
-    user_part = f"@{user['username']}" if user["username"] else str(telegram_id)
-
-    if custom_comment:
-        comment = f"{user_part} | {custom_comment}"
-    else:
-        comment = f"{user_part} | bot"
+    comment = (custom_comment or "").strip()
 
     try:
         async with XUIClient() as xui:
@@ -266,7 +256,7 @@ async def _do_approve(bot, chat_id: int, telegram_id: int, custom_comment: str =
             f"<b>Заявка одобрена</b>\n\n"
             f"Пользователь: {user['first_name']}\n"
             f"Email: {user['xui_email']}\n"
-            f"Комментарий: <code>{comment}</code>",
+            f"Комментарий: {comment or '—'}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="К списку", callback_data="admin_list_requests")]

@@ -16,7 +16,7 @@ from config import (
 # ============================================================
 
 def main_inline_menu(is_admin: bool = False):
-    """Главное inline-меню: WebApp для всех, админские кнопки — только админу."""
+    """Главное inline-меню: только вход в приложение."""
     rows = []
     if MINIAPP_URL:
         rows.append([
@@ -28,12 +28,6 @@ def main_inline_menu(is_admin: bool = False):
     else:
         rows.append([
             InlineKeyboardButton(text="Получить подписку", callback_data="menu_get_sub")
-        ])
-
-    if is_admin:
-        rows.append([
-            InlineKeyboardButton(text="Статистика", callback_data="admin_stats"),
-            InlineKeyboardButton(text="Управление", callback_data="admin_manage"),
         ])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
