@@ -2356,96 +2356,115 @@ async function openAdminUserCard(tgId) {
 
  const u = r.user || r;
  const statusMap = { active: 'Активна', pending: 'Заявка', rejected: 'Отклонён', new: 'Новая', blocked: 'Заблокирована' };
- const statusText = statusMap[u.status] || u.status;
+ const statusText = statusMap[u.status] || u.status || 'Неизвестно';
  const isBlocked = u.is_blocked || false;
+ const isOnline = u.vpn_online === true;
+ const totalDays = Number(u.plan_days) || 30;
+ const rawName = (u.first_name || '').trim();
+ const displayName = (rawName && rawName !== '@')
+   ? rawName
+   : (u.username ? '@' + u.username : 'Пользователь');
+ const avatarColor = adminAvatarColor(String(u.telegram_id || '') + displayName);
+ const avatarHtml = u.avatar
+   ? `<img src="${u.avatar}" alt="">`
+   : escapeHtml(adminInitials(displayName));
+ const statusClass = (isBlocked || u.status === 'blocked' || u.status === 'rejected')
+   ? 'is-bad'
+   : (u.status === 'pending' ? 'is-warn' : 'is-ok');
 
  let daysBar = '';
  if (u.days_left !== null && u.days_left !== undefined && u.days_left >= 0) {
- const totalDays = Number(u.plan_days) || 30;
- const percent = Math.min(100, Math.max(0, (u.days_left / totalDays) * 100));
- const ratio = totalDays ? (u.days_left / totalDays) : 0;
- const color = u.days_left < 0 ? '#f85149' : (ratio <= 0.15 ? '#f85149' : (ratio <= 0.35 ? '#d29922' : '#238636'));
- daysBar = `
- <div style="margin-top:8px;">
- <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--hint-color);margin-bottom:4px;">
- <span>Осталось дней</span><span>${u.days_left} из ${totalDays}</span>
- </div>
- <div class="progress-container" style="height:6px;">
- <div class="progress-fill" style="width:${percent}%;background-color:${color};"></div>
- </div>
- </div>`;
+   const percent = Math.min(100, Math.max(0, (u.days_left / totalDays) * 100));
+   const ratio = totalDays ? (u.days_left / totalDays) : 0;
+   const color = ratio <= 0.15
+     ? 'var(--danger-color)'
+     : (ratio <= 0.35 ? 'var(--warning-color)' : 'var(--success-color)');
+   daysBar = `<div class="profile-progress"><span style="width:${percent}%;background:${color};"></span></div>`;
  }
+
+ const vpnText = isOnline
+   ? '<span class="profile-dot is-ok"></span>Онлайн'
+   : (u.last_online ? 'Был в сети ' + escapeHtml(u.last_online) : 'Офлайн');
 
  const commentValue = u.comment || '';
  const commentHtml = `
- <div class="user-card-comment-block">
- <div class="user-card-comment-head">
- <span>Комментарий</span>
- <button type="button" class="user-card-comment-edit" data-act="edit_comment">Изменить</button>
- </div>
- <div class="user-card-comment" id="user-comment-text">${commentValue ? escapeHtml(commentValue) : '<span style="color:var(--hint-color);font-style:italic;">Нет комментария</span>'}</div>
+ <div class="profile-section">
+   <div class="profile-section-head">
+     <span>Комментарий</span>
+     <button type="button" class="profile-edit" data-act="edit_comment">Изменить</button>
+   </div>
+   <div class="profile-comment${commentValue ? '' : ' is-empty'}" id="user-comment-text">${commentValue ? escapeHtml(commentValue) : 'Нет комментария'}</div>
  </div>`;
-
- const trafficHtml = (u.traffic_up || u.traffic_down)
- ? `<div class="user-card-row"><span class="label">Трафик</span><span class="value">${u.traffic_down || '0 GB'} / ${u.traffic_up || '0 GB'}</span></div>`
- : '';
 
  let actionsHtml = '';
  if (u.status === 'pending') {
- actionsHtml = `<div class="user-card-actions-row">
- <button class="btn-extend" data-act="approve" data-tg="${tgId}">Одобрить</button>
- <button class="btn-reject" data-act="reject" data-tg="${tgId}">Отклонить</button>
- </div>`;
+   actionsHtml = `
+     <button class="profile-btn profile-btn--primary" data-act="approve" data-tg="${tgId}">Одобрить</button>
+     <button class="profile-btn" data-act="reject" data-tg="${tgId}">Отклонить</button>`;
  } else if (isBlocked) {
- actionsHtml = `<div class="user-card-actions-row">
- <button class="btn-unblock" data-act="unblock" data-tg="${tgId}">Разблокировать</button>
- ${IS_SUPERADMIN ? `<button class="btn-delete" data-act="delete" data-tg="${tgId}">Удалить</button>` : ''}
- </div>`;
+   actionsHtml = `
+     <button class="profile-btn profile-btn--primary" data-act="unblock" data-tg="${tgId}">Разблокировать</button>
+     ${IS_SUPERADMIN ? `<button class="profile-btn profile-btn--danger" data-act="delete" data-tg="${tgId}">Удалить</button>` : ''}`;
  } else {
- actionsHtml = `<div class="user-card-actions-row">
- <button class="btn-extend" data-act="extend" data-tg="${tgId}">Продлить +30</button>
- </div>
- <div class="user-card-actions-row">
- <button class="btn-block" data-act="block" data-tg="${tgId}">Заблокировать</button>
- ${IS_SUPERADMIN ? `<button class="btn-delete" data-act="delete" data-tg="${tgId}">Удалить</button>` : ''}
- </div>`;
+   actionsHtml = `
+     <button class="profile-btn profile-btn--primary" data-act="extend" data-tg="${tgId}">Продлить на 30 дней</button>
+     <div class="profile-actions-row">
+       <button class="profile-btn" data-act="block" data-tg="${tgId}">Заблокировать</button>
+       ${IS_SUPERADMIN ? `<button class="profile-btn profile-btn--danger" data-act="delete" data-tg="${tgId}">Удалить</button>` : ''}
+     </div>`;
  }
 
- const isOnline = u.vpn_online === true;
  const cardBadges = adminUserBadges(u, u.days_left ?? null, u.plan_days);
 
  container.innerHTML = `
- <div class="user-card-header">
- <div class="user-card-name"><span>${escapeHtml((u.first_name && u.first_name.trim() !== '@') ? u.first_name : (u.username ? '@' + u.username : 'Пользователь'))}</span></div>
- <div class="admin-user-badges">${cardBadges}</div>
- <div class="user-card-meta" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">
- <span onclick="copyToClipboard('@${u.username || ''}')" style="cursor:pointer; text-decoration:underline; text-decoration-style:dotted;">
- @${u.username || '—'}
- </span>
- <span style="cursor:pointer; text-decoration:underline; text-decoration-style:dotted;" onclick="copyToClipboard('${u.telegram_id}')">
- ID: ${u.telegram_id}
- </span>
+ <div class="profile">
+   <div class="profile-head">
+     <div class="profile-avatar${u.avatar ? ' profile-avatar--photo' : ''}" style="${u.avatar ? '' : `background:${avatarColor}`}">
+       ${avatarHtml}
+       ${isOnline ? '<span class="profile-online-dot" aria-label="Онлайн"></span>' : ''}
+     </div>
+     <div class="profile-name">${escapeHtml(displayName)}</div>
+     <div class="profile-handles">
+       ${u.username ? `<button type="button" class="profile-handle" onclick="copyToClipboard('@${escapeHtml(u.username)}')">@${escapeHtml(u.username)}</button><span class="profile-sep">·</span>` : ''}
+       <button type="button" class="profile-handle" onclick="copyToClipboard('${u.telegram_id}')">ID ${u.telegram_id}</button>
+     </div>
+     <div class="profile-badges">${cardBadges}</div>
+   </div>
+
+   <div class="profile-section">
+     <div class="profile-section-title">Подписка</div>
+     <div class="profile-row"><span class="profile-label">Статус</span><span class="profile-value"><span class="profile-dot ${statusClass}"></span>${escapeHtml(statusText)}</span></div>
+     ${u.expires_at ? `<div class="profile-row"><span class="profile-label">Действует до</span><span class="profile-value">${escapeHtml(u.expires_at)}</span></div>` : ''}
+     ${(u.days_left !== null && u.days_left !== undefined) ? `<div class="profile-row"><span class="profile-label">Осталось</span><span class="profile-value">${u.days_left} из ${totalDays}</span></div>` : ''}
+     ${daysBar}
+   </div>
+
+   <div class="profile-section">
+     <div class="profile-section-title">Данные</div>
+     <div class="profile-row"><span class="profile-label">Email</span><span class="profile-value">${escapeHtml(u.xui_email || '—')}</span></div>
+     <div class="profile-row"><span class="profile-label">VPN</span><span class="profile-value">${vpnText}</span></div>
+     <div class="profile-row"><span class="profile-label">Получено</span><span class="profile-value">${escapeHtml(u.traffic_down || '0 GB')}</span></div>
+     <div class="profile-row"><span class="profile-label">Отправлено</span><span class="profile-value">${escapeHtml(u.traffic_up || '0 GB')}</span></div>
+     <div class="profile-row"><span class="profile-label">Приглашено</span><span class="profile-value">${u.invites_count || 0}</span></div>
+     <div class="profile-row"><span class="profile-label">Продлений</span><span class="profile-value">${u.renew_count || 0}</span></div>
+     <div class="profile-row"><span class="profile-label">Последний визит</span><span class="profile-value">${escapeHtml(u.last_seen || '—')}</span></div>
+     <div class="profile-row"><span class="profile-label">Регистрация</span><span class="profile-value">${escapeHtml(u.created_at || '—')}</span></div>
+   </div>
+
+   ${commentHtml}
+
+   <div class="profile-actions">${actionsHtml}</div>
+
+   ${IS_SUPERADMIN ? `
+   <div class="profile-section">
+     <div class="profile-section-head"><span>Диагностика</span></div>
+     <div id="admin-diag-result" class="profile-diag">Проверьте состояние клиента и ссылки подписки.</div>
+     <button type="button" class="profile-row profile-row--button" id="admin-diag-run">Проверить подключение</button>
+   </div>
+   <div class="profile-section">
+     <button type="button" class="profile-row profile-row--button" onclick="openAuditForUser(${tgId})">История действий</button>
+   </div>` : ''}
  </div>
- </div>
- <div class="user-card-status">
- <span class="status-badge ${isBlocked ? 'expired' : (u.status === 'active' ? 'active' : 'pending')}">${statusText}${u.expires_at ? ' до ' + u.expires_at : ''}</span>
- ${daysBar}
- </div>
- <div class="user-card-row"><span class="label">Email</span><span class="value">${u.xui_email || '—'}</span></div>
- <div class="user-card-row"><span class="label">VPN</span><span class="value">${isOnline ? 'Онлайн' : (u.last_online ? 'Был в сети ' + escapeHtml(u.last_online) : 'Офлайн')}</span></div>
- <div class="user-card-row"><span class="label">Приглашено</span><span class="value">${u.invites_count || 0}</span></div>
- <div class="user-card-row"><span class="label">Продлений</span><span class="value">${u.renew_count || 0}</span></div>
- <div class="user-card-row"><span class="label">Последний визит</span><span class="value">${u.last_seen || '—'}</span></div>
- <div class="user-card-row"><span class="label">Регистрация</span><span class="value">${u.created_at || '—'}</span></div>
- ${trafficHtml}
- ${commentHtml}
- <div class="user-card-actions">${actionsHtml}</div>
- ${IS_SUPERADMIN ? `<div class="tg-card" style="margin-top:12px;">
-   <div class="tg-card-title">Диагностика</div>
-   <div id="admin-diag-result" class="tg-note" style="padding:0 0 8px;">Проверьте состояние клиента и ссылки подписки.</div>
-   <button class="btn btn-secondary" id="admin-diag-run" style="margin-bottom:0;">Проверить подключение</button>
- </div>
- <button class="btn btn-secondary" style="width:100%; margin-top:12px;" onclick="openAuditForUser(${tgId})">История действий</button>` : ''}
  `;
 
  container.querySelectorAll('[data-act]').forEach(btn => {
@@ -2461,9 +2480,8 @@ async function openAdminUserCard(tgId) {
  u.comment = res.comment || '';
  const view = document.getElementById('user-comment-text');
  if (view) {
- view.innerHTML = u.comment
- ? escapeHtml(u.comment)
- : '<span style="color:var(--hint-color);font-style:italic;">Нет комментария</span>';
+ view.classList.toggle('is-empty', !u.comment);
+ view.textContent = u.comment || 'Нет комментария';
  }
  showToast('Комментарий обновлён');
  return;
