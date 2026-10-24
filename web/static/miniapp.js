@@ -2583,6 +2583,7 @@ async function openAdminUserCard(tgId) {
    target.innerHTML = '<div class="tg-note" style="padding:4px 0;">Сверка ещё не выполнялась. Запускается автоматически каждые 30 минут.</div>';
    return;
  }
+ window._reconcileData = data;
  const issues = data.issues || {};
  const missing = (issues.missing_client || []).length + (issues.missing_email || []).length;
  const orphan = (issues.orphan_client || []).length;
@@ -2591,24 +2592,59 @@ async function openAdminUserCard(tgId) {
  const panelErrors = (data.panel_errors || []).length;
  const problems = missing + expired + failed + panelErrors;
  const fixed = (data.fixed_disabled || 0) + (data.fixed_expiry || 0);
- const statusColor = problems ? 'var(--danger-color)' : (orphan ? 'var(--warning-color)' : 'var(--success-color)');
- const statusText = problems ? `Требуют внимания: ${problems}` : (orphan ? `Клиенты вне базы: ${orphan}` : 'Расхождений нет');
+ const statusClass = problems ? 'bad' : (orphan ? 'warn' : 'ok');
+ const statusText = problems
+   ? `Требуют внимания: ${problems}`
+   : (orphan ? `Клиентов без подписки: ${orphan}` : 'Расхождений нет');
 
  const details = [];
  if (missing) details.push(`<div class="tg-note" style="padding:2px 0;">Без клиента в панели: ${missing}</div>`);
- if (orphan) details.push(`<div class="tg-note" style="padding:2px 0;">Клиенты вне базы (только просмотр): ${orphan}</div>`);
  if (expired) details.push(`<div class="tg-note" style="padding:2px 0;">Истёк срок в панели: ${expired}</div>`);
  if (failed) details.push(`<div class="tg-note" style="padding:2px 0;">Не удалось исправить: ${failed}</div>`);
  if (panelErrors) details.push(`<div class="tg-note" style="padding:2px 0;">Ошибки панели: ${escapeHtml((data.panel_errors || []).join(', '))}</div>`);
  if (data.dry_run) details.push('<div class="tg-note" style="padding:2px 0;">Последний запуск был тестовым, изменения не применялись.</div>');
 
+ const orphanNote = orphan ? `
+ <div class="reconcile-note">
+ Клиенты без подписки — это записи в 3x-ui, которых нет среди активных подписок. Обычно это дополнительные устройства или старые клиенты.
+ <button type="button" class="reconcile-link" onclick="openReconcileClients()">Показать список</button>
+ </div>` : '';
+
  target.innerHTML = `
- <div class="weekly-grid">
- <div class="weekly-card"><div class="weekly-num" style="color:${statusColor};font-size:15px;">${statusText}</div><div class="weekly-lbl">${escapeHtml(data.checked_at)}</div></div>
+ <div class="reconcile-status reconcile-status--${statusClass}">
+ <div class="reconcile-status__title">${escapeHtml(statusText)}</div>
+ <div class="reconcile-status__time">Проверено ${escapeHtml(data.checked_at)}</div>
+ </div>
+ <div class="weekly-grid weekly-grid--2">
  <div class="weekly-card"><div class="weekly-num">${data.active_users ?? 0} / ${data.clients ?? 0}</div><div class="weekly-lbl">Подписки / клиенты</div></div>
  <div class="weekly-card"><div class="weekly-num" style="color:var(--success-color);">${fixed}</div><div class="weekly-lbl">Исправлено</div></div>
  </div>
+ ${orphanNote}
  ${details.join('')}`;
+ }
+
+function openReconcileClients() {
+ const data = window._reconcileData || {};
+ const items = (data.issues && data.issues.orphan_client) || [];
+ const title = document.getElementById('reconcile-clients-title');
+ const list = document.getElementById('reconcile-clients-list');
+ if (title) title.textContent = `Клиенты без подписки: ${items.length}`;
+ if (list) {
+   list.innerHTML = items.length
+     ? items.map(item => `
+       <div class="reconcile-client-row">
+         <span class="reconcile-client-email">${escapeHtml(item.email || '')}</span>
+         <span class="reconcile-client-panel">${escapeHtml(item.panel || '')}</span>
+       </div>`).join('')
+     : '<div class="tg-note" style="padding:8px 0;">Список пуст.</div>';
+ }
+ const modal = document.getElementById('reconcile-clients-modal');
+ if (modal) modal.classList.add('show');
+ }
+
+function closeReconcileClients() {
+ const modal = document.getElementById('reconcile-clients-modal');
+ if (modal) modal.classList.remove('show');
  }
 
  async function loadAdminErrors() {

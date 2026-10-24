@@ -35,9 +35,10 @@ class MiniAppAssetsTest(unittest.TestCase):
             "IS_SUPERADMIN",
             "showOffline",
             "connect-onboarding",
+            "openReconcileClients",
         ):
             self.assertIn(token, js)
-        for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log", "offline-banner", "onboarding-actions"):
+        for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log", "offline-banner", "onboarding-actions", "reconcile-status", "reconcile-client-row"):
             self.assertIn(token, css)
         self.assertIn("pull-indicator", html)
         self.assertIn("disableVerticalSwipes", js)

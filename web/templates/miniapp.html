@@ -5,7 +5,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
  <title>Моя подписка — SkrepNet</title>
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
- <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-18">
+ <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-20">
 
 
     <!-- Favicon (SkrepNet) -->
@@ -206,7 +206,7 @@
 
  <div id="toast" class="toast" role="status" aria-live="polite">Скопировано!</div>
 
- <script src="/static/miniapp.js?v={{ bot_version }}-33"></script>
+ <script src="/static/miniapp.js?v={{ bot_version }}-34"></script>
 
  <!-- Модалка выбора суммы звёзд -->
  <div class="modal-backdrop" id="stars-modal">
@@ -524,6 +524,18 @@ async function submitBcast() {
   </div>
 </div>
 
+
+<!-- Клиенты без подписки -->
+<div class="modal-backdrop" id="reconcile-clients-modal">
+  <div class="modal" style="max-width: min(520px, 94vw); width: 100%;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 id="reconcile-clients-title" style="margin:0; font-size:18px;">Клиенты без подписки</h3>
+      <button onclick="closeReconcileClients()" style="background:none; border:none; color:var(--hint-color); font-size:20px; cursor:pointer;">×</button>
+    </div>
+    <div class="tg-note" style="padding:0 0 8px;">Записи в 3x-ui, не привязанные к активным подпискам. Только просмотр.</div>
+    <div id="reconcile-clients-list" class="reconcile-clients-list"></div>
+  </div>
+</div>
 
 <!-- Модалка журнала действий -->
 <div id="audit-modal" class="modal-backdrop">
