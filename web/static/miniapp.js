@@ -949,7 +949,7 @@ document.addEventListener('visibilitychange', () => {
  CURRENT_SUB_DATA = data;
  CURRENT_SUB_URL = data.sub_url || CURRENT_SUB_URL;
  const daysLeft = data.days_left || 0;
- const totalDays = 30;
+ const totalDays = Number(data.plan_days) || 30;
  const isUnlimited = data.expires_at === '∞';
  const daysPercent = isUnlimited ? 100 : Math.min(100, Math.max(0, (daysLeft / totalDays) * 100));
  const daysLabel = isUnlimited ? 'Бессрочно' : `${daysLeft} дн.`;
@@ -1566,8 +1566,9 @@ document.addEventListener('visibilitychange', () => {
  return '';
  }
 
- function adminUserBadges(u, daysLeft) {
+ function adminUserBadges(u, daysLeft, planDays = 30) {
     const badges = [];
+    const warnThreshold = planDays <= 7 ? 1 : 3;
     if (u.is_superadmin) badges.push('<span class="badge superadmin">суперадмин</span>');
     else if (u.is_admin) badges.push('<span class="badge admin">админ</span>');
     if (u.vpn_online) badges.push('<span class="badge online">онлайн</span>');
@@ -1577,7 +1578,7 @@ document.addEventListener('visibilitychange', () => {
     if (u.status === 'rejected') badges.push('<span class="badge dead">отклонён</span>');
     if (u.status === 'active' && daysLeft !== null) {
         if (daysLeft < 0) badges.push('<span class="badge dead">истёк</span>');
-        else if (daysLeft <= 3) badges.push(`<span class="badge warn">${daysLeft} дн.</span>`);
+        else if (daysLeft <= warnThreshold) badges.push(`<span class="badge warn">${daysLeft} дн.</span>`);
     }
     if (u.source === 'web' || u.is_web) badges.push('<span class="badge web">web</span>');
     return badges.join('');
@@ -1598,7 +1599,7 @@ document.addEventListener('visibilitychange', () => {
         ${IS_SUPERADMIN ? `<input type="checkbox" class="admin-user-check" data-tg="${u.telegram_id}" ${ADMIN.selected && ADMIN.selected.has(String(u.telegram_id)) ? 'checked' : ''} onclick="event.stopPropagation(); toggleUserSelection(this)">` : ''}
         <div class="admin-user-info">
             <div class="admin-user-name">${u.first_name || '—'}${u.username ? ' <span class="admin-user-username">@' + u.username + '</span>' : ''}</div>
-            <div class="admin-user-badges">${adminUserBadges(u, daysLeft)}</div>
+            <div class="admin-user-badges">${adminUserBadges(u, daysLeft, u.plan_days)}</div>
         </div>
         <div class="admin-user-arrow">›</div>
     </div>`;
@@ -2298,9 +2299,10 @@ async function openAdminUserCard(tgId) {
 
  let daysBar = '';
  if (u.days_left !== null && u.days_left !== undefined && u.days_left >= 0) {
- const totalDays = 30;
- const percent = Math.min(100, (u.days_left / totalDays) * 100);
- const color = u.days_left <= 3 ? '#f85149' : (u.days_left <= 7 ? '#d29922' : '#238636');
+ const totalDays = Number(u.plan_days) || 30;
+ const percent = Math.min(100, Math.max(0, (u.days_left / totalDays) * 100));
+ const ratio = totalDays ? (u.days_left / totalDays) : 0;
+ const color = u.days_left < 0 ? '#f85149' : (ratio <= 0.15 ? '#f85149' : (ratio <= 0.35 ? '#d29922' : '#238636'));
  daysBar = `
  <div style="margin-top:8px;">
  <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--hint-color);margin-bottom:4px;">
@@ -2348,7 +2350,7 @@ async function openAdminUserCard(tgId) {
  }
 
  const isOnline = u.vpn_online === true;
- const cardBadges = adminUserBadges(u, u.days_left ?? null);
+ const cardBadges = adminUserBadges(u, u.days_left ?? null, u.plan_days);
 
  container.innerHTML = `
  <div class="user-card-header">

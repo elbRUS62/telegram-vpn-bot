@@ -6,6 +6,7 @@ from flask import Response, jsonify, request
 
 from config import DB_PATH, XUI_PANELS
 from web.utils.async_helper import run_async
+from web.utils.subscription_days import days_left_from_expiry, plan_days_for_source
 
 from .common import (
     _audit,
@@ -138,6 +139,7 @@ def users_list():
             email = u.get("xui_email")
             u["vpn_online"] = email in online_emails
             u["is_web"] = (u.get("source") == "web")
+            u["plan_days"] = plan_days_for_source(u.get("source"))
             admin_role = u.get("admin_role")
             u["is_admin"] = bool(admin_role)
             u["is_superadmin"] = admin_role == "superadmin"
@@ -363,6 +365,7 @@ def user_card():
                 except Exception:
                     pass
         result["is_blocked"] = False
+        result["plan_days"] = plan_days_for_source(u.get("source"))
         result["comment"] = ""
         result["traffic_up"] = None
         result["traffic_down"] = None
@@ -419,12 +422,7 @@ def user_card():
                 logger.warning(f"Ошибка получения данных 3x-ui для {u['xui_email']}")
 
         # Дни до окончания
-        if u["expires_at"]:
-            try:
-                exp = datetime.strptime(str(u["expires_at"])[:10], "%Y-%m-%d")
-                result["days_left"] = (exp - datetime.now()).days
-            except Exception:
-                result["days_left"] = None
+        result["days_left"] = days_left_from_expiry(u["expires_at"])
 
         return {"user": result}
 

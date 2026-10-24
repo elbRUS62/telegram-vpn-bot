@@ -7,6 +7,7 @@ from flask import jsonify, request
 
 from web.utils.async_helper import run_async
 from web.utils.auth import validate_init_data
+from web.utils.subscription_days import days_left_from_expiry, plan_days_for_source
 
 from .common import api, logger
 
@@ -39,7 +40,7 @@ def subscription():
                 if expiry > 0:
                     exp_dt = datetime.fromtimestamp(expiry / 1000)
                     exp_date = exp_dt.strftime("%d.%m.%Y")
-                    days_left = (exp_dt - datetime.now()).days
+                    days_left = days_left_from_expiry(exp_dt)
 
                     if days_left < 0:
                         status_text, status = f"Истекла {exp_date}", "expired"
@@ -86,6 +87,7 @@ def subscription():
                 'sub_url': sub_url,
                 'expires_at': exp_date,
                 'days_left': days_left,
+                'plan_days': plan_days_for_source(db_user["source"]),
                 'status': status,
                 'status_text': status_text,
                 'traffic_up': f"{traffic_up:.2f} GB" if traffic_up is not None else "—",
