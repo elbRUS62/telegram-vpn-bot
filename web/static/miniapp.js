@@ -31,6 +31,7 @@ const tg = window.Telegram?.WebApp || {
  let INIT_DATA = tg.initData || "";
  let SUPPORT_STATE = { view: 'list', ticket: null };
  let TICKETS_STATE = { filter: 'all', current: null, busy: false, counts: null };
+ let DONATION_SUMMARY = null;
 
  const CACHE_PREFIX = 'skrepnet_cache:v2:';
  const CACHE_DEFAULT_TTL = 60 * 60 * 1000;
@@ -652,6 +653,7 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  tab.setAttribute('aria-current', 'page');
  document.getElementById('screen-' + name).classList.add('active');
  updateDots(index);
+ updateDonationSummary();
 
  setTimeout(updateDots, 100);
  restoreScroll(name);
@@ -719,6 +721,7 @@ document.addEventListener('visibilitychange', () => {
 
  try {
  const data = await apiCall('/api/miniapp/main');
+ renderDonationSummary(data);
  
  if (isSilent) {
  const currentStatusEl = content.querySelector('.status-badge');
@@ -807,21 +810,7 @@ document.addEventListener('visibilitychange', () => {
    <button type="button" class="onboarding-dismiss" onclick="dismissConnectOnboarding()">Позже</button>
  </div>` : '';
 
- const donationPercent = Math.min(100, Math.max(0, Number(data.progress_percent) || 0));
- const donatedRub = Number(data.donated) || 0;
- const serverCostRub = Number(data.server_cost) || 0;
- const donationHtml = serverCostRub > 0 ? `
- <button type="button" class="home-donate" data-action="open_donate" aria-label="Открыть раздел поддержки">
-   <span class="home-donate__top">
-     <span class="home-donate__title">Сбор в ${escapeHtml(data.next_month || 'этом месяце')}</span>
-     <span class="home-donate__percent">${donationPercent}%</span>
-   </span>
-   <span class="home-donate__bar"><span style="width:${donationPercent}%"></span></span>
-   <span class="home-donate__sum">${formatRub(donatedRub)} ₽ из ${formatRub(serverCostRub)} ₽</span>
- </button>` : '';
-
  content.innerHTML = `
- ${donationHtml}
  <div class="tg-hero tg-card">
    <div class="tg-kicker">${data.bot_name || 'SkrepNet'}</div>
    <h1 class="tg-title">${heroTitle}</h1>
@@ -861,7 +850,6 @@ document.addEventListener('visibilitychange', () => {
  btn.addEventListener('click', async () => {
  const action = btn.dataset.action;
  if (action === 'switch_sub') switchTab('sub');
- else if (action === 'open_donate') switchTab('donate');
  else if (action === 'get_sub') openTermsModal();
  else if (action === 'invite_friend') {
  if (!data.has_subscription) { showToast('Сначала получите подписку'); return; }
@@ -1106,6 +1094,7 @@ document.addEventListener('visibilitychange', () => {
  const data = await apiCall('/api/miniapp/donate');
  loading.style.display = 'none'; content.style.display = 'block';
  if (data.error) { content.innerHTML = loadErrorHtml(data.error, 'loadDonate()'); return; }
+ renderDonationSummary(data);
  content.innerHTML = `
  <div class="tg-hero">
    <div class="tg-kicker">Поддержка проекта</div>
@@ -1825,6 +1814,40 @@ document.addEventListener('visibilitychange', () => {
 
  function formatRub(value) {
  return Number(value || 0).toLocaleString('ru-RU');
+ }
+
+ function renderDonationSummary(data) {
+ const serverCost = Number(data && data.server_cost) || 0;
+ if (!serverCost) return;
+ DONATION_SUMMARY = {
+  percent: Math.min(100, Math.max(0, Number(data.progress_percent) || 0)),
+  donated: Number(data.donated) || 0,
+  server_cost: serverCost,
+  next_month: data.next_month || '',
+ };
+ updateDonationSummary();
+ }
+
+ function updateDonationSummary() {
+ const slot = document.getElementById('donation-summary');
+ if (!slot) return;
+ const active = document.querySelector('#tabs .tab.active')?.dataset.tab || 'donate';
+ if (!DONATION_SUMMARY || active === 'donate' || active === 'admin') {
+  slot.hidden = true;
+  slot.innerHTML = '';
+  return;
+ }
+ const d = DONATION_SUMMARY;
+ slot.innerHTML = `
+ <button type="button" class="home-donate" onclick="switchTab('donate')" aria-label="Открыть раздел поддержки">
+   <span class="home-donate__top">
+     <span class="home-donate__title">Сбор в ${escapeHtml(d.next_month || 'этом месяце')}</span>
+     <span class="home-donate__percent">${d.percent}%</span>
+   </span>
+   <span class="home-donate__bar"><span style="width:${d.percent}%"></span></span>
+   <span class="home-donate__sum">${formatRub(d.donated)} ₽ из ${formatRub(d.server_cost)} ₽</span>
+ </button>`;
+ slot.hidden = false;
  }
 
  function fmtUptime(sec) {
@@ -3115,6 +3138,7 @@ function closeReconcileClients() {
  initOfflineBanner();
  initModalScrollLock();
  loadMain();
+ loadDonate();
 
 
 

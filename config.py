@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Version
-BOT_VERSION = os.getenv("BOT_VERSION", "3.8.1")
+BOT_VERSION = os.getenv("BOT_VERSION", "3.9.0")
 
 # Sentry / GlitchTip (необязательно)
 SENTRY_DSN = os.getenv("SENTRY_DSN", "").strip()

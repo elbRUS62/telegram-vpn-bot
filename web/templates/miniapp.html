@@ -5,7 +5,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
  <title>Моя подписка — SkrepNet</title>
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
- <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-34">
+ <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-35">
 
 
     <!-- Favicon (SkrepNet) -->
@@ -37,11 +37,11 @@
 </div>
 
  <nav class="tabs" id="tabs" aria-label="Навигация">
- <button type="button" class="tab" data-tab="donate">
+ <button type="button" class="tab active" data-tab="donate" aria-current="page">
  <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
  <span class="tab-label">Поддержать</span>
  </button>
- <button type="button" class="tab active" data-tab="main" aria-current="page">
+ <button type="button" class="tab" data-tab="main">
  <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.1 10.4 12 3.1 20.9 10.4"></path><path d="M5.1 8.8V19.4a1.6 1.6 0 0 0 1.6 1.6h10.6a1.6 1.6 0 0 0 1.6-1.6V8.8"></path><path d="M9.9 21v-4a2.1 2.1 0 0 1 4.2 0v4"></path></svg>
  <span class="tab-label">Главная</span>
  </button>
@@ -62,7 +62,9 @@
  </nav>
  <div class="tabs-dots" id="tabs-dots"></div>
 
- <div id="screen-main" class="screen active">
+ <div id="donation-summary" class="donation-summary" hidden></div>
+
+ <div id="screen-main" class="screen">
  <div class="loading" id="main-loading"> Загрузка...</div>
  <div id="main-content" style="display:none;"></div>
  </div>
@@ -70,7 +72,7 @@
  <div class="loading" id="sub-loading"> Загрузка...</div>
  <div id="sub-content" style="display:none;"></div>
  </div>
- <div id="screen-donate" class="screen">
+ <div id="screen-donate" class="screen active">
  <div class="loading" id="donate-loading"> Загрузка...</div>
  <div id="donate-content" style="display:none;"></div>
  </div>
@@ -223,7 +225,7 @@
 
  <div id="toast" class="toast" role="status" aria-live="polite">Скопировано!</div>
 
- <script src="/static/miniapp.js?v={{ bot_version }}-44"></script>
+ <script src="/static/miniapp.js?v={{ bot_version }}-45"></script>
 
  <!-- Модалка выбора суммы звёзд -->
  <div class="modal-backdrop" id="stars-modal">

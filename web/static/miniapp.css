@@ -2150,3 +2150,7 @@ body { padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
 }
 .home-donate__bar span { display: block; height: 100%; border-radius: inherit; background: var(--link-color); }
 .home-donate__sum { color: var(--hint-color); font-size: 11px; }
+
+.donation-summary { max-width: 720px; margin: 0 auto; padding: 12px 12px 0; }
+.donation-summary[hidden] { display: none; }
+.donation-summary .home-donate { margin-bottom: 0; }
