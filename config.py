@@ -29,6 +29,7 @@ if not WEB_SECRET_KEY:
     ).hexdigest()
 WEB_ADMIN_SESSION_HOURS = int(os.getenv("WEB_ADMIN_SESSION_HOURS", "12"))
 WEB_ADMIN_LINK_TTL_MINUTES = int(os.getenv("WEB_ADMIN_LINK_TTL_MINUTES", "10"))
+DIAGNOSTIC_RETENTION_DAYS = int(os.getenv("DIAGNOSTIC_RETENTION_DAYS", "30"))
 
 # Branding
 BOT_NAME = os.getenv("BOT_NAME", "SkrepNet")

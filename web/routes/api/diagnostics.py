@@ -1,10 +1,10 @@
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import aiosqlite
 from flask import jsonify, request
 
-from config import DB_PATH
+from config import DB_PATH, DIAGNOSTIC_RETENTION_DAYS
 from web.utils.async_helper import run_async
 from web.utils.auth import validate_init_data
 
@@ -116,11 +116,17 @@ def diagnostics_report():
     else:
         latency_bucket = '>=3000'
 
-    bucket = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:00')
+    now = datetime.now(timezone.utc)
+    bucket = now.strftime('%Y-%m-%dT%H:00')
+    cutoff = (now - timedelta(days=DIAGNOSTIC_RETENTION_DAYS)).strftime('%Y-%m-%dT%H:00')
     ok = 1 if data.get('ok') is True else 0
 
     async def store():
         async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "DELETE FROM diagnostic_stats WHERE bucket < ?",
+                (cutoff,),
+            )
             await db.execute("""
                 INSERT INTO diagnostic_stats
                     (bucket, timezone, stage, ok, latency_bucket, count)
