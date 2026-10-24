@@ -1107,7 +1107,7 @@ document.addEventListener('visibilitychange', () => {
  </div>
 
  <div class="tg-card">
-   <div class="tg-card-title">Сбор в ${data.next_month}</div>
+   <div class="tg-card-title">Сбор на сервер в ${data.next_month}</div>
    <div class="donate-progress"><span style="width:${data.progress_percent}%"></span></div>
    <div class="donate-progress-label">
      <strong>${data.progress_percent}%</strong>
@@ -1841,7 +1841,7 @@ document.addEventListener('visibilitychange', () => {
  slot.innerHTML = `
  <button type="button" class="home-donate" onclick="switchTab('donate')" aria-label="Открыть раздел поддержки">
    <span class="home-donate__top">
-     <span class="home-donate__title">Сбор в ${escapeHtml(d.next_month || 'этом месяце')}</span>
+     <span class="home-donate__title">Сбор на сервер в ${escapeHtml(d.next_month || 'этом месяце')}</span>
      <span class="home-donate__percent">${d.percent}%</span>
    </span>
    <span class="home-donate__bar"><span style="width:${d.percent}%"></span></span>
