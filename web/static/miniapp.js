@@ -746,7 +746,7 @@ document.addEventListener('visibilitychange', () => {
 
  let hintsDismissed = false;
  try { hintsDismissed = localStorage.getItem(HINTS_KEY) === '1'; } catch (_) {}
- const hintsHtml = (!isActive && !isPending && !data.is_admin && !hintsDismissed) ? `
+ const hintsHtml = (!isActive && !isPending && !hintsDismissed) ? `
  <div class="onboarding-card" id="onboarding-hints">
    <div class="onboarding-title">Как начать</div>
    <div class="onboarding-steps">
@@ -760,7 +760,7 @@ document.addEventListener('visibilitychange', () => {
  const detectedPlatform = detectPlatformKey();
  const happLink = HAPP_LINKS[detectedPlatform] || 'https://www.happ.su/main/';
  const platformLabel = PLATFORM_LABELS[detectedPlatform] || 'ваше устройство';
- const connectOnboardingHtml = (isActive && !data.is_admin && !connectOnboardingDone()) ? `
+ const connectOnboardingHtml = (isActive && !connectOnboardingDone()) ? `
  <div class="onboarding-card onboarding-card--connect" id="connect-onboarding">
    <div class="onboarding-title">Подключение за три шага</div>
    <div class="onboarding-steps">
