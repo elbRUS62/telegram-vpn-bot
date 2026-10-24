@@ -244,7 +244,12 @@ def list_admins():
             ORDER BY CASE a.role WHEN 'superadmin' THEN 0 ELSE 1 END,
                      a.added_at, a.telegram_id
         """).fetchall()
-    return [dict(row) for row in rows]
+    result = []
+    for row in rows:
+        admin = dict(row)
+        admin["protected"] = int(admin["telegram_id"]) in SUPERADMIN_IDS
+        result.append(admin)
+    return result
 
 
 def save_admin(telegram_id, username="", first_name="", role=ROLE_ADMIN,

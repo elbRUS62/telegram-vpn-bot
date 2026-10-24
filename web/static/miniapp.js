@@ -2316,8 +2316,9 @@ async function openAdminUserCard(tgId) {
  const name = admin.first_name || admin.username || String(id);
  const username = admin.username ? ` @${escapeHtml(admin.username)}` : '';
  const inactive = !admin.is_active;
+ const protectedAdmin = !!admin.protected;
  const role = admin.role === 'superadmin' ? 'superadmin' : 'admin';
- const actions = inactive ? '' : `
+ const actions = (inactive || protectedAdmin) ? '' : `
  ${role === 'superadmin' ? `<button class="btn btn-secondary" onclick="changeAdminRole(${id}, 'admin')">Понизить</button>` : `<button class="btn btn-secondary" onclick="changeAdminRole(${id}, 'superadmin')">Повысить</button>`}
  <button class="btn btn-secondary" onclick="removeAdmin(${id})">Удалить</button>`;
  return `<div class="admin-admin-row">
@@ -2444,8 +2445,8 @@ async function openAdminUserCard(tgId) {
      <div class="admin-section-title">Инструменты</div>
      <div class="tg-list">
        <button class="tg-item" onclick="syncAdminUsers()"><span>Синхронизировать с 3x-ui</span><span class="tg-item__meta">Обновить даты</span></button>
-       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv('/users/export', 'skrepnet-users.csv', {q: ADMIN.q, status: ADMIN.status})"><span>Экспорт пользователей</span><span class="tg-item__meta">CSV</span></button>' : ''}
-       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv('/tickets/export', 'skrepnet-tickets.csv')"><span>Экспорт тикетов</span><span class="tg-item__meta">CSV</span></button>' : ''}
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv(&#39;/users/export&#39;, &#39;skrepnet-users.csv&#39;, {q: ADMIN.q, status: ADMIN.status})"><span>Экспорт пользователей</span><span class="tg-item__meta">CSV</span></button>' : ''}
+       ${IS_SUPERADMIN ? '<button class="tg-item" onclick="downloadAdminCsv(&#39;/tickets/export&#39;, &#39;skrepnet-tickets.csv&#39;)"><span>Экспорт тикетов</span><span class="tg-item__meta">CSV</span></button>' : ''}
        ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openAudit()"><span>История действий</span><span class="tg-item__arrow">›</span></button>' : ''}
        ${IS_SUPERADMIN ? '<button class="tg-item" onclick="openBroadcast()"><span>Массовая рассылка</span><span class="tg-item__arrow">›</span></button>' : ''}
        <button class="tg-item" onclick="openTickets()"><span>Тикеты <span class="badge pending admin-tickets-badge" style="display:none;margin-left:4px;">0</span></span><span class="tg-item__arrow">›</span></button>

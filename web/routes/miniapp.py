@@ -1,6 +1,6 @@
 """Роут страницы Mini App."""
 
-from flask import Blueprint, render_template
+from flask import Blueprint, make_response, render_template
 
 from config import BOT_NAME, BOT_VERSION
 
@@ -8,11 +8,13 @@ miniapp_bp = Blueprint('miniapp', __name__)
 
 
 def _render_miniapp():
-    return render_template(
+    response = make_response(render_template(
         'miniapp.html',
         bot_name=BOT_NAME,
         bot_version=BOT_VERSION,
-    )
+    ))
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 @miniapp_bp.route('/miniapp')
