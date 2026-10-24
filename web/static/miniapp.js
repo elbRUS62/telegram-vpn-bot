@@ -2541,6 +2541,49 @@ async function openAdminUserCard(tgId) {
  }, 60000);
  }
 
+ // Единая точка закрытия модалок: крестик сверху справа, клик по фону и Escape.
+ function closeTopModal(element) {
+ const backdrop = element?.closest?.('.modal-backdrop');
+ if (backdrop) backdrop.classList.remove('show');
+ }
+
+ function decorateModals() {
+ document.querySelectorAll('.modal-backdrop .modal').forEach(modal => {
+ if (modal.querySelector('.modal-close-top, .modal-close, #tickets-modal-close, button[onclick^="close"]')) return;
+ const row = document.createElement('div');
+ row.className = 'modal-close-row';
+ const button = document.createElement('button');
+ button.type = 'button';
+ button.className = 'modal-close-top';
+ button.setAttribute('aria-label', 'Закрыть');
+ button.textContent = '\u00d7';
+ button.addEventListener('click', (event) => {
+ event.stopPropagation();
+ closeTopModal(button);
+ });
+ row.appendChild(button);
+ modal.prepend(row);
+ });
+ }
+
+ document.addEventListener('click', (event) => {
+ if (event.target.classList?.contains('modal-backdrop')) {
+ event.target.classList.remove('show');
+ }
+ });
+
+ document.addEventListener('keydown', (event) => {
+ if (event.key !== 'Escape') return;
+ const open = [...document.querySelectorAll('.modal-backdrop.show')].pop();
+ if (open) open.classList.remove('show');
+ });
+
+ if (document.readyState === 'loading') {
+ document.addEventListener('DOMContentLoaded', decorateModals);
+ } else {
+ decorateModals();
+ }
+
  // Запуск
  loadMain();
 
