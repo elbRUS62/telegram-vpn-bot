@@ -2874,6 +2874,50 @@ async function openAdminUserCard(tgId) {
  }, 60000);
  }
 
+ // Блокировка прокрутки фона, пока открыта модалка
+ let MODAL_SCROLL_LOCK = { active: false, y: 0 };
+
+ function syncModalScrollLock() {
+ const hasOpen = !!document.querySelector('.modal-backdrop.show');
+ if (hasOpen && !MODAL_SCROLL_LOCK.active) {
+ MODAL_SCROLL_LOCK.y = window.scrollY || document.documentElement.scrollTop || 0;
+ document.body.style.position = 'fixed';
+ document.body.style.top = `-${MODAL_SCROLL_LOCK.y}px`;
+ document.body.style.left = '0';
+ document.body.style.right = '0';
+ document.body.style.width = '100%';
+ document.body.style.overflow = 'hidden';
+ MODAL_SCROLL_LOCK.active = true;
+ } else if (!hasOpen && MODAL_SCROLL_LOCK.active) {
+ const y = MODAL_SCROLL_LOCK.y;
+ document.body.style.position = '';
+ document.body.style.top = '';
+ document.body.style.left = '';
+ document.body.style.right = '';
+ document.body.style.width = '';
+ document.body.style.overflow = '';
+ MODAL_SCROLL_LOCK.active = false;
+ window.scrollTo(0, y);
+ }
+ }
+
+ function initModalScrollLock() {
+ const setup = () => {
+ document.querySelectorAll('.modal-backdrop').forEach((modal) => {
+ new MutationObserver(syncModalScrollLock).observe(modal, {
+ attributes: true,
+ attributeFilter: ['class'],
+ });
+ });
+ syncModalScrollLock();
+ };
+ if (document.readyState === 'loading') {
+ document.addEventListener('DOMContentLoaded', setup, { once: true });
+ } else {
+ setup();
+ }
+ }
+
  // Единая точка закрытия модалок: крестик сверху справа, клик по фону и Escape.
  function closeTopModal(element) {
  const backdrop = element?.closest?.('.modal-backdrop');
@@ -2920,6 +2964,7 @@ async function openAdminUserCard(tgId) {
 
  // Запуск
  initOfflineBanner();
+ initModalScrollLock();
  loadMain();
 
 
