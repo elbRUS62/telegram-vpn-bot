@@ -767,7 +767,6 @@ document.addEventListener('visibilitychange', () => {
    isActive ? { action: 'invite_friend', label: 'Пригласить друга', meta: '' } : null,
    isActive ? { action: 'invite_no_tg', label: 'Гостевая подписка', meta: 'Работает без Telegram' } : null,
    { action: 'connect_help', label: 'Как подключиться', meta: 'Инструкция' },
-   { action: 'donate', label: '❤️ Поддержать проект', meta: 'По желанию' },
  ].filter(Boolean);
 
  const quickHtml = quickActions.map(item => `
@@ -848,7 +847,6 @@ document.addEventListener('visibilitychange', () => {
  btn.addEventListener('click', async () => {
  const action = btn.dataset.action;
  if (action === 'switch_sub') switchTab('sub');
- else if (action === 'donate') switchTab('donate');
  else if (action === 'get_sub') openTermsModal();
  else if (action === 'invite_friend') {
  if (!data.has_subscription) { showToast('Сначала получите подписку'); return; }
@@ -1010,7 +1008,6 @@ document.addEventListener('visibilitychange', () => {
 
  <div class="tg-card">
    <button class="btn btn-secondary" data-action="renew_sub">Продлить бесплатно</button>
-   <button class="btn btn-secondary" data-action="donate">❤️ Поддержать проект</button>
  </div>
 
  <div class="tg-note" style="text-align:center;">Трафик не ограничен. Платные тарифы не используются.</div>
@@ -1027,7 +1024,6 @@ document.addEventListener('visibilitychange', () => {
  }
  else if (btn.dataset.action === 'share_link') shareSubscription(data.sub_url);
  else if (btn.dataset.action === 'renew_sub') openRenewModal();
- else if (btn.dataset.action === 'donate') switchTab('donate');
  });
  });
 
@@ -1099,7 +1095,7 @@ document.addEventListener('visibilitychange', () => {
  <div class="tg-hero">
    <div class="tg-kicker">Поддержка проекта</div>
    <h1 class="tg-title">Помочь серверу</h1>
-   <p class="tg-subtitle">Донат добровольный. Подписка остаётся бесплатной.</p>
+   <p class="tg-subtitle">Поддержка добровольная. Подписка остаётся бесплатной.</p>
  </div>
 
  <div class="tg-card">
@@ -1120,7 +1116,7 @@ document.addEventListener('visibilitychange', () => {
    <a href="${data.donate_url}" target="_blank" style="display:block;text-decoration:none;"><button class="btn btn-primary" style="width:100%;margin-bottom:0;">Поддержать через DonationAlerts</button></a>
  </div>
 
- <div class="tg-note" style="text-align:center;">Донат не влияет на доступ и не открывает платных функций.</div>
+ <div class="tg-note" style="text-align:center;">Поддержка не влияет на доступ и не открывает платных функций.</div>
  `;
  content.querySelectorAll('[data-action]').forEach(btn => {
  btn.addEventListener('click', async () => {

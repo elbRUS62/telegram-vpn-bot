@@ -50,8 +50,7 @@ async def _do_approve_from_notification(bot, chat_id: int, telegram_id: int, cus
                 f"<b>Подписка активирована</b>\n\n"
                 f"Ссылка:\n<code>{sub_url}</code>\n\n"
                 f"Лимит: 3 IP одновременно.\n"
-                f"Срок: 30 дней. Продлить можно в разделе «Моя подписка».\n\n"
-                f"Поддержать проект можно в разделе «Донат».",
+                f"Срок: 30 дней. Продлить можно в разделе «Моя подписка».",
                 parse_mode="HTML",
                 reply_markup=subscription_keyboard()
             )

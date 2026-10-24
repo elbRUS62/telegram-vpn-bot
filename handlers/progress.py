@@ -41,8 +41,7 @@ async def render_progress(short: bool = False) -> str:
     if short:
         return (
             f"Сбор на сервер в {month}: {_money(donated)} из {_money(SERVER_COST)} ₽ ({percent}%).\n"
-            f"{bar}\n"
-            f"Поддержать проект можно в разделе «Донат»."
+            f"{bar}"
         )
 
     if percent >= 100:
@@ -57,5 +56,5 @@ async def render_progress(short: bool = False) -> str:
         f"<b>Сбор на сервер в {month}</b>\n\n"
         f"Собрано {_money(donated)} из {_money(SERVER_COST)} ₽ ({percent}%).\n"
         f"{bar}\n\n"
-        f"Деньги идут только на аренду сервера. Поддержать можно в разделе «Донат»."
+        f"Деньги идут только на аренду сервера."
     )

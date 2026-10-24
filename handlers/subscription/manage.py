@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 
 from config import SUB_BASE_URL, SUB_PATH
 from database import get_user, increment_renew_count, renew_user
-from keyboards import donate_keyboard, subscription_keyboard
+from keyboards import subscription_keyboard
 from xui_client import XUIClient
 from ..utils import make_qr_image
 
@@ -74,9 +74,8 @@ async def renew_callback(callback: CallbackQuery):
         await callback.message.edit_text(
             f"<b>Подписка продлена</b>\n\n"
             f"Новая дата окончания: {exp_date}.\n"
-            f"Ссылка не изменилась.\n\n"
-            f"Поддержать проект можно в разделе «Донат».",
-            reply_markup=donate_keyboard()
+            f"Ссылка не изменилась.",
+            reply_markup=subscription_keyboard()
         )
 
     except Exception as e:

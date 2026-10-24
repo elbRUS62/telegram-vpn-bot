@@ -166,8 +166,6 @@ def donate_stars_keyboard():
 
 def renew_keyboard():
     rows = [[InlineKeyboardButton(text="Продлить подписку", callback_data="renew")]]
-    if DONATE_URL:
-        rows.append([InlineKeyboardButton(text="Поддержать проект", url=DONATE_URL)])
     rows.append([InlineKeyboardButton(text="В главное меню", callback_data="back_to_main")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -186,8 +184,6 @@ def subscription_keyboard():
         [InlineKeyboardButton(text="QR-код", callback_data="show_qr")],
         [InlineKeyboardButton(text="Продлить", callback_data="renew")],
     ]
-    if DONATE_URL:
-        rows.append([InlineKeyboardButton(text="Поддержать", url=DONATE_URL)])
     rows.append([InlineKeyboardButton(text="В главное меню", callback_data="back_to_main")])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)

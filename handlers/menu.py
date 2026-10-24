@@ -159,12 +159,13 @@ async def menu_docs(callback: CallbackQuery):
 
 @router.callback_query(F.data == "menu_progress")
 async def menu_progress(callback: CallbackQuery):
+    from keyboards import subscription_keyboard
+
     progress = await render_progress(short=False)
-    from keyboards import donate_keyboard
     await _edit_message(callback,
         progress,
         parse_mode="HTML",
-        reply_markup=donate_keyboard()
+        reply_markup=subscription_keyboard()
     )
     await callback.answer()
 
@@ -267,8 +268,7 @@ async def _handle_my_sub(callback: CallbackQuery):
         f"Ссылка:\n<code>{sub_url}</code>\n\n"
         f"{status_line}\n"
         f"Лимит: 3 IP одновременно.\n"
-        f"Трафик: получено {traffic_down:.2f} ГБ, отправлено {traffic_up:.2f} ГБ.\n\n"
-        f"Поддержать проект можно в разделе «Донат».",
+        f"Трафик: получено {traffic_down:.2f} ГБ, отправлено {traffic_up:.2f} ГБ.",
         reply_markup=subscription_keyboard(),
         parse_mode="HTML"
     )

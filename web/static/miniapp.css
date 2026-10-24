@@ -1865,16 +1865,16 @@ body { padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
 }
 .admin-avatar--photo { background: var(--secondary-bg); color: transparent; }
 .admin-avatar img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.tab[data-tab="donate"] .tab-icon { color: #ff3b30; filter: drop-shadow(0 0 6px rgba(255, 59, 48, .35)); }
-.tab[data-tab="donate"] .tab-icon path { fill: #ff3b30; stroke: #ff3b30; }
-.tab[data-tab="donate"].active .tab-icon { filter: drop-shadow(0 0 8px rgba(255, 59, 48, .55)); }
+.tab[data-tab="donate"] .tab-icon { color: #ff3b30; filter: drop-shadow(0 0 4px rgba(255, 59, 48, .22)); }
+.tab[data-tab="donate"] .tab-icon path { fill: none; stroke: #ff3b30; stroke-width: 2; }
+.tab[data-tab="donate"].active .tab-icon { filter: drop-shadow(0 0 6px rgba(255, 59, 48, .38)); }
 .tab[data-tab="sub"] .tab-icon { stroke-width: 2.1; }
 @keyframes donate-heart-pulse {
-  0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 59, 48, .30)); }
-  6% { transform: scale(1.18); filter: drop-shadow(0 0 12px rgba(255, 59, 48, .70)); }
-  12% { transform: scale(.98); filter: drop-shadow(0 0 6px rgba(255, 59, 48, .35)); }
-  18% { transform: scale(1.12); filter: drop-shadow(0 0 10px rgba(255, 59, 48, .60)); }
-  24%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255, 59, 48, .30)); }
+  0% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255, 59, 48, .22)); }
+  6% { transform: scale(1.18); filter: drop-shadow(0 0 9px rgba(255, 59, 48, .55)); }
+  12% { transform: scale(.98); filter: drop-shadow(0 0 4px rgba(255, 59, 48, .25)); }
+  18% { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(255, 59, 48, .45)); }
+  24%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255, 59, 48, .22)); }
 }
 .tab[data-tab="donate"] .tab-icon {
   transform-origin: 50% 55%;

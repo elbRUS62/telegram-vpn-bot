@@ -63,8 +63,7 @@ async def accept_terms(callback: CallbackQuery):
                 f"Ссылка:\n<code>{sub_url}</code>\n\n"
                 f"Лимит: 3 IP одновременно.\n"
                 f"Срок: 30 дней с момента активации.\n\n"
-                f"Подключение: «Как подключиться». QR-код: «QR-код».\n"
-                f"Поддержать проект можно в разделе «Донат».",
+                f"Подключение: «Как подключиться». QR-код: «QR-код».",
                 reply_markup=subscription_keyboard(),
                 parse_mode="HTML"
             )
