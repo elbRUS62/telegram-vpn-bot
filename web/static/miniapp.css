@@ -2154,3 +2154,6 @@ body { padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
 .donation-summary { max-width: 720px; margin: 0 auto; padding: 12px 12px 0; }
 .donation-summary[hidden] { display: none; }
 .donation-summary .home-donate { margin-bottom: 0; }
+
+.donate-access-warning { margin-top: 8px; color: var(--warning-color); font-size: 12px; line-height: 1.4; }
+.home-donate__warning { color: var(--warning-color); font-size: 10px; line-height: 1.35; }

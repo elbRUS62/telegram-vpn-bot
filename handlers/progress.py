@@ -23,6 +23,17 @@ def _money(value: float) -> str:
     return f"{value:,.0f}".replace(",", " ")
 
 
+ACCESS_WARNING = "Если сбор не закроется, возможны перебои; доступ остаётся бесплатным."
+
+
+async def access_warning() -> str:
+    """Предупреждение, если сбор на следующий месяц не закрыт."""
+    if SERVER_COST <= 0:
+        return ""
+    donated = await get_donations_total(currency="RUB")
+    return ACCESS_WARNING if donated < SERVER_COST else ""
+
+
 async def render_progress(short: bool = False) -> str:
     """Отрисовать прогресс сбора.
 
@@ -37,11 +48,12 @@ async def render_progress(short: bool = False) -> str:
     filled = min(percent // 10, 10)
     bar = "█" * filled + "░" * (10 - filled)
     month = _next_month_name()
+    warning = f"\n\n{ACCESS_WARNING}" if donated < SERVER_COST else ""
 
     if short:
         return (
             f"Сбор на сервер в {month}: {_money(donated)} из {_money(SERVER_COST)} ₽ ({percent}%).\n"
-            f"{bar}"
+            f"{bar}{warning}"
         )
 
     if percent >= 100:
@@ -56,5 +68,5 @@ async def render_progress(short: bool = False) -> str:
         f"<b>Сбор на сервер в {month}</b>\n\n"
         f"Собрано {_money(donated)} из {_money(SERVER_COST)} ₽ ({percent}%).\n"
         f"{bar}\n\n"
-        f"Деньги идут только на аренду сервера."
+        f"Деньги идут только на аренду сервера.{warning}"
     )

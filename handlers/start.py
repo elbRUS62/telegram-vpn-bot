@@ -111,9 +111,13 @@ async def cmd_start_deeplink(message: Message, command: CommandObject):
         if action == "donate":
             from keyboards import donate_keyboard
             from config import DONATE_TEXT, DONATE_URL
+            from handlers.progress import access_warning
             text = DONATE_TEXT or "Поддержать проект"
             if DONATE_URL:
                 text += f"\n\nСсылка для доната: {DONATE_URL}"
+            warning = await access_warning()
+            if warning:
+                text += f"\n\n{warning}"
             await message.answer(text, reply_markup=donate_keyboard())
             return
 

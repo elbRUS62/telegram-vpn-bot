@@ -1113,6 +1113,9 @@ document.addEventListener('visibilitychange', () => {
      <strong>${data.progress_percent}%</strong>
      <span>${data.server_cost ? `${data.donated} ₽ из ${data.server_cost} ₽` : 'Сбор на сервер'}</span>
    </div>
+   ${Number(data.server_cost) > 0 && Number(data.donated) < Number(data.server_cost)
+     ? '<div class="donate-access-warning">Если сбор не закроется, возможны перебои; доступ остаётся бесплатным.</div>'
+     : ''}
  </div>
 
  <div class="tg-card">
@@ -1838,6 +1841,9 @@ document.addEventListener('visibilitychange', () => {
   return;
  }
  const d = DONATION_SUMMARY;
+ const warning = d.donated < d.server_cost
+  ? '<span class="home-donate__warning">Если сбор не закроется, возможны перебои; доступ остаётся бесплатным.</span>'
+  : '';
  slot.innerHTML = `
  <button type="button" class="home-donate" onclick="switchTab('donate')" aria-label="Открыть раздел поддержки">
    <span class="home-donate__top">
@@ -1846,6 +1852,7 @@ document.addEventListener('visibilitychange', () => {
    </span>
    <span class="home-donate__bar"><span style="width:${d.percent}%"></span></span>
    <span class="home-donate__sum">${formatRub(d.donated)} ₽ из ${formatRub(d.server_cost)} ₽</span>
+   ${warning}
  </button>`;
  slot.hidden = false;
  }

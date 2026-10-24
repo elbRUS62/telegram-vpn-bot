@@ -4,6 +4,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, LabeledPrice, PreCheckoutQuery
 
 from config import DONATE_TEXT, DONATE_URL, BOT_NAME
+from handlers.progress import access_warning
 from permissions import get_admin_ids
 from keyboards import donate_keyboard, donate_stars_keyboard
 
@@ -11,17 +12,20 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 
-def _donate_text() -> str:
+async def _donate_text() -> str:
     text = DONATE_TEXT or "Поддержать проект"
     if DONATE_URL:
         text += f"\n\nСсылка для доната: {DONATE_URL}"
+    warning = await access_warning()
+    if warning:
+        text += f"\n\n{warning}"
     return text
 
 
 @router.message(F.text == "Поддержать проект")
 async def donate(message: Message):
     await message.answer(
-        _donate_text(),
+        await _donate_text(),
         reply_markup=donate_keyboard()
     )
 
@@ -41,7 +45,7 @@ async def donate_stars_menu(callback: CallbackQuery):
 @router.callback_query(F.data == "back_to_donate")
 async def back_to_donate(callback: CallbackQuery):
     await callback.message.edit_text(
-        _donate_text(),
+        await _donate_text(),
         reply_markup=donate_keyboard()
     )
     await callback.answer()
