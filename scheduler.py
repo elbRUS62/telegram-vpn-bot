@@ -8,6 +8,7 @@ import aiosqlite
 
 from monitoring import check_xui_health
 from reconciliation import reconcile_xui
+from web.utils.avatars import refresh_user_avatars
 from database import (
     get_expiring_users, get_expired_today, mark_notified,
     get_inactive_users, delete_user,
@@ -122,6 +123,17 @@ def setup_scheduler(bot: Bot):
         max_instances=1,
         coalesce=True,
         next_run_time=datetime.now() + timedelta(minutes=2),
+    )
+
+    # Аватарки и имена из Telegram — раз в сутки
+    scheduler.add_job(
+        refresh_user_avatars,
+        "cron",
+        hour=4,
+        minute=30,
+        id="refresh_avatars",
+        max_instances=1,
+        coalesce=True,
     )
 
     scheduler.start()

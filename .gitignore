@@ -10,6 +10,7 @@ __pycache__/
 # База данных и бэкапы
 skrepnet.db
 backups/
+data/
 
 # Резервные копии
 *.bak

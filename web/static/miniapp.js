@@ -646,8 +646,10 @@ document.querySelectorAll('.tab').forEach((tab, index) => {
  const previous = document.querySelector('.tab.active');
  if (previous) saveScroll(previous.dataset.tab);
  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+ document.querySelectorAll('#tabs .tab').forEach(t => t.removeAttribute('aria-current'));
  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
  tab.classList.add('active');
+ tab.setAttribute('aria-current', 'page');
  document.getElementById('screen-' + name).classList.add('active');
  updateDots(index);
 
@@ -1592,7 +1594,10 @@ document.addEventListener('visibilitychange', () => {
  function adminUserRow(u) {
  const id = String(u.telegram_id || '');
  const selected = !!(ADMIN.selected && ADMIN.selected.has(id));
- const name = u.first_name || (u.username ? '@' + u.username : (u.source === 'web' ? 'Гость' : 'ID ' + id));
+ const rawName = (u.first_name || '').trim();
+ const name = (rawName && rawName !== '@')
+   ? rawName
+   : (u.username ? '@' + u.username : (u.source === 'web' ? 'Гость' : 'ID ' + id));
  const role = u.is_superadmin
    ? 'суперадмин'
    : (u.is_admin ? 'админ' : (u.source === 'web' ? 'гость' : (u.invited_by ? 'реферал' : 'бот')));
@@ -1620,8 +1625,8 @@ document.addEventListener('visibilitychange', () => {
  return `
  <div class="admin-user ${selected ? 'is-selected' : ''}" data-tg="${id}">
    ${IS_SUPERADMIN && ADMIN.selectMode ? `<span class="admin-select-circle ${selected ? 'is-selected' : ''}" role="checkbox" aria-checked="${selected}" aria-label="Выбрать пользователя"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg></span>` : ''}
-   <div class="admin-avatar" style="background:${adminAvatarColor(id + name)}">
-     ${escapeHtml(adminInitials(name))}
+   <div class="admin-avatar ${u.avatar ? 'admin-avatar--photo' : ''}" style="${u.avatar ? '' : `background:${adminAvatarColor(id + name)}`}">
+     ${u.avatar ? `<img src="${u.avatar}" alt="">` : escapeHtml(adminInitials(name))}
      ${u.vpn_online ? '<span class="admin-online-dot" aria-label="Онлайн"></span>' : ''}
    </div>
    <div class="admin-user-info">
@@ -2415,7 +2420,7 @@ async function openAdminUserCard(tgId) {
 
  container.innerHTML = `
  <div class="user-card-header">
- <div class="user-card-name"><span>${u.first_name || 'Пользователь'}</span></div>
+ <div class="user-card-name"><span>${escapeHtml((u.first_name && u.first_name.trim() !== '@') ? u.first_name : (u.username ? '@' + u.username : 'Пользователь'))}</span></div>
  <div class="admin-user-badges">${cardBadges}</div>
  <div class="user-card-meta" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:8px;">
  <span onclick="copyToClipboard('@${u.username || ''}')" style="cursor:pointer; text-decoration:underline; text-decoration-style:dotted;">

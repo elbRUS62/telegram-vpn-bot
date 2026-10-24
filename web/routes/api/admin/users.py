@@ -6,6 +6,7 @@ from flask import Response, jsonify, request
 
 from config import DB_PATH, XUI_PANELS
 from web.utils.async_helper import run_async
+from web.utils.avatars import get_avatar_data_url
 from web.utils.subscription_days import days_left_from_expiry, plan_days_for_source
 
 from .common import (
@@ -140,6 +141,7 @@ def users_list():
             u["vpn_online"] = email in online_emails
             u["is_web"] = (u.get("source") == "web")
             u["plan_days"] = plan_days_for_source(u.get("source"))
+            u["avatar"] = get_avatar_data_url(int(u["telegram_id"])) if u.get("telegram_id") else ""
             admin_role = u.get("admin_role")
             u["is_admin"] = bool(admin_role)
             u["is_superadmin"] = admin_role == "superadmin"
@@ -366,6 +368,7 @@ def user_card():
                     pass
         result["is_blocked"] = False
         result["plan_days"] = plan_days_for_source(u.get("source"))
+        result["avatar"] = get_avatar_data_url(tg_id)
         result["comment"] = ""
         result["traffic_up"] = None
         result["traffic_down"] = None
