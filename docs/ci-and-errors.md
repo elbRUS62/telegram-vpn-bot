@@ -30,20 +30,20 @@ chmod +x .git/hooks/pre-push
 
 ## GitHub Actions
 
-Файл workflow: `.github/workflows/ci.yml`. Он запускает те же проверки на
-каждый push в `main` и на pull request.
+Workflow: `.github/workflows/ci.yml`. Запускается на каждый push в `main` и на
+pull request. Проверяет то же, что `scripts/ci.sh`: Python 3.13, Node 20,
+компиляцию, тесты и синтаксис JS. Секреты и `.env` для этого не нужны —
+скрипт подставляет тестовые значения сам.
 
-Важно: GitHub принимает изменения в `.github/workflows/*` только от токена
-с правом `workflow`. Если токен без этого права, push отклоняется с ошибкой
-`refusing to allow a Personal Access Token to create or update workflow`.
+Результаты: вкладка `Actions` → `CI` в репозитории.
 
-Варианты:
+Если push отклоняется с ошибкой `refusing to allow a Personal Access Token to
+create or update workflow`, у токена нет права `workflow`. Нужен classic PAT
+с правами `repo` и `workflow` либо fine-grained с `Contents: Read and write`
+и `Workflows: Read and write`.
 
-1. Создать новый classic PAT с правами `repo` и `workflow`, обновить
-   `/root/.git-credentials` и запушить workflow обычным способом.
-2. Добавить файл вручную через веб-интерфейс GitHub:
-   `Add file` → `Create new file` → `.github/workflows/ci.yml`,
-   вставить содержимое из репозитория.
+CodeQL для публичного репозитория включён средствами GitHub отдельно и
+запускается на push сам; файла workflow для него в репозитории нет.
 
 До этого CI можно запускать вручную через `scripts/ci.sh`.
 

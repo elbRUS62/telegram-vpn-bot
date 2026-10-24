@@ -1,6 +1,10 @@
 # Telegram VPN Bot
 
 <p align="center">
+  <a href="https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml"><img src="https://github.com/elbRUS62/telegram-vpn-bot/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
+<p align="center">
   <img src="brand/png/skrepnet-cover-1280x640.png" alt="SkrepNet — бесплатный VPN на Hysteria2" width="100%">
 </p>
 
