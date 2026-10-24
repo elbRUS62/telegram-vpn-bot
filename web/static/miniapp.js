@@ -1,4 +1,17 @@
-const tg = window.Telegram.WebApp;
+const tg = window.Telegram?.WebApp || {
+ initData: '',
+ initDataUnsafe: {},
+ platform: '',
+ ready() {},
+ expand() {},
+ setHeaderColor() {},
+ setBackgroundColor() {},
+ setBottomBarColor() {},
+ disableVerticalSwipes() {},
+ openLink(url) { try { window.open(url, '_blank'); } catch (_) {} },
+ openTelegramLink(url) { try { window.open(url, '_blank'); } catch (_) {} },
+ openInvoice() {},
+};
  tg.ready();
  tg.expand();
  try { tg.setHeaderColor('secondary_bg_color'); } catch (_) {}
@@ -19,36 +32,125 @@ const tg = window.Telegram.WebApp;
  let SUPPORT_STATE = { view: 'list', ticket: null };
  let TICKETS_STATE = { filter: 'active', current: null, busy: false };
 
- const CACHE_PREFIX = 'skrepnet_cache:';
- const CACHE_TTL = 10 * 60 * 1000;
+ const CACHE_PREFIX = 'skrepnet_cache:v2:';
+ const CACHE_DEFAULT_TTL = 60 * 60 * 1000;
+ const CACHE_DAY_TTL = 24 * 60 * 60 * 1000;
+ const CACHE_LONG_TTL = 7 * 24 * 60 * 60 * 1000;
  const CACHEABLE_PATHS = new Set([
  '/api/miniapp/main',
  '/api/miniapp/subscription',
  '/api/miniapp/donate',
  '/api/miniapp/support/list',
  ]);
+ const CACHE_LONG_PATHS = new Set([
+ '/api/miniapp/main',
+ '/api/miniapp/subscription',
+ ]);
+ const CACHE_DAY_PATHS = new Set([
+ '/api/miniapp/support/list',
+ ]);
+ const HEALTH_CACHE_KEY = 'skrepnet_health:v1';
+ const TG_USER_ID = String(tg.initDataUnsafe?.user?.id || '');
+ const CONNECT_ONBOARDING_KEY = `skrepnet_connect_onboarding_v1:${TG_USER_ID || 'anon'}`;
+ const HAPP_LINKS = {
+ android: 'https://play.google.com/store/apps/details?id=com.happproxy',
+ ios: 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215',
+ macos: 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215',
+ windows: 'https://www.happ.su/main/',
+ linux: 'https://www.happ.su/main/',
+ androidtv: 'https://www.happ.su/main/',
+ };
+ const PLATFORM_LABELS = {
+ android: 'Android',
+ ios: 'iOS',
+ macos: 'macOS',
+ windows: 'Windows',
+ linux: 'Linux',
+ androidtv: 'Android TV',
+ };
  const ACTIVE_TAB_KEY = 'skrepnet_active_tab';
  const HINTS_KEY = 'skrepnet_hints_dismissed';
 
+ function isCacheablePath(path) {
+ return CACHEABLE_PATHS.has(path) || path.startsWith('/api/miniapp/connect');
+ }
+
+ function cacheTtl(path) {
+ if (CACHE_LONG_PATHS.has(path) || path.startsWith('/api/miniapp/connect')) return CACHE_LONG_TTL;
+ if (CACHE_DAY_PATHS.has(path)) return CACHE_DAY_TTL;
+ return CACHE_DEFAULT_TTL;
+ }
+
  function cacheSet(path, data) {
  try {
- sessionStorage.setItem(CACHE_PREFIX + path, JSON.stringify({ ts: Date.now(), data }));
+ localStorage.setItem(CACHE_PREFIX + path, JSON.stringify({ ts: Date.now(), data }));
  } catch (_) {}
  }
 
  function cacheGet(path) {
  try {
- const raw = sessionStorage.getItem(CACHE_PREFIX + path);
+ const raw = localStorage.getItem(CACHE_PREFIX + path);
  if (!raw) return null;
  const parsed = JSON.parse(raw);
- if (!parsed || Date.now() - Number(parsed.ts || 0) > CACHE_TTL) {
- sessionStorage.removeItem(CACHE_PREFIX + path);
+ if (!parsed) return null;
+ const age = Date.now() - Number(parsed.ts || 0);
+ if (age > cacheTtl(path)) {
+ localStorage.removeItem(CACHE_PREFIX + path);
  return null;
  }
- return parsed.data;
+ return { data: parsed.data, ts: Number(parsed.ts) || 0 };
  } catch (_) {
  return null;
  }
+ }
+
+ function formatCacheTime(ts) {
+ if (!ts) return '';
+ try {
+ return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+ } catch (_) { return ''; }
+ }
+
+ function showOffline(ts) {
+ const banner = document.getElementById('offline-banner');
+ const text = document.getElementById('offline-text');
+ if (!banner || !text) return;
+ text.textContent = ts
+ ? `Нет сети. Данные от ${formatCacheTime(ts)}.`
+ : 'Нет сети. Проверьте подключение.';
+ banner.hidden = false;
+ }
+
+ function hideOffline() {
+ const banner = document.getElementById('offline-banner');
+ if (banner) banner.hidden = true;
+ }
+
+ function initOfflineBanner() {
+ const retry = document.getElementById('offline-retry');
+ if (retry) retry.addEventListener('click', () => {
+ hideOffline();
+ refreshActiveTab();
+ });
+ window.addEventListener('offline', () => showOffline(null));
+ window.addEventListener('online', () => {
+ hideOffline();
+ refreshActiveTab();
+ });
+ }
+
+ function connectOnboardingDone() {
+ try { return localStorage.getItem(CONNECT_ONBOARDING_KEY) === '1'; } catch (_) { return false; }
+ }
+
+ function markConnectOnboarding() {
+ try { localStorage.setItem(CONNECT_ONBOARDING_KEY, '1'); } catch (_) {}
+ }
+
+ function dismissConnectOnboarding() {
+ markConnectOnboarding();
+ const element = document.getElementById('connect-onboarding');
+ if (element) element.remove();
  }
 
  function skeletonHtml(cards = 3) {
@@ -70,6 +172,20 @@ const tg = window.Telegram.WebApp;
  if (element) element.remove();
  }
 
+ function renderServerStatus(panel, suffix = '') {
+ const target = document.getElementById('server-status-list');
+ if (!target) return;
+ const ok = !!panel.ok;
+ const name = escapeHtml(panel.name || 'GB');
+ const note = suffix
+ ? `<div class="tg-note" style="padding-top:6px;">${escapeHtml(suffix)}</div>`
+ : '';
+ target.innerHTML = `<div class="server-status-row">
+ <span class="server-status-name"><span class="server-status-dot ${ok ? 'ok' : 'bad'}"></span>${name}</span>
+ <span class="server-status-value ${ok ? 'ok' : 'bad'}">${ok ? 'Онлайн' : 'Недоступен'}</span>
+ </div>${note}`;
+ }
+
  async function loadServerStatus() {
  const target = document.getElementById('server-status-list');
  if (!target) return;
@@ -82,14 +198,16 @@ const tg = window.Telegram.WebApp;
  target.innerHTML = '<div class="tg-note">Нет данных о сервере GB.</div>';
  return;
  }
- const ok = !!panel.ok;
- const name = escapeHtml(panel.name || 'GB');
- target.innerHTML = `<div class="server-status-row">
- <span class="server-status-name"><span class="server-status-dot ${ok ? 'ok' : 'bad'}"></span>${name}</span>
- <span class="server-status-value ${ok ? 'ok' : 'bad'}">${ok ? 'Онлайн' : 'Недоступен'}</span>
- </div>`;
+ try { localStorage.setItem(HEALTH_CACHE_KEY, JSON.stringify({ ts: Date.now(), panel })); } catch (_) {}
+ renderServerStatus(panel);
  } catch (_) {
- target.innerHTML = '<div class="tg-note">Не удалось получить статус сервера GB.</div>';
+ let cached = null;
+ try { cached = JSON.parse(localStorage.getItem(HEALTH_CACHE_KEY) || 'null'); } catch (_) {}
+ if (cached && cached.panel) {
+ renderServerStatus(cached.panel, `Данные от ${formatCacheTime(cached.ts)}.`);
+ } else {
+ target.innerHTML = '<div class="tg-note">Нет связи. Статус сервера неизвестен.</div>';
+ }
  }
  }
 
@@ -105,24 +223,30 @@ const tg = window.Telegram.WebApp;
  body: JSON.stringify({init_data: INIT_DATA, ...body}),
  });
  } catch (error) {
- if (attempt < 2) {
+ const canRetry = attempt < 2 && navigator.onLine !== false;
+ if (canRetry) {
  await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
  return apiCall(path, body, attempt + 1);
  }
  console.warn('apiCall network error:', error);
- if (CACHEABLE_PATHS.has(path)) {
+ if (isCacheablePath(path)) {
  const cached = cacheGet(path);
  if (cached) {
- showToast('Нет связи. Показаны последние сохранённые данные');
- return cached;
+ showOffline(cached.ts);
+ return cached.data;
  }
  }
- throw new Error('Не удалось загрузить данные. Проверьте соединение и попробуйте ещё раз.');
+ showOffline(null);
+ if (isCacheablePath(path)) {
+ throw new Error('Нет сети. Не удалось загрузить данные.');
+ }
+ throw new Error('Нет сети. Действие не отправлено.');
  }
  if (res.status === 401) console.warn("Ошибка 401: init_data пустой или неверный");
  try {
  const data = await res.json();
- if (CACHEABLE_PATHS.has(path) && !(data && data.error)) cacheSet(path, data);
+ if (isCacheablePath(path) && !(data && data.error)) cacheSet(path, data);
+ hideOffline();
  return data;
  } catch (error) {
  console.warn('apiCall json error:', error);
@@ -633,6 +757,24 @@ document.addEventListener('visibilitychange', () => {
    <button type="button" class="onboarding-dismiss" onclick="dismissHints()">Понятно</button>
  </div>` : '';
 
+ const detectedPlatform = detectPlatformKey();
+ const happLink = HAPP_LINKS[detectedPlatform] || 'https://www.happ.su/main/';
+ const platformLabel = PLATFORM_LABELS[detectedPlatform] || 'ваше устройство';
+ const connectOnboardingHtml = (isActive && !data.is_admin && !connectOnboardingDone()) ? `
+ <div class="onboarding-card onboarding-card--connect" id="connect-onboarding">
+   <div class="onboarding-title">Подключение за три шага</div>
+   <div class="onboarding-steps">
+     <div class="onboarding-step"><span class="onboarding-num">1</span><span>Установите Happ для ${platformLabel}.</span></div>
+     <div class="onboarding-step"><span class="onboarding-num">2</span><span>Добавьте ссылку подписки в приложение.</span></div>
+     <div class="onboarding-step"><span class="onboarding-num">3</span><span>Выберите сервер и включите VPN.</span></div>
+   </div>
+   <div class="onboarding-actions">
+     <a class="btn btn-primary" href="${happLink}" target="_blank" rel="noopener" onclick="markConnectOnboarding()">Скачать Happ</a>
+     <button type="button" class="btn btn-secondary" data-action="connect_help" onclick="markConnectOnboarding()">Инструкция</button>
+   </div>
+   <button type="button" class="onboarding-dismiss" onclick="dismissConnectOnboarding()">Позже</button>
+ </div>` : '';
+
  content.innerHTML = `
  <div class="tg-hero tg-card">
    <div class="tg-kicker">${data.bot_name || 'SkrepNet'}</div>
@@ -650,6 +792,8 @@ document.addEventListener('visibilitychange', () => {
  </div>
 
  ${hintsHtml}
+
+ ${connectOnboardingHtml}
 
  <div class="tg-card server-status-card" id="server-status-card">
    <div class="card-title">Сервер</div>
@@ -1241,12 +1385,21 @@ document.addEventListener('visibilitychange', () => {
      const pData = await apiCall('/api/miniapp/connect/' + key);
      if (pData.error) throw new Error(pData.error);
 
-     const stepsHtml = pData.steps.map((s, i) => `
+     const stepsHtml = (pData.steps || []).map((s, i) => `
        <div class="tg-step">
          <span class="tg-step__num">${i + 1}</span>
-         <span class="tg-step__text">${s}</span>
+         <span class="tg-step__text">${escapeHtml(s)}</span>
        </div>
      `).join('');
+     const troubleshootHtml = (pData.troubleshooting || []).length ? `
+       <div class="tg-card" style="margin-top:12px;">
+         <div class="tg-card-title">Если не работает</div>
+         <div class="tg-steps">${pData.troubleshooting.map((s, i) => `
+           <div class="tg-step">
+             <span class="tg-step__num">${i + 1}</span>
+             <span class="tg-step__text">${escapeHtml(s)}</span>
+           </div>`).join('')}</div>
+       </div>` : '';
      const subUrl = CURRENT_SUB_URL || (CURRENT_SUB_DATA && CURRENT_SUB_DATA.sub_url);
      const linkHtml = subUrl ? `
        <div class="tg-card">
@@ -1259,6 +1412,7 @@ document.addEventListener('visibilitychange', () => {
      content.innerHTML = `
        <h3 style="text-align:left;color:var(--text-color);margin-bottom:14px;font-size:18px;">${pData.title}</h3>
        <div class="tg-steps">${stepsHtml}</div>
+       ${troubleshootHtml}
        <a href="${pData.app_url}" target="_blank" id="connect-app-link" style="display:block;text-decoration:none;margin-top:16px;"><button class="btn btn-link" style="width:100%;">Скачать ${pData.app}</button></a>
        ${linkHtml}
        <button class="btn btn-secondary" id="connect-back" style="margin-top:8px;">Назад к списку</button>
@@ -2705,6 +2859,7 @@ async function openAdminUserCard(tgId) {
  }
 
  // Запуск
+ initOfflineBanner();
  loadMain();
 
 

@@ -5,7 +5,7 @@
  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
  <title>Моя подписка — SkrepNet</title>
  <script src="https://telegram.org/js/telegram-web-app.js"></script>
- <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-16">
+ <link rel="stylesheet" href="/static/miniapp.css?v={{ bot_version }}-17">
 
 
     <!-- Favicon (SkrepNet) -->
@@ -19,6 +19,11 @@
 </head>
 <body>
 <div id="pull-indicator" class="pull-indicator">Обновить</div>
+<div id="offline-banner" class="offline-banner" hidden>
+  <span class="offline-banner__dot"></span>
+  <span id="offline-text">Нет сети. Проверьте подключение.</span>
+  <button type="button" id="offline-retry">Повторить</button>
+</div>
 <div class="main-bg-dot main-bg-dot--1"></div>
 <div class="main-bg-dot main-bg-dot--2"></div>
 <div class="main-bg-dot main-bg-dot--3"></div>
@@ -189,7 +194,7 @@
 
  <div id="toast" class="toast" role="status" aria-live="polite">Скопировано!</div>
 
- <script src="/static/miniapp.js?v={{ bot_version }}-27"></script>
+ <script src="/static/miniapp.js?v={{ bot_version }}-28"></script>
 
  <!-- Модалка выбора суммы звёзд -->
  <div class="modal-backdrop" id="stars-modal">

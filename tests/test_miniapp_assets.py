@@ -33,9 +33,11 @@ class MiniAppAssetsTest(unittest.TestCase):
             "loadAdminAdmins",
             "admin-admins-list",
             "IS_SUPERADMIN",
+            "showOffline",
+            "connect-onboarding",
         ):
             self.assertIn(token, js)
-        for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log"):
+        for token in ("skeleton-line", "onboarding-card", "server-status-card", "admin-error-log", "offline-banner", "onboarding-actions"):
             self.assertIn(token, css)
         self.assertIn("pull-indicator", html)
         self.assertIn("disableVerticalSwipes", js)

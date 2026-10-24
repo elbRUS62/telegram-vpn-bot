@@ -1725,3 +1725,12 @@ button.tg-item:disabled { opacity: 0.5; cursor: default; }
 .audit-search { width: 100%; padding: 9px 10px; margin-bottom: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--secondary-bg); color: var(--text-color); font-size: 16px; }
 .audit-summary { min-height: 16px; margin-bottom: 4px; color: var(--hint-color); font-size: 12px; }
 .audit-list { max-height: 58vh; overflow-y: auto; overflow-x: hidden; font-size: 13px; word-break: break-word; overflow-wrap: anywhere; }
+
+.offline-banner { position: sticky; top: 0; z-index: 60; display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 9px 14px; background: color-mix(in srgb, var(--warning-color) 18%, var(--bg-color)); border-bottom: 1px solid color-mix(in srgb, var(--warning-color) 35%, transparent); color: var(--text-color); font-size: 13px; }
+.offline-banner[hidden] { display: none; }
+.offline-banner__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warning-color); flex-shrink: 0; }
+#offline-text { flex: 1; min-width: 0; }
+#offline-retry { padding: 4px 6px; border: 0; background: none; color: var(--link-color); font-size: 13px; font-weight: 600; cursor: pointer; }
+.onboarding-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.onboarding-actions .btn { display: inline-flex; flex: 1 1 140px; align-items: center; justify-content: center; margin: 0; text-align: center; text-decoration: none; }
+.onboarding-card--connect { border-color: color-mix(in srgb, var(--link-color) 30%, transparent); }
