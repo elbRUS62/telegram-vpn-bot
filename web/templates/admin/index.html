@@ -24,6 +24,7 @@
         <button type="button" class="wa-nav-item is-active" data-view="overview">Обзор</button>
         <button type="button" class="wa-nav-item" data-view="users">Пользователи</button>
         <button type="button" class="wa-nav-item" data-view="tickets">Тикеты</button>
+        <button type="button" class="wa-nav-item" data-view="diagnostics">Диагностика</button>
         {% if is_superadmin %}
         <button type="button" class="wa-nav-item" data-view="admins">Админы</button>
         {% endif %}
@@ -103,6 +104,30 @@
         </div>
       </section>
 
+      <section class="wa-view" id="view-diagnostics" hidden>
+        <div class="wa-toolbar">
+          <select id="wa-diagnostics-days" class="wa-select">
+            <option value="1">За сутки</option>
+            <option value="7" selected>За 7 дней</option>
+            <option value="30">За 30 дней</option>
+          </select>
+          <button id="wa-diagnostics-refresh" type="button" class="wa-button wa-button-secondary">Обновить</button>
+        </div>
+        <div class="wa-cards" id="wa-diagnostics-summary"></div>
+        <div class="wa-panel">
+          <div class="wa-panel-head"><h2>По операторам</h2></div>
+          <div id="wa-diagnostics-operators"></div>
+        </div>
+        <div class="wa-panel">
+          <div class="wa-panel-head"><h2>Этапы ошибок</h2></div>
+          <div id="wa-diagnostics-stages"></div>
+        </div>
+        <div class="wa-panel">
+          <div class="wa-panel-head"><h2>По часовым поясам</h2></div>
+          <div id="wa-diagnostics-timezones"></div>
+        </div>
+      </section>
+
       {% if is_superadmin %}
       <section class="wa-view" id="view-admins" hidden>
         <div class="wa-panel">
@@ -149,6 +174,6 @@
       adminId: {{ admin_id|tojson }}
     };
   </script>
-  <script src="/static/webadmin.js?v=1"></script>
+  <script src="/static/webadmin.js?v=2"></script>
 </body>
 </html>

@@ -156,13 +156,54 @@ async def init_db():
             CREATE TABLE IF NOT EXISTS diagnostic_stats (
                 bucket TEXT NOT NULL,
                 timezone TEXT NOT NULL DEFAULT 'unknown',
+                asn INTEGER,
+                operator TEXT NOT NULL DEFAULT 'unknown',
                 stage TEXT NOT NULL,
                 ok INTEGER NOT NULL,
                 latency_bucket TEXT NOT NULL,
                 count INTEGER NOT NULL DEFAULT 0,
-                PRIMARY KEY (bucket, timezone, stage, ok, latency_bucket)
+                PRIMARY KEY (bucket, timezone, asn, operator, stage, ok, latency_bucket)
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS asn_ranges (
+                start INTEGER PRIMARY KEY,
+                end INTEGER NOT NULL,
+                asn INTEGER NOT NULL,
+                operator TEXT NOT NULL DEFAULT 'unknown'
+            )
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_asn_ranges_end
+            ON asn_ranges(end)
+        """)
+        async with db.execute("PRAGMA table_info(diagnostic_stats)") as cur:
+            diagnostic_columns = [row[1] for row in await cur.fetchall()]
+        if "operator" not in diagnostic_columns:
+            await db.execute("""
+                CREATE TABLE diagnostic_stats_new (
+                    bucket TEXT NOT NULL,
+                    timezone TEXT NOT NULL DEFAULT 'unknown',
+                    asn INTEGER,
+                    operator TEXT NOT NULL DEFAULT 'unknown',
+                    stage TEXT NOT NULL,
+                    ok INTEGER NOT NULL,
+                    latency_bucket TEXT NOT NULL,
+                    count INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (bucket, timezone, asn, operator, stage, ok, latency_bucket)
+                )
+            """)
+            await db.execute("""
+                INSERT INTO diagnostic_stats_new
+                    (bucket, timezone, asn, operator, stage, ok, latency_bucket, count)
+                SELECT bucket, timezone, NULL, 'unknown', stage, ok, latency_bucket, count
+                FROM diagnostic_stats
+            """)
+            await db.execute("DROP TABLE diagnostic_stats")
+            await db.execute(
+                "ALTER TABLE diagnostic_stats_new RENAME TO diagnostic_stats"
+            )
+            logger.info("🔧 diagnostic_stats migrated with operator fields")
         await db.execute("""
             CREATE INDEX IF NOT EXISTS idx_diagnostic_stats_bucket
             ON diagnostic_stats(bucket)
@@ -188,6 +229,7 @@ async def init_db():
         if "renew_count" not in columns:
             await db.execute("ALTER TABLE users ADD COLUMN renew_count INTEGER DEFAULT 0")
             logger.info("🔧 Добавлено поле renew_count в таблицу users")
+
         # Миграция: добавляем поля в invite_links для веб-привязки
         async with db.execute("PRAGMA table_info(invite_links)") as cur:
             il_columns = [row[1] for row in await cur.fetchall()]

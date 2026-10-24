@@ -5,6 +5,7 @@ import aiosqlite
 from flask import jsonify, request
 
 from config import DB_PATH, DIAGNOSTIC_RETENTION_DAYS
+from web.utils.asn_lookup import lookup_operator
 from web.utils.async_helper import run_async
 from web.utils.auth import validate_init_data
 
@@ -121,6 +122,9 @@ def diagnostics_report():
     cutoff = (now - timedelta(days=DIAGNOSTIC_RETENTION_DAYS)).strftime('%Y-%m-%dT%H:00')
     ok = 1 if data.get('ok') is True else 0
 
+    client_ip = request.headers.get('CF-Connecting-IP') or request.remote_addr or ''
+    asn, operator = lookup_operator(client_ip)
+
     async def store():
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
@@ -129,11 +133,19 @@ def diagnostics_report():
             )
             await db.execute("""
                 INSERT INTO diagnostic_stats
-                    (bucket, timezone, stage, ok, latency_bucket, count)
-                VALUES (?, ?, ?, ?, ?, 1)
-                ON CONFLICT(bucket, timezone, stage, ok, latency_bucket)
+                    (bucket, timezone, asn, operator, stage, ok, latency_bucket, count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                ON CONFLICT(bucket, timezone, asn, operator, stage, ok, latency_bucket)
                 DO UPDATE SET count = count + 1
-            """, (bucket, timezone_name, stage, ok, latency_bucket))
+            """, (
+                bucket,
+                timezone_name,
+                asn,
+                operator,
+                stage,
+                ok,
+                latency_bucket,
+            ))
             await db.commit()
 
     try:
